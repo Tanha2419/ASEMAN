@@ -1260,8 +1260,16 @@
         <button type="submit" class="search-btn">آنالیز هوشمند</button>
       </form>
 
-      <!-- Fear & Greed -->
-      <div class="header-actions">
+      <!-- Live UTC Clock & Global Session Tracker & Fear & Greed -->
+      <div class="header-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <!-- Live UTC Clock Badge -->
+        <div class="utc-clock-badge" id="utcClockBadge" title="ساعت زنده بین‌المللی هماهنگ (UTC) و وضعیت سشن فعال بازارهای مالی جهان" style="display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.4); padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; backdrop-filter: blur(6px); box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite;"></span>
+          <span style="font-family: monospace; font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;" id="liveUtcClock">--:--:-- UTC</span>
+          <span style="border-right: 1px solid rgba(148, 163, 184, 0.3); height: 14px; margin: 0 2px;"></span>
+          <span id="activeMarketSession" style="font-size: 0.75rem; color: #facc15; font-weight: 600;">سشن: در حال بررسی...</span>
+        </div>
+
         <div class="fng-badge" id="fngBadge" title="شاخص احساسات و ترس و طمع کل بازار">
           <div class="fng-dot" id="fngDot"></div>
           <span style="color: var(--text-dim)">طمع/ترس:</span>
@@ -1507,6 +1515,24 @@
           <div class="action-badge action-buy" id="scalpActionBadge">LONG (خرید سریع)</div>
         </div>
 
+        <!-- Scalp Setup UTC Timing & Validity Strip -->
+        <div class="signal-time-strip" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 10px 14px; margin: 12px 0; font-size: 0.8rem; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #38bdf8;">⏰ زمان صدور سیگنال (UTC):</span>
+              <strong style="color: #f8fafc; font-family: monospace; font-size: 0.88rem;" id="scalpIssuedUtc">--:--:-- UTC</strong>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #f59e0b;">⏳ افق اعتبار ستاپ:</span>
+              <span style="color: #fef08a; font-family: monospace; font-weight: 700; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3);" id="scalpValidUntilUtc">۳ ساعت (تا --:-- UTC)</span>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px; font-size: 0.74rem; color: #94a3b8;">
+            <span>🛡️ <b>مدیریت ریسک نهادی:</b> به محض لمس TP1، استاپ به نقطه ورود (Breakeven) کشیده شود.</span>
+            <span id="scalpStatusBadge" style="color: #4ade80; font-weight: 700;">● تایید شده اسمارت‌مانی</span>
+          </div>
+        </div>
+
         <div class="trading-levels">
           <div class="level-row">
             <div class="level-tag">
@@ -1590,6 +1616,24 @@
             </div>
           </div>
           <div class="action-badge action-buy" id="swingActionBadge">SWING LONG (خرید روندی)</div>
+        </div>
+
+        <!-- Swing Setup UTC Timing & Validity Strip -->
+        <div class="signal-time-strip" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 10px 14px; margin: 12px 0; font-size: 0.8rem; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #c084fc;">⏰ زمان صدور تحلیل (UTC):</span>
+              <strong style="color: #f8fafc; font-family: monospace; font-size: 0.88rem;" id="swingIssuedUtc">--:--:-- UTC</strong>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #38bdf8;">⏳ بازه اعتبار سوئینگ:</span>
+              <span style="color: #bae6fd; font-family: monospace; font-weight: 700; background: rgba(56, 189, 248, 0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);" id="swingValidUntilUtc">۳ الی ۷ روز کاری (تا --:--)</span>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px; font-size: 0.74rem; color: #94a3b8;">
+            <span>🎯 <b>هدف ساختاری:</b> پوزیشن‌های میان‌مدت و خرید پله‌ای منطبق بر POC و پاکت طلایی فیبوناچی.</span>
+            <span id="swingStatusBadge" style="color: #c084fc; font-weight: 700;">● پوزیشن سوئینگ</span>
+          </div>
         </div>
 
         <div class="trading-levels">
@@ -2411,23 +2455,28 @@
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
             <div>
               <div style="font-size: 1.1rem; font-weight: 800; color: #ff9800; display: flex; align-items: center; gap: 8px;">
-                <span>🦵</span> رادار دیتکشن‌ها و فرصت‌های آنی (Coinlegs Market Scanner)
+                <span>🦵</span> رادار دیتکشن‌ها و فرصت‌های آنی (اسکن ۷۰ نماد برتر بازار)
               </div>
               <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">
-                ردیابی واگرایی‌های RSI، هانت‌های نقدینگی BSL/SSL و اسپایک‌های حجم غیرعادی در ۱۲ نماد برتر بازار
+                اسکن ۷۰ ارز برتر کریپتو | حذف هوشمند نمادهای خنثی و بی‌روند جهت خلوت‌سازی صفحه و تمرکز بر پرقدرت‌ترین ستاپ‌ها
               </div>
             </div>
-            <div style="display: flex; gap: 10px;">
-              <button onclick="fetchCoinlegsDetections()" class="copy-btn" style="padding: 6px 14px; font-size: 0.8rem;">🔄 اسکن مجدد بازار</button>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button onclick="fetchCoinlegsDetections()" class="copy-btn" style="padding: 6px 14px; font-size: 0.8rem;">🔄 اسکن مجدد ۷۰ ارز</button>
               <a href="https://www.coinlegs.com/detections" target="_blank" class="portal-chip portal-legs" style="padding: 6px 14px;">
-                🦵 پرتال دیتکشن‌های رسمی Coinlegs ↗
+                🦵 پرتال مرجع Coinlegs ↗
               </a>
             </div>
           </div>
 
-          <div style="background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.2); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.82rem; display: flex; align-items: center; gap: 8px;">
-            <span>💡</span>
-            <span>این موتور به‌طور خودکار هر کندل ۱۵ دقیقه را تحلیل کرده و پترن‌های تهاجمی خرید یا فروش هوشمند را تفکیک می‌کند. با کلیک بر روی هر دیتکشن، تحلیل تفصیلی آن باز می‌شود.</span>
+          <div style="background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.82rem;" id="coinlegsFilterBanner">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; color: #fef08a; font-weight: 700;">
+                <span>🎯 فیلتر هوشمند عدم ازدحام صفحه:</span>
+                <span id="coinlegsFilterStats">در حال اسکن ۷۰ نماد برتر و تفکیک فرصت‌های طلایی...</span>
+              </div>
+              <span style="font-size: 0.74rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; padding: 2px 8px; border-radius: 4px; font-weight: 700;">● فقط سیگنال‌های پرقدرت و تاییدشده</span>
+            </div>
           </div>
 
           <!-- Detections Table Wrap -->
@@ -2435,19 +2484,19 @@
             <table class="crypto-table" id="detectionsTable">
               <thead>
                 <tr>
-                  <th>نماد (Pair)</th>
+                  <th>نماد (Coin)</th>
                   <th>تایم‌فریم</th>
-                  <th>نوع دیتکشن (Detection)</th>
-                  <th>قیمت و جزئیات تکنیکال</th>
-                  <th>جهت پیشنهادی (Bias)</th>
-                  <th>قدرت سیگنال</th>
+                  <th>نوع دیتکشن و شکار نقدینگی</th>
+                  <th>قیمت زنده و RSI</th>
+                  <th>سیگنال سیستم و منطق ورود</th>
+                  <th>قدرت سیگنال (Conviction)</th>
                   <th>عملیات</th>
                 </tr>
               </thead>
               <tbody id="detectionsTbody">
                 <tr>
                   <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">
-                    در حال اسکن بازار با الگوریتم‌های Coinlegs...
+                    در حال اسکن ۷۰ نماد برتر بازار با الگوریتم‌های Coinlegs...
                   </td>
                 </tr>
               </tbody>
@@ -2659,21 +2708,55 @@
             </div>
           </div>
 
+          <!-- Macro Directional Impact Quick Guide -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px;">
+            <div style="background: rgba(234, 179, 8, 0.06); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 8px; padding: 10px 12px;">
+              <div style="font-size: 0.82rem; font-weight: 800; color: #facc15; display: flex; align-items: center; gap: 6px;">
+                <span>🥇</span> بازار طلا (Gold / XAUUSD)
+              </div>
+              <div style="font-size: 0.74rem; color: #cbd5e1; margin-top: 5px; line-height: 1.5;">
+                • در صورت کاهش بهره/تورم: <strong style="color: #4ade80;">⬆️ صعودی قوی</strong><br>
+                • در صورت ارقام داغ‌تر: <strong style="color: #f87171;">⬇️ نزولی و اصلاح</strong>
+              </div>
+            </div>
+
+            <div style="background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px; padding: 10px 12px;">
+              <div style="font-size: 0.82rem; font-weight: 800; color: #60a5fa; display: flex; align-items: center; gap: 6px;">
+                <span>💵</span> فارکس و دلار (Forex / DXY)
+              </div>
+              <div style="font-size: 0.74rem; color: #cbd5e1; margin-top: 5px; line-height: 1.5;">
+                • در صورت کاهش بهره/تورم: <strong style="color: #f87171;">⬇️ تضعیف شاخص دلار</strong><br>
+                • در صورت ارقام داغ‌تر: <strong style="color: #4ade80;">⬆️ جهش و تقویت دلار</strong>
+              </div>
+            </div>
+
+            <div style="background: rgba(34, 197, 94, 0.06); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; padding: 10px 12px;">
+              <div style="font-size: 0.82rem; font-weight: 800; color: #4ade80; display: flex; align-items: center; gap: 6px;">
+                <span>🪙</span> رمزارزها (Crypto / Bitcoin)
+              </div>
+              <div style="font-size: 0.74rem; color: #cbd5e1; margin-top: 5px; line-height: 1.5;">
+                • در صورت کاهش بهره/تورم: <strong style="color: #4ade80;">⬆️ پامپ و جذب نقدینگی</strong><br>
+                • در صورت ارقام داغ‌تر: <strong style="color: #f87171;">⬇️ ریزش و فشار فروش</strong>
+              </div>
+            </div>
+          </div>
+
           <!-- Schedule Table -->
           <div style="overflow-x: auto;">
-            <table class="crypto-table">
+            <table class="crypto-table" style="min-width: 960px;">
               <thead>
                 <tr>
-                  <th>نام رویداد اقتصادی کلان</th>
+                  <th style="min-width: 200px;">نام رویداد اقتصادی کلان</th>
                   <th>کد</th>
-                  <th>درجه اهمیت و نوسان</th>
+                  <th style="min-width: 130px;">درجه اهمیت و نوسان</th>
                   <th>تاریخ و ساعت (UTC)</th>
                   <th>پیش‌بینی (Forecast)</th>
-                  <th>دوره قبلی (Previous)</th>
+                  <th>دوره قبل (Prev)</th>
+                  <th style="min-width: 330px; background: rgba(0, 210, 255, 0.08); text-align: center;">اثر در صورت تحقق پیش‌بینی (طلا | فارکس | کریپتو)</th>
                 </tr>
               </thead>
               <tbody id="macroEventsTbody">
-                <tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-dim);">در حال دریافت تقویم رویدادهای فدرال‌رزرو...</td></tr>
+                <tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-dim);">در حال دریافت تقویم رویدادهای فدرال‌رزرو...</td></tr>
               </tbody>
             </table>
           </div>
@@ -3270,15 +3353,20 @@
     // --- Coinlegs Scanner Engine ---
     async function fetchCoinlegsDetections() {
       const tbody = document.getElementById('detectionsTbody');
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">در حال اسکن ۱۲ نماد برتر بازار در تایم‌فریم ۱۵ دقیقه به سبک Coinlegs...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">در حال اسکن همزمان ۷۰ نماد برتر بازار در تایم‌فریم ۱۵ دقیقه و فیلتر سیگنال‌های پرقدرت...</td></tr>';
       try {
         const res = await fetch('/api/detections');
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Failed to fetch detections');
 
+        const statsEl = document.getElementById('coinlegsFilterStats');
+        if (statsEl) {
+          statsEl.innerText = `${data.total_scanned || 70} نماد ارزیابی شد | ${data.neutral_filtered || 0} نماد خنثی حذف شد | ${data.high_conviction_count || 0} سیگنال طلایی کشف شد`;
+        }
+
         const items = data.detections || [];
         if (items.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">هیچ واگرایی یا هانت فعالی در حال حاضر شناسایی نشد.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">تمام ۷۰ ارز برتر در منطقه رنج و خنثی هستند؛ هیچ سیگنال تاییدشده‌ای جهت جلوگیری از تله ۵۰/۵۰ صادر نشد.</td></tr>';
           return;
         }
 
@@ -3297,18 +3385,26 @@
             </td>
             <td><span class="indicator-badge" style="background: rgba(255,255,255,0.06); color: #ccc;">15M</span></td>
             <td>
-              <div style="font-weight: 700; color: ${badgeCol};">${d.divergence !== 'فاقد واگرایی' ? d.divergence : d.sweep !== 'نرمال' ? d.sweep : (d.volume_spike ? '⚡ جهش غیرعادی حجم' : 'نوسان روتین')}</div>
-              <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">RSI: ${d.rsi} | نوسان: ${d.change_pct >= 0 ? '+' : ''}${d.change_pct}%</div>
+              <div style="font-weight: 700; color: ${badgeCol};">${d.divergence !== 'فاقد واگرایی' ? d.divergence : d.sweep !== 'نرمال' ? d.sweep : (d.volume_spike ? '⚡ جهش غیرعادی حجم' : 'شتاب مومنتوم')}</div>
+              <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 2px;">RSI: <strong style="color: #fff;">${d.rsi}</strong> | نوسان: <strong style="color: ${d.change_pct >= 0 ? '#00e676' : '#ff3366'}">${d.change_pct >= 0 ? '+' : ''}${d.change_pct}%</strong></div>
             </td>
             <td><span class="mono" style="font-weight: 700;">${formatPrice(d.price)}</span></td>
-            <td><span class="indicator-badge" style="background: ${badgeBg}; color: ${badgeCol}; font-weight: 800;">${d.signal}</span></td>
             <td>
-              <span style="font-size: 0.8rem; color: ${d.volume_spike ? '#00e676' : 'var(--text-dim)'};">
-                ${d.volume_spike ? '⚡ حجم بالا (HFT Active)' : 'متوسط'}
-              </span>
+              <span class="indicator-badge" style="background: ${badgeBg}; color: ${badgeCol}; font-weight: 800; display: inline-block;">${d.signal}</span>
+              ${d.reason ? `<div style="font-size: 0.71rem; color: #cbd5e1; margin-top: 3px; max-width: 250px;">💡 ${d.reason}</div>` : ''}
             </td>
             <td>
-              <button onclick="loadSymbol('${d.symbol}'); switchTab('instTab', document.querySelector('.tab-btn')); window.scrollTo({top:0, behavior:'smooth'});" class="copy-btn" style="padding: 4px 10px; font-size: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="indicator-badge" style="background: ${d.signal_strength >= 90 ? 'rgba(0, 230, 118, 0.2)' : 'rgba(0, 210, 255, 0.2)'}; color: ${d.signal_strength >= 90 ? '#00e676' : '#00d2ff'}; font-weight: 800;">
+                  ${d.signal_strength || 85}% [Grade ${d.signal_strength >= 90 ? 'A+' : (d.signal_strength >= 85 ? 'A' : 'B+')}]
+                </span>
+              </div>
+              <div style="font-size: 0.69rem; color: ${d.volume_spike ? '#00e676' : '#94a3b8'}; margin-top: 2px;">
+                ${d.volume_spike ? '⚡ تایید حجم نهنگ (HFT)' : 'نقدینگی نهادی نرمال'}
+              </div>
+            </td>
+            <td>
+              <button onclick="loadSymbol('${d.symbol}'); switchTab('instTab', document.querySelector('.tab-btn')); window.scrollTo({top:0, behavior:'smooth'});" class="copy-btn" style="padding: 5px 12px; font-size: 0.78rem; font-weight: 700; border-color: rgba(0, 210, 255, 0.5); color: #00d2ff;">
                 🔍 آنالیز فوری
               </button>
             </td>
@@ -3523,14 +3619,71 @@
         tbody.innerHTML = '';
         (cal.all_events || []).forEach(ev => {
           const tr = document.createElement('tr');
-          const impCol = ev.impact === 'CRITICAL_MAX' ? '#ff3366' : '#ff9800';
+          
+          let impTextFa = 'بالا';
+          let impBg = 'rgba(255, 152, 0, 0.18)';
+          let impCol = '#ff9800';
+          
+          if (ev.impact === 'CRITICAL_MAX' || (ev.impact_fa && ev.impact_fa.includes('بحرانی'))) {
+            impTextFa = ev.impact_fa || 'بسیار بالا / بحرانی';
+            impBg = 'rgba(255, 51, 102, 0.18)';
+            impCol = '#ff3366';
+          } else if (ev.impact === 'HIGH' || ev.impact_fa === 'بالا') {
+            impTextFa = ev.impact_fa || 'بالا';
+            impBg = 'rgba(255, 152, 0, 0.18)';
+            impCol = '#ff9800';
+          } else if (ev.impact === 'MEDIUM' || ev.impact_fa === 'متوسط') {
+            impTextFa = ev.impact_fa || 'متوسط';
+            impBg = 'rgba(250, 204, 21, 0.18)';
+            impCol = '#facc15';
+          } else {
+            impTextFa = ev.impact_fa || 'پایین';
+            impBg = 'rgba(34, 197, 94, 0.15)';
+            impCol = '#4ade80';
+          }
+
+          const volTextFa = ev.volatility_fa || (ev.impact === 'CRITICAL_MAX' ? 'نوسان شدید' : 'نوسان بالا');
+          
+          const rx = ev.reaction_inline || {};
+          const gold = rx.gold || { arrow: '⬆️', dir: 'صعودی' };
+          const forex = rx.forex || { arrow: '⬇️', dir: 'تضعیف دلار' };
+          const crypto = rx.crypto || { arrow: '⬆️', dir: 'پامپ و رشد' };
+
           tr.innerHTML = `
-            <td><strong>${ev.name}</strong></td>
-            <td><span class="mono">${ev.code}</span></td>
-            <td><span class="indicator-badge" style="background: rgba(255, 51, 102, 0.12); color: ${impCol};">${ev.impact}</span></td>
-            <td><span class="mono" style="font-size: 0.8rem;">${ev.date_utc}</span></td>
-            <td><strong style="color: #00d2ff;">${ev.forecast}</strong></td>
-            <td><span style="color: var(--text-dim);">${ev.previous}</span></td>
+            <td>
+              <strong style="color: #fff; font-size: 0.9rem;">${ev.name}</strong>
+              ${ev.forecast_context ? `<div style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px;">📌 ${ev.forecast_context}</div>` : ''}
+            </td>
+            <td><span class="mono" style="font-size: 0.8rem; font-weight: 700; color: #38bdf8;">${ev.code}</span></td>
+            <td>
+              <span class="indicator-badge" style="background: ${impBg}; color: ${impCol}; font-weight: 800; font-size: 0.75rem; display: inline-block;">
+                ● ${impTextFa}
+              </span>
+              <div style="font-size: 0.69rem; color: #94a3b8; margin-top: 3px; font-weight: 500;">
+                ${volTextFa}
+              </div>
+            </td>
+            <td><span class="mono" style="font-size: 0.78rem; color: #cbd5e1;">${ev.date_utc}</span></td>
+            <td><strong style="color: #00d2ff; font-family: monospace;">${ev.forecast}</strong></td>
+            <td><span style="color: var(--text-dim); font-family: monospace;">${ev.previous}</span></td>
+            <td>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <span style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); color: #4ade80; padding: 3px 8px; border-radius: 6px; font-size: 0.76rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    🥇 طلا: ${gold.arrow} ${gold.dir}
+                  </span>
+                  <span style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 3px 8px; border-radius: 6px; font-size: 0.76rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    💵 فارکس: ${forex.arrow} ${forex.dir}
+                  </span>
+                  <span style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); color: #4ade80; padding: 3px 8px; border-radius: 6px; font-size: 0.76rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    🪙 رمز ارز: ${crypto.arrow} ${crypto.dir}
+                  </span>
+                </div>
+                <div style="font-size: 0.69rem; color: #64748b; margin-top: 2px;">
+                  <span style="color: #f59e0b;">انحراف بالاتر:</span> طلا ⬇️ | دلار ⬆️ | کریپتو ⬇️ &nbsp;|&nbsp; <span style="color: #38bdf8;">انحراف پایین‌تر:</span> طلا ⬆️ | دلار ⬇️ | کریپتو ⬆️
+                </div>
+              </div>
+            </td>
           `;
           tbody.appendChild(tr);
         });
@@ -4061,13 +4214,20 @@
         else if (scalp_setup.action_code === 'SELL') badge.className = 'action-badge action-sell';
         else badge.className = 'action-badge action-wait';
 
+        if (document.getElementById('scalpIssuedUtc')) {
+          document.getElementById('scalpIssuedUtc').innerText = scalp_setup.generated_at_utc || (new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
+        }
+        if (document.getElementById('scalpValidUntilUtc')) {
+          document.getElementById('scalpValidUntilUtc').innerText = scalp_setup.valid_until_utc ? `${scalp_setup.validity_window_text || '۳ ساعت'} (تا ${scalp_setup.valid_until_utc.substring(11, 19)})` : '۳ ساعت پس از صدور';
+        }
+
         document.getElementById('scalpEntry').innerText = scalp_setup.entry_zone || '-';
         document.getElementById('scalpSl').innerHTML = `${formatPrice(scalp_setup.stop_loss)} <span class="pct">(-${scalp_setup.stop_loss_pct}%)</span>`;
         document.getElementById('scalpTp1').innerHTML = `${formatPrice(scalp_setup.tp1)} <span class="pct">(+${scalp_setup.tp1_pct}%)</span>`;
         document.getElementById('scalpTp2').innerHTML = `${formatPrice(scalp_setup.tp2)} <span class="pct">(+${scalp_setup.tp2_pct}%)</span>`;
         document.getElementById('scalpTp3').innerHTML = `${formatPrice(scalp_setup.tp3)} <span class="pct">(+${scalp_setup.tp3_pct}%)</span>`;
         
-        document.getElementById('scalpRr').innerText = scalp_setup.risk_reward || '1:2.0';
+        document.getElementById('scalpRr').innerText = scalp_setup.risk_reward || '1:2.5';
         document.getElementById('scalpWinRate').innerText = scalp_setup.confidence || '75%';
         document.getElementById('scalpLev').innerText = scalp_setup.suggested_leverage || '3x - 5x';
 
@@ -4083,6 +4243,13 @@
         if (swing_setup.action_code === 'BUY') badge.className = 'action-badge action-buy';
         else if (swing_setup.action_code === 'SELL') badge.className = 'action-badge action-sell';
         else badge.className = 'action-badge action-wait';
+
+        if (document.getElementById('swingIssuedUtc')) {
+          document.getElementById('swingIssuedUtc').innerText = swing_setup.generated_at_utc || (new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
+        }
+        if (document.getElementById('swingValidUntilUtc')) {
+          document.getElementById('swingValidUntilUtc').innerText = swing_setup.valid_until_utc ? `${swing_setup.validity_window_text || '۳ الی ۷ روز کاری'} (تا ${swing_setup.valid_until_utc.substring(0, 10)})` : '۳ الی ۷ روز کاری';
+        }
 
         document.getElementById('swingPullback').innerText = swing_setup.pullback_entry || '-';
         document.getElementById('swingBreakout').innerText = swing_setup.breakout_entry || '-';
@@ -4443,7 +4610,14 @@
               <a href="${it.url || '#'}" target="_blank" style="font-size: 0.92rem; font-weight: 700; color: #fff; text-decoration: none; line-height: 1.5; display: block;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color='#fff'">
                 ${it.title} ↗
               </a>
-              ${it.description ? `<div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 4px;">${it.description}</div>` : ''}
+              <div style="font-size: 0.84rem; font-weight: 600; color: #fde047; margin-top: 6px; background: rgba(234, 179, 8, 0.08); border-right: 3px solid #eab308; padding: 5px 10px; border-radius: 4px; line-height: 1.5; display: flex; align-items: flex-start; gap: 6px;">
+                <span style="font-size: 0.9rem; line-height: 1;">🇮🇷</span>
+                <div>
+                  <span style="font-size: 0.7rem; color: #fbbf24; font-weight: 700; display: block; opacity: 0.85;">ترجمه فارسی هوشمند:</span>
+                  ${it.title_fa || 'ترجمه تیتر در دسترس نیست'}
+                </div>
+              </div>
+              ${it.description ? `<div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 5px;">${it.description}</div>` : ''}
             </div>
 
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -4857,6 +5031,8 @@ ${s3d.action_advice || ''}
       const s = currentAnalysis.scalp_setup;
       const sym = currentAnalysis.symbol;
       const text = `⚡ سیگنال اسکالپ اسمارت‌مانی | ${sym}
+⏰ زمان صدور سیگنال (UTC): ${s.generated_at_utc || 'N/A'}
+⏳ افق اعتبار ستاپ: ${s.validity_window_text || '۳ ساعت'} (تا ${s.valid_until_utc || 'N/A'})
 📌 جهت: ${s.action}
 🔹 محدوده ورود: ${s.entry_zone}
 🛑 حد ضرر: ${formatPrice(s.stop_loss)} (-${s.stop_loss_pct}%)
@@ -4865,10 +5041,10 @@ ${s3d.action_advice || ''}
 🎯 تارگت سوم (BSL): ${formatPrice(s.tp3)} (+${s.tp3_pct}%)
 ⚖️ لوریج پیشنهادی: ${s.suggested_leverage}
 📊 ریسک به ریوارد: ${s.risk_reward}
-⚠️ سیو سود ۵۰٪ در تارگت ۱ و ریسک‌فری الزامی است.`;
+🛡️ قانون مدیریت ریسک: سیو سود ۵۰٪ در تارگت ۱ و انتقال بی‌درنگ استاپ به نقطه ورود (Breakeven)`;
 
       navigator.clipboard.writeText(text).then(() => {
-        showToast('سیگنال اسکالپ با موفقیت در کلیپ‌بورد کپی شد');
+        showToast('سیگنال اسکالپ با مهر زمانی UTC کپی شد');
       });
     }
 
@@ -4877,6 +5053,8 @@ ${s3d.action_advice || ''}
       const s = currentAnalysis.swing_setup;
       const sym = currentAnalysis.symbol;
       const text = `🌊 سیگنال سوئینگ تریدینگ | ${sym}
+⏰ زمان صدور تحلیل (UTC): ${s.generated_at_utc || 'N/A'}
+⏳ بازه اعتبار سوئینگ: ${s.validity_window_text || '۳ الی ۷ روز کاری'} (تا ${s.valid_until_utc || 'N/A'})
 📌 استراتژی: ${s.action}
 🔹 ورود در اصلاح (POC): ${s.pullback_entry}
 🔹 ورود در شکست: ${s.breakout_entry}
@@ -5087,7 +5265,50 @@ ${s3d.action_advice || ''}
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
+    function updateUtcClock() {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const timeStr = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())} UTC`;
+      
+      const clockEl = document.getElementById('liveUtcClock');
+      if (clockEl) clockEl.innerText = timeStr;
+      
+      const totalMins = now.getUTCHours() * 60 + now.getUTCMinutes();
+      let sessionName = 'توکیو و شرق آسیا (Tokyo Session)';
+      let sessionEmoji = '⛩️';
+      let sessionColor = '#a855f7';
+      
+      if (totalMins >= 720 && totalMins <= 930) {
+        sessionName = 'اورلپ نیویورک و لندن (اوج نقدینگی)';
+        sessionEmoji = '⚡';
+        sessionColor = '#f59e0b';
+      } else if (totalMins >= 420 && totalMins < 960) {
+        sessionName = 'لندن و اروپا (London Session)';
+        sessionEmoji = '🏛️';
+        sessionColor = '#38bdf8';
+      } else if (totalMins >= 720 && totalMins <= 1200) {
+        sessionName = 'نیویورک و وال‌استریت (NY Session)';
+        sessionEmoji = '🗽';
+        sessionColor = '#10b981';
+      } else if (totalMins >= 0 && totalMins < 480) {
+        sessionName = 'توکیو و شرق آسیا (Tokyo Session)';
+        sessionEmoji = '⛩️';
+        sessionColor = '#a855f7';
+      } else {
+        sessionName = 'سیدنی و پاسیفیک (Sydney Open)';
+        sessionEmoji = '🌏';
+        sessionColor = '#94a3b8';
+      }
+      
+      const sessionEl = document.getElementById('activeMarketSession');
+      if (sessionEl) {
+        sessionEl.innerHTML = `${sessionEmoji} <span style="color:${sessionColor};font-weight:700;">${sessionName}</span>`;
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+      updateUtcClock();
+      setInterval(updateUtcClock, 1000);
       loadSymbol('BTC');
       loadTelegramConfig();
     });

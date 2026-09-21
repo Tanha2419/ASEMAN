@@ -272,7 +272,14 @@ def run_cli():
         sh_col = GREEN if "باثبات" in macro_cal.get("shield_state","") else (YELLOW if "ریسک بالا" in macro_cal.get("shield_state","") else RED)
         print(f"\n{BOLD}3. 🏛️ تقویم رویدادهای ماکرو و فیوز کلان (Economic Shield & Circuit Breaker):{RESET}")
         print(f"  📅 {BOLD}رویداد بعدی کلان آمریکا:{RESET} {YELLOW}{macro_cal.get('next_event')}{RESET}")
+        print(f"  ⭐ {BOLD}درجه اهمیت و نوسان:{RESET} {RED}{macro_cal.get('impact_fa', 'بسیار بالا')}{RESET} ({macro_cal.get('volatility_fa', 'نوسان شدید')})")
         print(f"  ⏳ {BOLD}شمارش معکوس زنده:{RESET} {macro_cal.get('countdown_fmt')} (پیش‌بینی: {macro_cal.get('forecast')} | قبلی: {macro_cal.get('previous')})")
+        rx = macro_cal.get("reaction_inline", {})
+        if rx:
+            g = rx.get("gold", {})
+            fx = rx.get("forex", {})
+            c = rx.get("crypto", {})
+            print(f"  🎯 {BOLD}اثر در صورت تحقق پیش‌بینی:{RESET} 🥇 طلا: {g.get('arrow')} {g.get('dir')} | 💵 فارکس: {fx.get('arrow')} {fx.get('dir')} | 🪙 کریپتو: {c.get('arrow')} {c.get('dir')}")
         print(f"  🛡️ {BOLD}وضعیت فیوز معاملاتی:{RESET} {sh_col}{macro_cal.get('shield_state')}{RESET}")
 
         # 4. Deribit Options & Max Pain

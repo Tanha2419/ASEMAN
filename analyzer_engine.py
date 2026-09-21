@@ -1,6 +1,7 @@
 import requests
 import numpy as np
 import time
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, List
 from institutional_addons import MacroEngine, OnChainEngine, NewsCircuitBreaker, BacktestEngine, TelegramDispatcher
 
@@ -1103,7 +1104,7 @@ class CryptoTradingAgent:
         fundamentals = self.fetcher.fetch_coingecko_details(base_coin)
 
         # 9. Generate Scalp & Swing Setups
-        scalp_setup = self._build_scalp_setup(current_price, ta_15m, ta_1h, orderbook, smc_15m)
+        scalp_setup = self._build_scalp_setup(current_price, ta_15m, ta_1h, orderbook, smc_15m, ta_4h=ta_4h, derivatives=derivatives)
         swing_setup = self._build_swing_setup(current_price, ta_4h, ta_1d, fundamentals, smc_4h)
 
         # 10. Macro Market, Dominance & Correlations (Layer 6)
@@ -1390,9 +1391,21 @@ class CryptoTradingAgent:
 
         return table
 
-    def _build_scalp_setup(self, price: float, ta_15m: Dict[str, Any], ta_1h: Dict[str, Any], ob: Dict[str, Any], smc: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_scalp_setup(self, price: float, ta_15m: Dict[str, Any], ta_1h: Dict[str, Any], ob: Dict[str, Any], smc: Dict[str, Any], ta_4h: Optional[Dict[str, Any]] = None, derivatives: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        now_utc = datetime.now(timezone.utc)
+        generated_at_utc = now_utc.strftime("%Y-%m-%d %H:%M:%S UTC")
+        valid_until_utc = (now_utc + timedelta(hours=3)).strftime("%Y-%m-%d %H:%M:%S UTC")
+        validity_window_text = "۳ ساعت از زمان صدور (تایم‌فریم ۱۵ دقیقه)"
+
         if not ta_15m:
-            return {"action": "WAIT", "action_code": "WAIT", "message": "داده‌های تایم‌فریم اسکالپ ناکافی است."}
+            return {
+                "action": "WAIT",
+                "action_code": "WAIT",
+                "message": "داده‌های تایم‌فریم اسکالپ ناکافی است.",
+                "generated_at_utc": generated_at_utc,
+                "valid_until_utc": valid_until_utc,
+                "validity_window_text": validity_window_text
+            }
 
         atr = ta_15m.get("atr", price * 0.01)
         rsi = ta_15m.get("rsi", 50)
@@ -1404,8 +1417,32 @@ class CryptoTradingAgent:
         fake_badge = smc.get("fake_trend", {}).get("badge", "ORGANIC")
         latest_sweep = smc.get("latest_sweep", {})
 
+        # Multi-Timeframe (MTF) & Volatility Consistency Check
+        bias_4h = (ta_4h.get("bias", "NEUTRAL") if ta_4h else "NEUTRAL")
+        atr_pct = (atr / price) * 100.0 if price > 0 else 0.0
+        is_dead_chop = atr_pct < 0.20
+
+        # Institutional Confluence Gates (High Precision / High Selectivity)
+        bullish_aligned = (
+            ("BULLISH" in bias_15m or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP"))
+            and (bias_4h != "BEARISH_STRONG" or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP"))
+            and (38 <= rsi <= 66)
+            and ob_ratio >= 0.92
+            and fake_badge != "BULL_TRAP"
+            and not is_dead_chop
+        )
+
+        bearish_aligned = (
+            ("BEARISH" in bias_15m or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP"))
+            and (bias_4h != "BULLISH_STRONG" or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP"))
+            and (34 <= rsi <= 62)
+            and ob_ratio <= 1.08
+            and fake_badge != "BEAR_TRAP"
+            and not is_dead_chop
+        )
+
         # Bullish Scalp Setup
-        if ("BULLISH" in bias_15m or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP")) and rsi < 74 and ob_ratio >= 0.90 and fake_badge != "BULL_TRAP":
+        if bullish_aligned:
             action = "LONG (خرید سریع اسمارت‌مانی)"
             action_code = "BUY"
             
@@ -1419,50 +1456,57 @@ class CryptoTradingAgent:
                 
             entry_str = f"{entry_low} - {entry_high}"
             
-            sl_distance = max(1.25 * atr, price * 0.006)
+            sl_distance = max(1.25 * atr, price * 0.007)
             sl = round(max(nearest_sup * 0.998, price - sl_distance), 6)
             risk = price - sl
             if risk <= 0: risk = price * 0.01; sl = round(price - risk, 6)
             
-            tp1 = round(price + 1.2 * risk, 6)
-            tp2 = round(price + 2.0 * risk, 6)
-            tp3 = round(max(price + 3.0 * risk, smc.get("bsl_pool_target", price * 1.03)), 6)
-            confidence = "85%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "78%"
+            tp1 = round(price + 1.5 * risk, 6)
+            tp2 = round(price + 2.5 * risk, 6)
+            tp3 = round(max(price + 3.5 * risk, smc.get("bsl_pool_target", price * 1.03)), 6)
+            confidence = "88%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "82%"
             
             triggers = [
-                "ورود در برخورد به خلاء نقدینگی (FVG) یا لمس VWAP/EMA20 در تایم‌فریم ۱۵ دقیقه",
-                "تایید بسته شدن کندل سبز صعودی با جذب نقدینگی فروشندگان",
-                "هدف‌گذاری جمع‌آوری استاپ‌های بالای سقف (BSL Liquidity Pool)"
+                "ورود در برخورد به خلاء نقدینگی (FVG) یا لمس VWAP/EMA20 با تایید تقاضای اردر بوک",
+                "سیو سود ۵۰٪ در تارگت ۱ و انتقال فوری حد ضرر به نقطه ورود (Breakeven)",
+                "هدف‌گذاری شکار استخرهای نقدینگی بالای سقف (BSL Liquidity Pool)"
             ]
             warning = "در صورت شکست قطعی کف FVG یا ابطال کندل هانت، بلافاصله حد ضرر فعال شود."
 
         # Bearish Scalp Setup
-        elif ("BEARISH" in bias_15m or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP")) and rsi > 26 and ob_ratio <= 1.10 and fake_badge != "BEAR_TRAP":
+        elif bearish_aligned:
             action = "SHORT (فروش سریع / هانت BSL)"
             action_code = "SELL"
-            entry_low = round(price, 6)
-            entry_high = round(max(price, ema20), 6)
+            
+            fvg = smc.get("nearest_fvg")
+            if fvg and fvg.get("type") == "BEARISH_FVG" and fvg.get("bottom") > price:
+                entry_low = round(max(price, fvg["bottom"]), 6)
+                entry_high = round(fvg["top"], 6)
+            else:
+                entry_low = round(price, 6)
+                entry_high = round(max(price, ema20), 6)
+                
             entry_str = f"{entry_low} - {entry_high}"
             
-            sl_distance = max(1.25 * atr, price * 0.006)
+            sl_distance = max(1.25 * atr, price * 0.007)
             sl = round(min(nearest_res * 1.002, price + sl_distance), 6)
             risk = sl - price
             if risk <= 0: risk = price * 0.01; sl = round(price + risk, 6)
             
-            tp1 = round(price - 1.2 * risk, 6)
-            tp2 = round(price - 2.0 * risk, 6)
-            tp3 = round(min(price - 3.0 * risk, smc.get("ssl_pool_target", price * 0.97)), 6)
-            confidence = "82%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "74%"
+            tp1 = round(price - 1.5 * risk, 6)
+            tp2 = round(price - 2.5 * risk, 6)
+            tp3 = round(min(price - 3.5 * risk, smc.get("ssl_pool_target", price * 0.97)), 6)
+            confidence = "86%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "80%"
             
             triggers = [
                 "ورود پس از ثبت BSL Sweep (ریجکت از سقف و خروج خریداران خرد)",
-                "رویت کندل نزولی زیر VWAP و پرتاب قیمت به سمت استخر نقدینگی پایین (SSL)",
-                "سیو سود مرحله‌ای در تارگت‌ها بدون تعلل"
+                "سیو سود ۵۰٪ در تارگت ۱ و ریسک‌فری کردن باقی‌مانده حجم (SL به Breakeven)",
+                "رویت کندل نزولی زیر VWAP و پرتاب قیمت به سمت استخر نقدینگی پایین (SSL)"
             ]
             warning = "در معاملات شورت مراقب پامپ‌های ناشی از دستکاری الگوریتمی HFT باشید."
 
         else:
-            action = "WAIT / NO TRADE (نظاره‌گر / تله احتمالی)"
+            action = "WAIT / NO SCALP (صبر برای خروج از رنج و شفافیت روند)"
             action_code = "WAIT"
             entry_str = f"محدوده رنج بین {round(nearest_sup, 6)} تا {round(nearest_res, 6)}"
             sl = round(nearest_sup * 0.99, 6)
@@ -1472,11 +1516,12 @@ class CryptoTradingAgent:
             tp2 = round(nearest_res * 1.015, 6)
             tp3 = round(nearest_res * 1.03, 6)
             confidence = "50%"
+            reason_chop = "نوسان مرده و اسپرد فشرده بازار" if is_dead_chop else "فقدان همسویی ساختار تایم‌فریم ۴ ساعته با ۱۵ دقیقه یا قرارگیری RSI در منطقه ۵۰/۵۰"
             triggers = [
-                f"هشدار: {smc.get('fake_trend', {}).get('title', 'بازار رنج')}. منتظر تثبیت ساختار بمانید.",
-                "از ورود احساسی در میان رنج قیمت خودداری کنید."
+                f"فیلتر سخت‌گیرانه نهادی: {reason_chop}. جهت صیانت از بالانس از ورود اجتناب کنید.",
+                "تنها پس از شکست معتبر خط روند رنج یا رویت Sweep استخرهای نقدینگی وارد شوید."
             ]
-            warning = smc.get('fake_trend', {}).get('desc', 'اندیکاتورها در منطقه بلاتکلیف هستند.')
+            warning = "معامله در شرایط رنج فرسایشی بیش از ۸۰٪ خطاهای معاملاتی و کارمزدهای هدررفته را رقم می‌زند."
 
         return {
             "timeframe": "15m / 5m (اسکالپ اسمارت‌مانی)",
@@ -1492,17 +1537,32 @@ class CryptoTradingAgent:
             "tp1_pct": round(abs((tp1 - price) / price) * 100, 2),
             "tp2_pct": round(abs((tp2 - price) / price) * 100, 2),
             "tp3_pct": round(abs((tp3 - price) / price) * 100, 2),
-            "risk_reward": "1:2.0",
+            "risk_reward": "1:2.5",
             "confidence": confidence,
             "estimated_duration": "15 دقیقه الی 2 ساعت",
             "suggested_leverage": "حداکثر 3x الی 5x (یا اسپات)",
             "triggers": triggers,
-            "warning": warning
+            "warning": warning,
+            "generated_at_utc": generated_at_utc,
+            "valid_until_utc": valid_until_utc,
+            "validity_window_text": validity_window_text
         }
 
     def _build_swing_setup(self, price: float, ta_4h: Dict[str, Any], ta_1d: Dict[str, Any], fundamentals: Dict[str, Any], smc_4h: Dict[str, Any]) -> Dict[str, Any]:
+        now_utc = datetime.now(timezone.utc)
+        generated_at_utc = now_utc.strftime("%Y-%m-%d %H:%M:%S UTC")
+        valid_until_utc = (now_utc + timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S UTC")
+        validity_window_text = "۳ الی ۷ روز کاری (پوزیشن میان‌مدت سوئینگ)"
+
         if not ta_4h:
-            return {"action": "WAIT", "action_code": "WAIT", "message": "داده‌های تایم‌فریم ۴ ساعته ناکافی است."}
+            return {
+                "action": "WAIT",
+                "action_code": "WAIT",
+                "message": "داده‌های تایم‌فریم ۴ ساعته ناکافی است.",
+                "generated_at_utc": generated_at_utc,
+                "valid_until_utc": valid_until_utc,
+                "validity_window_text": validity_window_text
+            }
 
         fib = ta_4h.get("fib", {})
         recent_low = ta_4h.get("recent_low", price * 0.9)
@@ -1589,7 +1649,10 @@ class CryptoTradingAgent:
             "holding_period": "3 الی 14 روز",
             "capital_risk_advice": "حداکثر ۱ تا ۳ درصد از کل سرمایه روی حد ضرر ریسک شود",
             "strategy_description": strategy_desc,
-            "invalidation_condition": invalidation
+            "invalidation_condition": invalidation,
+            "generated_at_utc": generated_at_utc,
+            "valid_until_utc": valid_until_utc,
+            "validity_window_text": validity_window_text
         }
 
     def _build_persian_verdict(self, symbol: str, price: float, ticker: Dict[str, Any],

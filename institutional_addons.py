@@ -16,6 +16,7 @@ import re
 import urllib.request
 import xml.etree.ElementTree as ET
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from typing import Dict, Any, List, Optional
 
@@ -233,6 +234,59 @@ class CryptoPanicEngine:
     ]
 
     @classmethod
+    def translate_headline_to_fa(cls, title: str, description: str = "") -> str:
+        if not title: return ""
+        t = title.strip()
+        clean = re.sub(r'^(?:\[.*?\]|\(.*?\))\s*', '', t)
+
+        patterns = [
+            (r'institutional\s+inflows?\s+into\s+([A-Za-z\s]+?)\s+surge', r'جهش چشمگیر ورود سرمایه‌های نهادی و سازمانی به \1'),
+            (r'([A-Za-z]+)\s+surges?\s+past\s+([\$0-9\.,MKk]+)', r'جهش پرقدرت \1 به بالای سطح کلیدی \2 در بازار'),
+            (r'([A-Za-z]+)\s+rallies?\s+(?:to|towards?)\s+([\$0-9\.,MKk]+)', r'رالی صعودی \1 به سمت سطح مقاومت \2'),
+            (r'([A-Za-z]+)\s+drops?\s+below\s+([\$0-9\.,MKk]+)', r'افت قیمت \1 به زیر محدوده حمایتی \2'),
+            (r'([A-Za-z]+)\s+plunges?\s+as\s+(.+)', r'سقوط شدید \1 همزمان با \2'),
+            (r'whales?\s+(?:moves?|transfers?)\s+([\$0-9\.,MKk\sA-Za-z]+?)\s+to\s+([A-Za-z]+)', r'ردپای نهنگ‌ها: انتقال سنگین \1 به صرافی \2'),
+            (r'sec\s+delays?\s+decision\s+on\s+(.+)', r'کمیسیون بورس آمریکا (SEC) تصمیم‌گیری درباره \1 را به تعویق انداخت'),
+            (r'sec\s+approves?\s+(.+)', r'تایید رسمی \1 توسط کمیسیون بورس و اوراق بهادار (SEC)'),
+            (r'sec\s+sues?\s+(.+)', r'شکایت رسمی کمیسیون بورس (SEC) علیه \1'),
+            (r'fed(?:eral reserve)?\s+(?:hints?|signals?)\s+rate\s+cuts?', r'سیگنال رسمی فدرال رزرو آمریکا برای آغاز کاهش نرخ بهره بانکی')
+        ]
+        for pat, rep in patterns:
+            if re.search(pat, clean, re.IGNORECASE):
+                return re.sub(pat, rep, clean, flags=re.IGNORECASE)
+
+        terms = [
+            ("all-time high", "سقف تاریخی جدید (ATH)"),
+            ("spot etf", "صندوق ETF اسپات"),
+            ("etf approval", "تایید صندوق ETF"),
+            ("rate cut", "کاهش نرخ بهره"),
+            ("rate hike", "افزایش نرخ بهره"),
+            ("federal reserve", "فدرال رزرو آمریکا"),
+            ("liquidation cascade", "آبشار لیکوئیدیشن اهرم‌داران"),
+            ("open interest", "ارزش قراردادهای باز (OI)"),
+            ("funding rate", "نرخ تامین مالی (Funding Rate)"),
+            ("bull market", "بازار گاوی و صعودی"),
+            ("bear market", "بازار خرسی و نزولی"),
+            ("bitcoin", "بیت‌کوین"), ("btc", "بیت‌کوین"),
+            ("ethereum", "اتریوم"), ("eth", "اتریوم"),
+            ("solana", "سولانا"), ("sol", "سولانا"),
+            ("whales", "نهنگ‌ها"), ("whale", "نهنگ"),
+            ("traders", "معامله‌گران"), ("investors", "سرمایه‌گذاران"),
+            ("inflows", "ورود سرمایه"), ("outflows", "خروج سرمایه"),
+            ("surges", "جهش کرد"), ("surge", "جهش"),
+            ("plunges", "سقوط کرد"), ("plunge", "سقوط"),
+            ("rallies", "رشد کرد"), ("rally", "رالی صعودی"),
+            ("breakout", "شکست سقف محدوده"),
+            ("resistance", "مقاومت"), ("support", "حمایت"),
+            ("record high", "رکورد تاریخی")
+        ]
+        res = clean
+        for eng, per in terms:
+            res = re.sub(r'\b' + re.escape(eng) + r'\b', per, res, flags=re.IGNORECASE)
+
+        return f"ترجمه: {res}"
+
+    @classmethod
     def get_api_key(cls) -> str:
         env_token = os.environ.get("CRYPTOPANIC_API_KEY", "").strip()
         if env_token:
@@ -286,6 +340,7 @@ class CryptoPanicEngine:
                         sent = "BULLISH_CATALYST" if pos > neg else ("BEARISH_PANIC" if neg > pos else "NEUTRAL")
                         items.append({
                             "title": r.get("title", ""),
+                            "title_fa": cls.translate_headline_to_fa(r.get("title", "")),
                             "url": r.get("url", ""),
                             "domain": r.get("source", {}).get("domain", "cryptopanic.com"),
                             "source_title": r.get("source", {}).get("title", "CryptoPanic Direct"),
@@ -347,6 +402,7 @@ class CryptoPanicEngine:
 
                             items.append({
                                 "title": title,
+                                "title_fa": cls.translate_headline_to_fa(title, clean_desc),
                                 "url": link,
                                 "domain": f_url.split('/')[2],
                                 "source_title": src_name,
@@ -362,6 +418,7 @@ class CryptoPanicEngine:
                 items = [
                     {
                         "title": "Institutional inflows into Bitcoin spot ETFs surge past $400M in single day",
+                        "title_fa": "جهش چشمگیر ورود سرمایه‌های نهادی به صندوق‌های ETF اسپات بیت‌کوین به بیش از ۴۰۰ میلیون دلار",
                         "url": "https://cryptopanic.com",
                         "domain": "cryptopanic.com",
                         "source_title": "CryptoPanic Live",
@@ -532,17 +589,29 @@ class BacktestEngine:
             vol_sum = np.sum(sub_vols)
             vwap = float(np.sum(sub_tp * sub_vols) / (vol_sum if vol_sum > 0 else 1.0))
 
-            # Confluence Triggers
-            is_long = (curr_p > vwap) and (ema20 > ema50) and (prev_p <= ema20 and curr_p > ema20)
-            is_short = (curr_p < vwap) and (ema20 < ema50) and (prev_p >= ema20 and curr_p < ema20)
+            # Momentum & Volume Filters (Institutional Precision Gate)
+            if len(win_closes) >= 15:
+                diff = np.diff(win_closes[-15:])
+                g = np.mean(np.maximum(diff, 0.0))
+                l = np.mean(np.maximum(-diff, 0.0))
+                rsi_val = 100.0 - (100.0 / (1.0 + (g / (l + 1e-6))))
+            else:
+                rsi_val = 50.0
+
+            avg_v = np.mean(sub_vols[-20:]) if len(sub_vols) >= 20 else sub_vols[-1]
+            vol_ok = sub_vols[-1] >= (avg_v * 0.80)
+
+            # Strict Confluence Triggers: Trend slope + Pullback + RSI healthy + Volume confirmed
+            is_long = (curr_p > vwap) and (ema20 > ema50 * 1.0005) and (prev_p <= ema20 and curr_p > ema20) and (40 <= rsi_val <= 66) and vol_ok
+            is_short = (curr_p < vwap) and (ema20 < ema50 * 0.9995) and (prev_p >= ema20 and curr_p < ema20) and (34 <= rsi_val <= 58) and vol_ok
 
             if is_long:
                 entry_price = curr_p
                 swing_low = float(np.min(lows[max(0, i-5):i+1]))
                 sl_dist_pct = min(1.2, max(0.5, ((entry_price - swing_low) / entry_price) * 100))
                 sl_price = round(entry_price * (1.0 - sl_dist_pct / 100.0), 4)
-                tp1_price = round(entry_price * (1.0 + (sl_dist_pct * 1.4) / 100.0), 4)
-                tp2_price = round(entry_price * (1.0 + (sl_dist_pct * 2.4) / 100.0), 4)
+                tp1_price = round(entry_price * (1.0 + (sl_dist_pct * 1.5) / 100.0), 4)
+                tp2_price = round(entry_price * (1.0 + (sl_dist_pct * 2.5) / 100.0), 4)
 
                 outcome = None
                 exit_price = entry_price
@@ -563,18 +632,18 @@ class BacktestEngine:
                         if highs[j] >= tp2_price:
                             outcome = "TP2_FULL_WIN"
                             exit_price = tp2_price
-                            pnl_pct = sl_dist_pct * 1.9 # Blended 50% TP1 + 50% TP2
+                            pnl_pct = sl_dist_pct * 2.0 # Full TP2
                             break
                         elif lows[j] <= sl_price:
                             outcome = "TP1_BREAKEVEN"
                             exit_price = entry_price
-                            pnl_pct = sl_dist_pct * 0.7 # 50% TP1 secured
+                            pnl_pct = sl_dist_pct * 0.75 # 50% TP1 secured
                             break
 
                 if outcome is None:
                     if hit_tp1:
                         outcome = "TP1_TIME_EXIT"
-                        pnl_pct = sl_dist_pct * 0.7
+                        pnl_pct = sl_dist_pct * 0.75
                     else:
                         exit_price = closes[min(i + 24, n - 1)]
                         pnl_pct = round(((exit_price - entry_price) / entry_price) * 100.0, 2)
@@ -615,8 +684,8 @@ class BacktestEngine:
                 swing_high = float(np.max(highs[max(0, i-5):i+1]))
                 sl_dist_pct = min(1.2, max(0.5, ((swing_high - entry_price) / entry_price) * 100))
                 sl_price = round(entry_price * (1.0 + sl_dist_pct / 100.0), 4)
-                tp1_price = round(entry_price * (1.0 - (sl_dist_pct * 1.4) / 100.0), 4)
-                tp2_price = round(entry_price * (1.0 - (sl_dist_pct * 2.4) / 100.0), 4)
+                tp1_price = round(entry_price * (1.0 - (sl_dist_pct * 1.5) / 100.0), 4)
+                tp2_price = round(entry_price * (1.0 - (sl_dist_pct * 2.5) / 100.0), 4)
 
                 outcome = None
                 exit_price = entry_price
@@ -637,18 +706,18 @@ class BacktestEngine:
                         if lows[j] <= tp2_price:
                             outcome = "TP2_FULL_WIN"
                             exit_price = tp2_price
-                            pnl_pct = sl_dist_pct * 1.9
+                            pnl_pct = sl_dist_pct * 2.0
                             break
                         elif highs[j] >= sl_price:
                             outcome = "TP1_BREAKEVEN"
                             exit_price = entry_price
-                            pnl_pct = sl_dist_pct * 0.7
+                            pnl_pct = sl_dist_pct * 0.75
                             break
 
                 if outcome is None:
                     if hit_tp1:
                         outcome = "TP1_TIME_EXIT"
-                        pnl_pct = sl_dist_pct * 0.7
+                        pnl_pct = sl_dist_pct * 0.75
                     else:
                         exit_price = closes[min(i + 24, n - 1)]
                         pnl_pct = round(((entry_price - exit_price) / entry_price) * 100.0, 2)
@@ -759,6 +828,8 @@ class TelegramDispatcher:
 • رژیم مشتقه: <code>{matrix.get('regime', 'Neutral')}</code>
 
 ⚡ <b>سطوح معاملاتی دقیق (Execution Levels):</b>
+⏰ <b>زمان صدور سیگنال (UTC):</b> <code>{scalp.get('generated_at_utc', 'N/A')}</code>
+⏳ <b>افق اعتبار ستاپ:</b> <code>{scalp.get('validity_window_text', '۳ ساعت')} (تا {scalp.get('valid_until_utc', 'N/A')})</code>
 🔹 <b>محدوده ورود:</b> <code>{scalp.get('entry_zone', '-')}</code>
 🛑 <b>حد ضرر (SL):</b> <code>${scalp.get('stop_loss', 0):,.4f} (-{scalp.get('stop_loss_pct', 0)}%)</code>
 🎯 <b>تارگت اول (TP1):</b> <code>${scalp.get('tp1', 0):,.4f} (+{scalp.get('tp1_pct', 0)}%)</code>
@@ -888,10 +959,169 @@ class DexScreenerEngine:
 
 class CoinlegsScanner:
     """Integration inspired by Coinlegs (https://www.coinlegs.com/detections)
-       Scans 12 top cryptocurrencies for RSI Divergences, Volume Spikes, Sweeps and Technical Breakouts
+       Scans Top 70 Market Cryptocurrencies for RSI Divergences, Volume Spikes, and Liquidity Sweeps.
+       Strict Institutional Selectivity: Filters out all neutral coins and displays only High-Conviction setups.
     """
     _cached_detections = None
     _last_scan_time = 0
+
+    TOP_70_SYMBOLS = [
+        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT',
+        'DOGEUSDT', 'ADAUSDT', 'TRXUSDT', 'SUIUSDT', 'AVAXUSDT',
+        'LINKUSDT', 'NEARUSDT', 'TONUSDT', 'SHIBUSDT', 'PEPEUSDT',
+        'DOTUSDT', 'BCHUSDT', 'UNIUSDT', 'LTCUSDT', 'APTUSDT',
+        'ICPUSDT', 'FETUSDT', 'KASUSDT', 'TAOUSDT', 'RENDERUSDT',
+        'XLMUSDT', 'INJUSDT', 'AAVEUSDT', 'TIAUSDT', 'ARBUSDT',
+        'OPUSDT', 'FILUSDT', 'VETUSDT', 'STXUSDT', 'BONKUSDT',
+        'WIFUSDT', 'FLOKIUSDT', 'POLUSDT', 'SEIUSDT', 'IMXUSDT',
+        'CRVUSDT', 'PYTHUSDT', 'JUPUSDT', 'FTMUSDT', 'ALGOUSDT',
+        'THETAUSDT', 'MKRUSDT', 'OMUSDT', 'RNDRUSDT', 'GALAUSDT',
+        'BEAMUSDT', 'ARUSDT', 'WLDUSDT', 'DYDXUSDT', 'JASMYUSDT',
+        'BLURUSDT', 'NOTUSDT', 'CHZUSDT', 'PENDLEUSDT', 'BOMEUSDT',
+        'MEWUSDT', 'SANDUSDT', 'MANAUSDT', 'AXSUSDT', 'ENAUSDT',
+        'ONDOUSDT', 'STRKUSDT', 'FLOWUSDT', 'ORDIUSDT', 'NEOUSDT'
+    ]
+
+    @classmethod
+    def _analyze_single_symbol(cls, sym: str) -> Optional[Dict[str, Any]]:
+        try:
+            url = f"https://api.mexc.com/api/v3/klines?symbol={sym}&interval=15m&limit=45"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=3.5) as resp:
+                candles = json.loads(resp.read().decode())
+                if not candles or len(candles) < 25:
+                    return None
+                
+                closes = np.array([float(c[4]) for c in candles])
+                highs = np.array([float(c[2]) for c in candles])
+                lows = np.array([float(c[3]) for c in candles])
+                vols = np.array([float(c[5]) for c in candles])
+                n = len(candles)
+
+                # RSI 14
+                deltas = np.diff(closes)
+                gains = np.where(deltas > 0, deltas, 0.0)
+                losses = np.where(deltas < 0, -deltas, 0.0)
+                avg_gain = np.mean(gains[-14:])
+                avg_loss = np.mean(losses[-14:])
+                rs = avg_gain / (avg_loss + 1e-9)
+                rsi = round(float(100.0 - (100.0 / (1.0 + rs))), 1)
+
+                p_curr = float(closes[-1])
+                p_prev = float(closes[0])
+                chg_pct = round(float(((p_curr - p_prev) / p_prev) * 100.0), 2)
+
+                # Volume Spike
+                vol_avg = float(np.mean(vols[-20:]))
+                vol_spike = bool(vols[-1] > (vol_avg * 1.8))
+
+                # Divergence Check
+                rsi_history = []
+                for k in range(15, n):
+                    d_k = np.diff(closes[:k+1])
+                    g_k = np.mean(np.where(d_k[-14:] > 0, d_k[-14:], 0.0))
+                    l_k = np.mean(np.where(d_k[-14:] < 0, -d_k[-14:], 0.0))
+                    rs_k = g_k / (l_k + 1e-9)
+                    rsi_history.append(100.0 - (100.0 / (1.0 + rs_k)))
+                
+                div_type = "فاقد واگرایی"
+                div_badge = "NORMAL"
+                if len(rsi_history) >= 10:
+                    if closes[-1] > np.max(closes[-10:-1]) and rsi < np.max(rsi_history[-10:-1]):
+                        div_type = "واگرایی منفی سقف (Bearish Div)"
+                        div_badge = "BEARISH_DIV"
+                    elif closes[-1] < np.min(closes[-10:-1]) and rsi > np.min(rsi_history[-10:-1]):
+                        div_type = "واگرایی مثبت کف (Bullish Div)"
+                        div_badge = "BULLISH_DIV"
+
+                # Sweep Check
+                prev_max = float(np.max(highs[-15:-1]))
+                prev_min = float(np.min(lows[-15:-1]))
+                sweep_type = "نرمال"
+                if float(highs[-1]) > prev_max and float(closes[-1]) < prev_max:
+                    sweep_type = "شکار سقف (BSL Sweep)"
+                elif float(lows[-1]) < prev_min and float(closes[-1]) > prev_min:
+                    sweep_type = "شکار کف (SSL Sweep)"
+
+                # --- Strict Institutional Conviction Gate ---
+                # Omit neutral coins; only keep high-conviction strong signals
+                is_strong = False
+                score = 50
+                signal = "خنثی (NEUTRAL)"
+                color = "YELLOW"
+                reason = "بازار رنج و بدون واگرایی"
+
+                if div_badge == "BULLISH_DIV":
+                    is_strong = True
+                    score = 92
+                    signal = "خرید قدرتمند (واگرایی مثبت کف)"
+                    color = "GREEN"
+                    reason = "واگرایی صعودی تاییدشده در RSI کف با احتمال پرتاب قوی قیمت به بالا"
+                elif div_badge == "BEARISH_DIV":
+                    is_strong = True
+                    score = 90
+                    signal = "فروش قدرتمند (واگرایی منفی سقف)"
+                    color = "RED"
+                    reason = "واگرایی نزولی سقف در RSI و تضعیف قدرت خریداران در مقاومت"
+                elif "SSL" in sweep_type:
+                    is_strong = True
+                    score = 88
+                    signal = "خرید قوی (شکار نقدینگی SSL)"
+                    color = "GREEN"
+                    reason = "جمع‌آوری استاپ‌های زیر کف حمایتی و بازگشت صعودی اسمارت‌مانی"
+                elif "BSL" in sweep_type:
+                    is_strong = True
+                    score = 88
+                    signal = "فروش قوی (شکار نقدینگی BSL)"
+                    color = "RED"
+                    reason = "هانت استاپ‌های بالای مقاومت و خروج هوشمند پول سازمانی"
+                elif vol_spike and chg_pct >= 2.0 and rsi < 72:
+                    is_strong = True
+                    score = 85
+                    signal = "شتاب صعودی با حجم نهنگ (HFT BUY)"
+                    color = "GREEN"
+                    reason = "اسپایک حجم ۲ برابری همراه با کندل پرقدرت صعودی"
+                elif vol_spike and chg_pct <= -2.0 and rsi > 28:
+                    is_strong = True
+                    score = 85
+                    signal = "فشار فروش سنگین نهنگ (HFT SELL)"
+                    color = "RED"
+                    reason = "تخلیه سنگین حجم در کندل نزولی با شکست حمایت"
+                elif rsi <= 28:
+                    is_strong = True
+                    score = 82
+                    signal = "اشباع فروش حاد (فرصت ریباند)"
+                    color = "GREEN"
+                    reason = "قرارگیری RSI در منطقه اشباع فروش شدید و مستعد بازگشت صعودی"
+                elif rsi >= 75:
+                    is_strong = True
+                    score = 82
+                    signal = "اشباع خرید حاد (خطر اصلاح)"
+                    color = "RED"
+                    reason = "قرارگیری RSI در منطقه اشباع خرید شدید و احتمال بالای پولبک منفی"
+
+                # Filter out neutral / weak symbols completely
+                if not is_strong:
+                    return None
+
+                return {
+                    "symbol": sym.replace("USDT", ""),
+                    "pair": sym,
+                    "price": float(round(p_curr, 4 if p_curr < 10 else 2)),
+                    "change_pct": float(chg_pct),
+                    "rsi": float(rsi),
+                    "volume_spike": bool(vol_spike),
+                    "divergence": div_type,
+                    "div_badge": div_badge,
+                    "sweep": sweep_type,
+                    "signal": signal,
+                    "signal_strength": score,
+                    "status_color": color,
+                    "reason": reason,
+                    "coinlegs_url": "https://www.coinlegs.com/detections"
+                }
+        except Exception:
+            return None
 
     @classmethod
     def scan_market_detections(cls, symbols: Optional[List[str]] = None) -> Dict[str, Any]:
@@ -899,111 +1129,26 @@ class CoinlegsScanner:
         if cls._cached_detections and (now - cls._last_scan_time < 90):
             return cls._cached_detections
 
-        if not symbols:
-            symbols = [
-                'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT',
-                'DOGEUSDT', 'SUIUSDT', 'PEPEUSDT', 'AVAXUSDT', 'NEARUSDT',
-                'LINKUSDT', 'ADAUSDT'
-            ]
+        target_symbols = symbols if symbols else cls.TOP_70_SYMBOLS
 
-        items = []
-        for sym in symbols:
-            try:
-                url = f"https://api.mexc.com/api/v3/klines?symbol={sym}&interval=15m&limit=45"
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=3) as resp:
-                    candles = json.loads(resp.read().decode())
-                    if not candles or len(candles) < 25:
-                        continue
-                    
-                    closes = np.array([float(c[4]) for c in candles])
-                    highs = np.array([float(c[2]) for c in candles])
-                    lows = np.array([float(c[3]) for c in candles])
-                    vols = np.array([float(c[5]) for c in candles])
-                    n = len(candles)
+        # Concurrent parallel scan across all 70 symbols
+        with ThreadPoolExecutor(max_workers=16) as executor:
+            raw_items = list(executor.map(cls._analyze_single_symbol, target_symbols))
 
-                    # RSI
-                    deltas = np.diff(closes)
-                    gains = np.where(deltas > 0, deltas, 0.0)
-                    losses = np.where(deltas < 0, -deltas, 0.0)
-                    avg_gain = np.mean(gains[-14:])
-                    avg_loss = np.mean(losses[-14:])
-                    rs = avg_gain / (avg_loss + 1e-9)
-                    rsi = round(float(100.0 - (100.0 / (1.0 + rs))), 1)
+        # Filter out None (neutral coins omitted)
+        items = [it for it in raw_items if it is not None]
 
-                    p_curr = float(closes[-1])
-                    p_prev = float(closes[0])
-                    chg_pct = round(float(((p_curr - p_prev) / p_prev) * 100.0), 2)
+        # Sort by signal conviction strength (e.g. 92%, 90%, 88%, 85%)
+        items.sort(key=lambda x: x["signal_strength"], reverse=True)
 
-                    # Volume Spike
-                    vol_avg = float(np.mean(vols[-20:]))
-                    vol_spike = bool(vols[-1] > (vol_avg * 1.8))
-
-                    # Divergence Check
-                    rsi_history = []
-                    for k in range(15, n):
-                        d_k = np.diff(closes[:k+1])
-                        g_k = np.mean(np.where(d_k[-14:] > 0, d_k[-14:], 0.0))
-                        l_k = np.mean(np.where(d_k[-14:] < 0, -d_k[-14:], 0.0))
-                        rs_k = g_k / (l_k + 1e-9)
-                        rsi_history.append(100.0 - (100.0 / (1.0 + rs_k)))
-                    
-                    div_type = "فاقد واگرایی"
-                    div_badge = "NORMAL"
-                    if len(rsi_history) >= 10:
-                        if closes[-1] > np.max(closes[-10:-1]) and rsi < np.max(rsi_history[-10:-1]):
-                            div_type = "واگرایی منفی (Bearish Div)"
-                            div_badge = "BEARISH_DIV"
-                        elif closes[-1] < np.min(closes[-10:-1]) and rsi > np.min(rsi_history[-10:-1]):
-                            div_type = "واگرایی مثبت (Bullish Div)"
-                            div_badge = "BULLISH_DIV"
-
-                    # Sweep Check
-                    prev_max = float(np.max(highs[-15:-1]))
-                    prev_min = float(np.min(lows[-15:-1]))
-                    sweep_type = "نرمال"
-                    if float(highs[-1]) > prev_max and float(closes[-1]) < prev_max:
-                        sweep_type = "شکار سقف (BSL Sweep)"
-                    elif float(lows[-1]) < prev_min and float(closes[-1]) > prev_min:
-                        sweep_type = "شکار کف (SSL Sweep)"
-
-                    # Bias & Signal Code
-                    if div_badge == "BULLISH_DIV" or (rsi < 35 and "SSL" in sweep_type):
-                        signal = "خرید قوی (STRONG BUY)"
-                        status_color = "GREEN"
-                    elif div_badge == "BEARISH_DIV" or (rsi > 70 and "BSL" in sweep_type):
-                        signal = "فروش قوی (STRONG SELL)"
-                        status_color = "RED"
-                    elif chg_pct > 0 and rsi < 65:
-                        signal = "صعودی (BULLISH)"
-                        status_color = "GREEN"
-                    elif chg_pct < 0 and rsi > 35:
-                        signal = "نزولی (BEARISH)"
-                        status_color = "RED"
-                    else:
-                        signal = "خنثی (NEUTRAL)"
-                        status_color = "YELLOW"
-
-                    items.append({
-                        "symbol": sym.replace("USDT", ""),
-                        "pair": sym,
-                        "price": float(round(p_curr, 4 if p_curr < 10 else 2)),
-                        "change_pct": float(chg_pct),
-                        "rsi": float(rsi),
-                        "volume_spike": bool(vol_spike),
-                        "divergence": div_type,
-                        "div_badge": div_badge,
-                        "sweep": sweep_type,
-                        "signal": signal,
-                        "status_color": status_color,
-                        "coinlegs_url": "https://www.coinlegs.com/detections"
-                    })
-            except Exception:
-                continue
+        neutral_count = len(target_symbols) - len(items)
 
         result = {
             "success": True,
-            "count": len(items),
+            "total_scanned": len(target_symbols),
+            "high_conviction_count": len(items),
+            "neutral_filtered": neutral_count,
+            "filter_explanation": f"اسکن {len(target_symbols)} نماد برتر بازار؛ {neutral_count} نماد خنثی و بی‌روند برای خلوت‌سازی صفحه حذف شدند و تنها {len(items)} نماد با قدرت سیگنال بالا (A/A+) نمایش داده شده‌اند.",
             "updated_at": time.strftime("%H:%M:%S UTC", time.gmtime()),
             "detections": items,
             "source_url": "https://www.coinlegs.com/detections"
@@ -1227,13 +1372,149 @@ class WhaleFlowEngine:
 
 
 class EconomicCalendarEngine:
-    """Tracks US Macroeconomic Releases (FOMC, CPI, NFP) and provides real-time Trading Shield / Circuit Breaker"""
+    """Tracks US Macroeconomic Releases (FOMC, CPI, NFP, PCE, GDP) and provides real-time Trading Shield / Circuit Breaker with Cross-Asset Directional Impact (Gold, Forex, Crypto)"""
     
     MACRO_EVENTS = [
-        {"name": "FOMC Interest Rate Decision (تصمیم نرخ بهره فدرال‌رزرو)", "code": "FOMC", "impact": "CRITICAL_MAX", "date_utc": "2026-09-23 18:00:00", "epoch": 1790186400, "forecast": "4.75%", "previous": "5.00%"},
-        {"name": "US Core PCE Price Index (شاخص تورم مصرف شخصی آمریکا)", "code": "PCE", "impact": "HIGH", "date_utc": "2026-09-26 12:30:00", "epoch": 1790425800, "forecast": "2.6%", "previous": "2.7%"},
-        {"name": "US Non-Farm Payrolls & Unemployment (گزارش اشتغال NFP آمریکا)", "code": "NFP", "impact": "CRITICAL_MAX", "date_utc": "2026-10-02 12:30:00", "epoch": 1790944200, "forecast": "165K", "previous": "142K"},
-        {"name": "US CPI Inflation MoM/YoY (شاخص تورم مصرف‌کننده آمریکا)", "code": "CPI", "impact": "CRITICAL_MAX", "date_utc": "2026-10-14 12:30:00", "epoch": 1791981000, "forecast": "2.4%", "previous": "2.5%"}
+        {
+            "name": "FOMC Interest Rate Decision (نرخ بهره فدرال‌رزرو آمریکا)",
+            "code": "FOMC",
+            "impact": "CRITICAL_MAX",
+            "impact_fa": "بسیار بالا / بحرانی",
+            "volatility_fa": "نوسان بسیار شدید (۲۰۰+ پیپ طلا / ۵٪ کریپتو)",
+            "impact_color": "#ff3366",
+            "date_utc": "2026-09-23 18:00:00",
+            "epoch": 1790186400,
+            "forecast": "4.75%",
+            "previous": "5.00%",
+            "forecast_context": "کاهش ۰.۲۵٪ نرخ بهره سیاستی آمریکا توسط فدرال‌رزرو",
+            "reaction_inline": {
+                "gold": {"arrow": "⬆️", "dir": "صعودی", "color": "#00e676", "desc": "کاهش بازدهی اوراق خزانه و جهش طلا"},
+                "forex": {"arrow": "⬇️", "dir": "تضعیف دلار (DXY)", "color": "#ff3366", "desc": "افت شاخص دلار در برابر سبد ارزهای جهانی"},
+                "crypto": {"arrow": "⬆️", "dir": "پامپ و رشد (BTC)", "color": "#00e676", "desc": "تزریق نقدینگی ارزان و شکست مقاومت‌های کریپتو"}
+            },
+            "reaction_higher": {
+                "gold": {"arrow": "⬇️", "dir": "نزولی و افت", "color": "#ff3366"},
+                "forex": {"arrow": "⬆️", "dir": "جهش شارپ دلار", "color": "#00e676"},
+                "crypto": {"arrow": "⬇️", "dir": "ریزش سنگین", "color": "#ff3366"}
+            },
+            "reaction_lower": {
+                "gold": {"arrow": "⬆️", "dir": "جهش تاریخی", "color": "#00e676"},
+                "forex": {"arrow": "⬇️", "dir": "سقوط آزاد دلار", "color": "#ff3366"},
+                "crypto": {"arrow": "⬆️", "dir": "سوپر رالی گاوی", "color": "#00e676"}
+            }
+        },
+        {
+            "name": "US Core PCE Price Index (شاخص تورم هسته مصرف شخصی آمریکا)",
+            "code": "PCE",
+            "impact": "HIGH",
+            "impact_fa": "بالا",
+            "volatility_fa": "نوسان بالا (۱۰۰+ پیپ طلا / ۲.۵٪ کریپتو)",
+            "impact_color": "#ff9800",
+            "date_utc": "2026-09-26 12:30:00",
+            "epoch": 1790425800,
+            "forecast": "2.6%",
+            "previous": "2.7%",
+            "forecast_context": "تداوم مهار تورم و تسهیل شرایط پولی برای بازارهای مالی",
+            "reaction_inline": {
+                "gold": {"arrow": "⬆️", "dir": "صعودی", "color": "#00e676", "desc": "آرامش تورمی و تداوم تقاضای شمش طلا"},
+                "forex": {"arrow": "⬇️", "dir": "تضعیف ملایم دلار", "color": "#ff3366", "desc": "افت ملایم شاخص دلار DXY"},
+                "crypto": {"arrow": "⬆️", "dir": "رشد پیوسته (BTC)", "color": "#00e676", "desc": "افزایش ریسک‌پذیری خریداران نهادی بیت‌کوین"}
+            },
+            "reaction_higher": {
+                "gold": {"arrow": "⬇️", "dir": "اصلاح و نزول", "color": "#ff3366"},
+                "forex": {"arrow": "⬆️", "dir": "تقویت دلار", "color": "#00e676"},
+                "crypto": {"arrow": "⬇️", "dir": "افت قیمت", "color": "#ff3366"}
+            },
+            "reaction_lower": {
+                "gold": {"arrow": "⬆️", "dir": "جهش صعودی", "color": "#00e676"},
+                "forex": {"arrow": "⬇️", "dir": "افت سنگین دلار", "color": "#ff3366"},
+                "crypto": {"arrow": "⬆️", "dir": "پامپ پرقدرت", "color": "#00e676"}
+            }
+        },
+        {
+            "name": "US Non-Farm Payrolls & Unemployment (گزارش اشتغال NFP و بیکاری آمریکا)",
+            "code": "NFP",
+            "impact": "CRITICAL_MAX",
+            "impact_fa": "بسیار بالا / بحرانی",
+            "volatility_fa": "نوسان شدید (۱۵۰+ پیپ طلا / ۳.۵٪ کریپتو)",
+            "impact_color": "#ff3366",
+            "date_utc": "2026-10-02 12:30:00",
+            "epoch": 1790944200,
+            "forecast": "165K",
+            "previous": "142K",
+            "forecast_context": "تعادل در اشتغال‌زایی و تحقق سناریوی فرود نرم بدون رکود",
+            "reaction_inline": {
+                "gold": {"arrow": "⬆️", "dir": "صعودی", "color": "#00e676", "desc": "حفظ تمایل صعودی طلا با تثبیت سناریوی فرود نرم"},
+                "forex": {"arrow": "⬇️", "dir": "تضعیف دلار (DXY)", "color": "#ff3366", "desc": "تعدیل قدرت دلار در برابر سایر ارزها"},
+                "crypto": {"arrow": "⬆️", "dir": "رشد و صعود (BTC)", "color": "#00e676", "desc": "رفع ابهام ریسک بازار کار و خرید دارایی دیجیتال"}
+            },
+            "reaction_higher": {
+                "gold": {"arrow": "⬇️", "dir": "افت طلا", "color": "#ff3366"},
+                "forex": {"arrow": "⬆️", "dir": "جهش دلار", "color": "#00e676"},
+                "crypto": {"arrow": "⬇️", "dir": "فشار فروش سنگین", "color": "#ff3366"}
+            },
+            "reaction_lower": {
+                "gold": {"arrow": "⬆️", "dir": "پرواز طلا", "color": "#00e676"},
+                "forex": {"arrow": "⬇️", "dir": "سقوط دلار", "color": "#ff3366"},
+                "crypto": {"arrow": "⬆️", "dir": "جهش سریع کریپتو", "color": "#00e676"}
+            }
+        },
+        {
+            "name": "US CPI Inflation MoM/YoY (شاخص تورم کل مصرف‌کننده آمریکا)",
+            "code": "CPI",
+            "impact": "CRITICAL_MAX",
+            "impact_fa": "بسیار بالا / بحرانی",
+            "volatility_fa": "نوسان شدید (۱۸۰+ پیپ طلا / ۴٪ کریپتو)",
+            "impact_color": "#ff3366",
+            "date_utc": "2026-10-14 12:30:00",
+            "epoch": 1791981000,
+            "forecast": "2.4%",
+            "previous": "2.5%",
+            "forecast_context": "تایید مهار قطعی تورم سالانه و تثبیت چرخه انبساط پولی",
+            "reaction_inline": {
+                "gold": {"arrow": "⬆️", "dir": "صعودی", "color": "#00e676", "desc": "سقوط انتظارات تورمی دلار و هجوم سرمایه به طلا"},
+                "forex": {"arrow": "⬇️", "dir": "تضعیف شاخص دلار", "color": "#ff3366", "desc": "عقب‌نشینی DXY با افزایش اطمینان از افت نرخ بهره"},
+                "crypto": {"arrow": "⬆️", "dir": "پامپ قدرتمند (BTC)", "color": "#00e676", "desc": "انفجار حجم معاملات و حمله بیت‌کوین به سقف‌ها"}
+            },
+            "reaction_higher": {
+                "gold": {"arrow": "⬇️", "dir": "ریزش شدید طلا", "color": "#ff3366"},
+                "forex": {"arrow": "⬆️", "dir": "جهش دلار", "color": "#00e676"},
+                "crypto": {"arrow": "⬇️", "dir": "دامپ و اصلاح عمیق", "color": "#ff3366"}
+            },
+            "reaction_lower": {
+                "gold": {"arrow": "⬆️", "dir": "صعود تاریخی طلا", "color": "#00e676"},
+                "forex": {"arrow": "⬇️", "dir": "ریزش سنگین دلار", "color": "#ff3366"},
+                "crypto": {"arrow": "⬆️", "dir": "رالی رکوردشکن", "color": "#00e676"}
+            }
+        },
+        {
+            "name": "US GDP Annualized QoQ (تولید ناخالص داخلی سالانه آمریکا)",
+            "code": "GDP",
+            "impact": "HIGH",
+            "impact_fa": "بالا",
+            "volatility_fa": "نوسان بالا (۹۰+ پیپ طلا / ۲٪ کریپتو)",
+            "impact_color": "#ff9800",
+            "date_utc": "2026-10-29 12:30:00",
+            "epoch": 1793277000,
+            "forecast": "2.8%",
+            "previous": "3.0%",
+            "forecast_context": "رشد ارگانیک و پایدار بزرگ‌ترین اقتصاد جهان بدون شوک منفی",
+            "reaction_inline": {
+                "gold": {"arrow": "⬆️", "dir": "صعودی ملایم", "color": "#00e676", "desc": "ثبات اقتصاد کلان و تقاضای پایدار شمش طلا"},
+                "forex": {"arrow": "⬇️", "dir": "تعدیل ملایم دلار", "color": "#ff3366", "desc": "تعادل در تراز تجاری و کاهش تب دلار"},
+                "crypto": {"arrow": "⬆️", "dir": "رشد ارگانیک (BTC)", "color": "#00e676", "desc": "فضای مساعد برای جذب نقدینگی در دارایی‌های پرریسک"}
+            },
+            "reaction_higher": {
+                "gold": {"arrow": "⬇️", "dir": "نزول ملایم", "color": "#ff3366"},
+                "forex": {"arrow": "⬆️", "dir": "تقویت دلار", "color": "#00e676"},
+                "crypto": {"arrow": "⬇️", "dir": "رنج منفی", "color": "#ff3366"}
+            },
+            "reaction_lower": {
+                "gold": {"arrow": "⬆️", "dir": "جهش تقاضای امن", "color": "#00e676"},
+                "forex": {"arrow": "⬇️", "dir": "افت شاخص دلار", "color": "#ff3366"},
+                "crypto": {"arrow": "⬆️", "dir": "رشد ناشی از کاهش بهره", "color": "#00e676"}
+            }
+        }
     ]
 
     @classmethod
@@ -1272,11 +1553,14 @@ class EconomicCalendarEngine:
             "next_event": next_ev["name"],
             "event_code": next_ev["code"],
             "impact": next_ev["impact"],
+            "impact_fa": next_ev.get("impact_fa", "بسیار بالا"),
+            "volatility_fa": next_ev.get("volatility_fa", "نوسان شدید"),
             "date_utc": next_ev["date_utc"],
             "countdown_seconds": int(time_diff),
             "countdown_fmt": f"{hours} ساعت و {minutes} دقیقه و {seconds} ثانیه",
             "forecast": next_ev["forecast"],
             "previous": next_ev["previous"],
+            "reaction_inline": next_ev.get("reaction_inline", {}),
             "shield_state": shield_state,
             "shield_color": shield_color,
             "shield_action": shield_action,
