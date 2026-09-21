@@ -23,6 +23,7 @@ class CryptoDataFetcher:
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         })
+        self._fng_cache = {}
 
     def fetch_mexc_ticker(self, symbol: str) -> Optional[Dict[str, Any]]:
         try:
@@ -231,6 +232,65 @@ class CryptoDataFetcher:
         }
 
     def fetch_fear_and_greed(self) -> Dict[str, Any]:
+        """
+        Fetches the real-time Crypto Fear & Greed Index.
+        Priority 1: CoinMarketCap Real-Time Fear & Greed Index (instant live intraday data)
+        Priority 2: Alternative.me Fear & Greed API (daily fallback)
+        Includes 60-second in-memory caching to optimize response speed.
+        """
+        now = time.time()
+        if hasattr(self, "_fng_cache") and self._fng_cache and (now - self._fng_cache.get("time", 0) < 60):
+            return self._fng_cache["data"]
+
+        # 1. Primary Source: CoinMarketCap Live Fear & Greed Index
+        try:
+            cmc_url = "https://coinmarketcap.com/charts/fear-and-greed-index/"
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9"
+            }
+            res = self.session.get(cmc_url, headers=headers, timeout=5)
+            if res.status_code == 200:
+                import json, re
+                m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', res.text)
+                if m:
+                    d = json.loads(m.group(1))
+                    fng_data = d.get("props", {}).get("pageProps", {}).get("pageSharedData", {}).get("fearGreedIndexData", {})
+                    current = fng_data.get("currentIndex", {})
+                    score = current.get("score")
+                    if score is not None:
+                        val = int(score)
+                        raw_name = current.get("name", "")
+                        cls = raw_name.title() if raw_name else ""
+                        if not cls:
+                            if val >= 75: cls = "Extreme Greed"
+                            elif val >= 55: cls = "Greed"
+                            elif val >= 45: cls = "Neutral"
+                            elif val >= 25: cls = "Fear"
+                            else: cls = "Extreme Fear"
+
+                        fa_cls = {
+                            "Extreme Fear": "ترس شدید (Extreme Fear) - ارزندگی قیمت و فرصت انباشت پله‌ای",
+                            "Fear": "ترس (Fear) - احتیاط حاکم بر بازار",
+                            "Neutral": "خنثی (Neutral) - تعادل احساسی معامله‌گران",
+                            "Greed": "طمع (Greed) - ورود هیجانی سرمایه‌گذاران",
+                            "Extreme Greed": "طمع شدید (Extreme Greed) - هشدار سقف‌های قیمتی و سیو سود"
+                        }.get(cls, cls)
+
+                        res_data = {
+                            "value": val,
+                            "classification": cls,
+                            "classification_fa": fa_cls,
+                            "source": "CoinMarketCap (Live)",
+                            "timestamp": current.get("updateTime")
+                        }
+                        self._fng_cache = {"time": now, "data": res_data}
+                        return res_data
+        except Exception:
+            pass
+
+        # 2. Secondary Fallback: Alternative.me API
         try:
             url = "https://api.alternative.me/fng/"
             res = self.session.get(url, timeout=4)
@@ -245,15 +305,22 @@ class CryptoDataFetcher:
                     "Greed": "طمع (Greed) - ورود هیجانی سرمایه‌گذاران",
                     "Extreme Greed": "طمع شدید (Extreme Greed) - هشدار سقف‌های قیمتی و سیو سود"
                 }.get(cls, cls)
-                return {
+                res_data = {
                     "value": val,
                     "classification": cls,
                     "classification_fa": fa_cls,
+                    "source": "Alternative.me",
                     "timestamp": d.get("timestamp")
                 }
+                self._fng_cache = {"time": now, "data": res_data}
+                return res_data
         except Exception:
             pass
-        return {"value": 50, "classification": "Neutral", "classification_fa": "خنثی", "timestamp": None}
+
+        if hasattr(self, "_fng_cache") and self._fng_cache and self._fng_cache.get("data"):
+            return self._fng_cache["data"]
+
+        return {"value": 50, "classification": "Neutral", "classification_fa": "خنثی", "source": "Default", "timestamp": None}
 
     def fetch_coingecko_details(self, base_coin: str) -> Dict[str, Any]:
         try:

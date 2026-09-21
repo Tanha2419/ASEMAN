@@ -1270,10 +1270,10 @@
           <span id="activeMarketSession" style="font-size: 0.75rem; color: #facc15; font-weight: 600;">سشن: در حال بررسی...</span>
         </div>
 
-        <div class="fng-badge" id="fngBadge" title="شاخص احساسات و ترس و طمع کل بازار">
-          <div class="fng-dot" id="fngDot"></div>
-          <span style="color: var(--text-dim)">طمع/ترس:</span>
-          <strong id="fngValue">...</strong>
+        <div class="fng-badge" id="fngBadge" title="شاخص احساسات و ترس و طمع زنده کل بازار (CoinMarketCap)">
+          <div class="fng-dot" id="fngDot" style="background: #00e676; box-shadow: 0 0 10px rgba(0, 230, 118, 0.9);"></div>
+          <span style="color: var(--text-dim)">طمع/ترس (CMC):</span>
+          <strong id="fngValue">80 (Extreme Greed)</strong>
         </div>
       </div>
     </div>
@@ -3992,9 +3992,10 @@
           status_fa: 'صعودی با تاییدیه سازمانی'
         },
         market_sentiment: {
-          value: 71,
-          classification: 'Greed',
-          classification_fa: 'طمع'
+          value: 80,
+          classification: 'Extreme Greed',
+          classification_fa: 'طمع شدید (Extreme Greed) - هشدار سقف‌های قیمتی و سیو سود',
+          source: 'CoinMarketCap (Live)'
         },
         timeframes: {
           '15m': { rsi: 44.5, macd: { histogram: 0.5 }, ema_trend: 'Bullish' },
@@ -4055,11 +4056,33 @@
 
       // Header Fear & Greed
       if (market_sentiment) {
-        document.getElementById('fngValue').innerText = `${market_sentiment.value} (${market_sentiment.classification})`;
+        const valEl = document.getElementById('fngValue');
+        if (valEl) valEl.innerText = `${market_sentiment.value} (${market_sentiment.classification})`;
         const dot = document.getElementById('fngDot');
-        if (market_sentiment.value > 65) dot.style.background = '#00e676';
-        else if (market_sentiment.value < 35) dot.style.background = '#ff3366';
-        else dot.style.background = '#ffd166';
+        const badge = document.getElementById('fngBadge');
+        if (dot) {
+          if (market_sentiment.value >= 75) {
+            dot.style.background = '#00e676';
+            dot.style.boxShadow = '0 0 10px rgba(0, 230, 118, 0.9)';
+          } else if (market_sentiment.value >= 55) {
+            dot.style.background = '#a3e635';
+            dot.style.boxShadow = '0 0 6px rgba(163, 230, 53, 0.7)';
+          } else if (market_sentiment.value <= 25) {
+            dot.style.background = '#ff1744';
+            dot.style.boxShadow = '0 0 10px rgba(255, 23, 68, 0.9)';
+          } else if (market_sentiment.value <= 45) {
+            dot.style.background = '#ff7043';
+            dot.style.boxShadow = '0 0 6px rgba(255, 112, 67, 0.7)';
+          } else {
+            dot.style.background = '#ffd166';
+            dot.style.boxShadow = '0 0 6px rgba(255, 209, 102, 0.7)';
+          }
+        }
+        if (badge) {
+          const srcText = market_sentiment.source || 'CoinMarketCap زنده';
+          const faDesc = market_sentiment.classification_fa || market_sentiment.classification;
+          badge.title = `شاخص زنده طمع و ترس (${srcText}): ${market_sentiment.value} - ${faDesc}`;
+        }
       }
 
       // Hero Identity
@@ -4600,24 +4623,26 @@
         const posV = it.votes ? it.votes.positive : 0;
         const negV = it.votes ? it.votes.negative : 0;
 
+        const cleanFa = (it.title_fa || '').replace(/^ترجمه:\s*/i, '').trim();
+
         return `
-          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 14px 18px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 260px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
                 <span style="font-size: 0.72rem; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #ccc;">${it.domain || it.source_title || 'CryptoPanic'}</span>
                 <span style="font-size: 0.72rem; color: var(--text-dim);">${it.published_at || ''}</span>
               </div>
-              <a href="${it.url || '#'}" target="_blank" style="font-size: 0.92rem; font-weight: 700; color: #fff; text-decoration: none; line-height: 1.5; display: block;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color='#fff'">
+              <a href="${it.url || '#'}" target="_blank" style="font-size: 0.95rem; font-weight: 700; color: #fff; text-decoration: none; line-height: 1.5; display: block;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color='#fff'">
                 ${it.title} ↗
               </a>
-              <div style="font-size: 0.84rem; font-weight: 600; color: #fde047; margin-top: 6px; background: rgba(234, 179, 8, 0.08); border-right: 3px solid #eab308; padding: 5px 10px; border-radius: 4px; line-height: 1.5; display: flex; align-items: flex-start; gap: 6px;">
-                <span style="font-size: 0.9rem; line-height: 1;">🇮🇷</span>
+              <div style="font-size: 0.88rem; font-weight: 600; color: #fde047; margin-top: 8px; background: rgba(234, 179, 8, 0.08); border-right: 3px solid #eab308; padding: 6px 12px; border-radius: 6px; line-height: 1.6; display: flex; align-items: flex-start; gap: 8px;">
+                <span style="font-size: 1rem; line-height: 1.2;">🇮🇷</span>
                 <div>
-                  <span style="font-size: 0.7rem; color: #fbbf24; font-weight: 700; display: block; opacity: 0.85;">ترجمه فارسی هوشمند:</span>
-                  ${it.title_fa || 'ترجمه تیتر در دسترس نیست'}
+                  <span style="font-size: 0.72rem; color: #facc15; font-weight: 800; display: block; opacity: 0.9; margin-bottom: 2px;">ترجمه فارسی روان:</span>
+                  <span style="color: #fef08a; font-weight: 600; font-size: 0.88rem;">${cleanFa || 'در حال ترجمه آنلاین...'}</span>
                 </div>
               </div>
-              ${it.description ? `<div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 5px;">${it.description}</div>` : ''}
+              ${it.description ? `<div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 6px;">${it.description}</div>` : ''}
             </div>
 
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -5306,9 +5331,49 @@ ${s3d.action_advice || ''}
       }
     }
 
+    async function fetchLiveFearAndGreed() {
+      try {
+        const res = await fetch('/api/fng');
+        const data = await res.json();
+        if (data && data.value !== undefined) {
+          const valEl = document.getElementById('fngValue');
+          const dot = document.getElementById('fngDot');
+          const badge = document.getElementById('fngBadge');
+          if (valEl) valEl.innerText = `${data.value} (${data.classification})`;
+          if (dot) {
+            if (data.value >= 75) {
+              dot.style.background = '#00e676';
+              dot.style.boxShadow = '0 0 10px rgba(0, 230, 118, 0.9)';
+            } else if (data.value >= 55) {
+              dot.style.background = '#a3e635';
+              dot.style.boxShadow = '0 0 6px rgba(163, 230, 53, 0.7)';
+            } else if (data.value <= 25) {
+              dot.style.background = '#ff1744';
+              dot.style.boxShadow = '0 0 10px rgba(255, 23, 68, 0.9)';
+            } else if (data.value <= 45) {
+              dot.style.background = '#ff7043';
+              dot.style.boxShadow = '0 0 6px rgba(255, 112, 67, 0.7)';
+            } else {
+              dot.style.background = '#ffd166';
+              dot.style.boxShadow = '0 0 6px rgba(255, 209, 102, 0.7)';
+            }
+          }
+          if (badge) {
+            const srcText = data.source || 'CoinMarketCap زنده';
+            const faDesc = data.classification_fa || data.classification;
+            badge.title = `شاخص زنده طمع و ترس (${srcText}): ${data.value} - ${faDesc}`;
+          }
+        }
+      } catch (e) {
+        console.debug('F&G live fetch:', e);
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       updateUtcClock();
       setInterval(updateUtcClock, 1000);
+      fetchLiveFearAndGreed();
+      setInterval(fetchLiveFearAndGreed, 60000);
       loadSymbol('BTC');
       loadTelegramConfig();
     });

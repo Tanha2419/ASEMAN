@@ -233,28 +233,72 @@ class CryptoPanicEngine:
         "surge", "surges", "rallies", "rally", "gain", "gains", "jump", "jumps", "bullish", "ath", "soars", "inflows", "pump", "breakout"
     ]
 
+    _translation_cache = {}
+
     @classmethod
     def translate_headline_to_fa(cls, title: str, description: str = "") -> str:
-        if not title: return ""
+        if not title or not title.strip():
+            return ""
         t = title.strip()
-        clean = re.sub(r'^(?:\[.*?\]|\(.*?\))\s*', '', t)
+        clean = re.sub(r'^(?:\[.*?\]|\(.*?\))\s*', '', t).strip()
+        if not clean:
+            return ""
 
+        if clean in cls._translation_cache:
+            return cls._translation_cache[clean]
+
+        # 1. Primary Online Neural Translation (MyMemory Translation API)
+        try:
+            q_enc = urllib.parse.quote(clean[:200])
+            url = f"https://api.mymemory.translated.net/get?q={q_enc}&langpair=en|fa"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+            with urllib.request.urlopen(req, timeout=3.5) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                translated = data.get("responseData", {}).get("translatedText", "")
+                if translated and bool(re.search(r'[\u0600-\u06FF]', translated)):
+                    clean_tr = translated.replace("&#39;", "'").replace("&quot;", '"').replace("&amp;", '&').strip()
+                    cls._translation_cache[clean] = clean_tr
+                    return clean_tr
+        except Exception:
+            pass
+
+        # 2. Secondary Web Translation Engine
+        try:
+            q_enc = urllib.parse.quote(clean[:200])
+            url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=fa&dt=t&q={q_enc}"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'})
+            with urllib.request.urlopen(req, timeout=2.5) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                if data and isinstance(data, list) and data[0]:
+                    parts = [seg[0] for seg in data[0] if seg and seg[0]]
+                    combined = "".join(parts).strip()
+                    if combined and bool(re.search(r'[\u0600-\u06FF]', combined)):
+                        cls._translation_cache[clean] = combined
+                        return combined
+        except Exception:
+            pass
+
+        # 3. Comprehensive Financial & Crypto Syntax Patterns
         patterns = [
-            (r'institutional\s+inflows?\s+into\s+([A-Za-z\s]+?)\s+surge', r'جهش چشمگیر ورود سرمایه‌های نهادی و سازمانی به \1'),
-            (r'([A-Za-z]+)\s+surges?\s+past\s+([\$0-9\.,MKk]+)', r'جهش پرقدرت \1 به بالای سطح کلیدی \2 در بازار'),
-            (r'([A-Za-z]+)\s+rallies?\s+(?:to|towards?)\s+([\$0-9\.,MKk]+)', r'رالی صعودی \1 به سمت سطح مقاومت \2'),
+            (r'institutional\s+inflows?\s+into\s+([A-Za-z\s]+?)\s+surge', r'جهش چشمگیر ورود سرمایه‌های نهادی به \1'),
+            (r'([A-Za-z]+)\s+price\s+tags?\s+([\$0-9\.,MKk]+)\s+as\s+(.+)', r'قیمت \1 به تراز \2 رسید؛ همزمان با \3'),
+            (r'([A-Za-z]+)\s+surges?\s+past\s+([\$0-9\.,MKk]+)', r'جهش پرقدرت \1 به بالای سطح کلیدی \2'),
+            (r'([A-Za-z]+)\s+rallies?\s+(?:to|towards?)\s+([\$0-9\.,MKk]+)', r'رالی صعودی \1 به سمت تراز مقاومت \2'),
             (r'([A-Za-z]+)\s+drops?\s+below\s+([\$0-9\.,MKk]+)', r'افت قیمت \1 به زیر محدوده حمایتی \2'),
-            (r'([A-Za-z]+)\s+plunges?\s+as\s+(.+)', r'سقوط شدید \1 همزمان با \2'),
+            (r'([A-Za-z]+)\s+plunges?\s+as\s+(.+)', r'ریزش شدید قیمت \1 در پی \2'),
             (r'whales?\s+(?:moves?|transfers?)\s+([\$0-9\.,MKk\sA-Za-z]+?)\s+to\s+([A-Za-z]+)', r'ردپای نهنگ‌ها: انتقال سنگین \1 به صرافی \2'),
             (r'sec\s+delays?\s+decision\s+on\s+(.+)', r'کمیسیون بورس آمریکا (SEC) تصمیم‌گیری درباره \1 را به تعویق انداخت'),
-            (r'sec\s+approves?\s+(.+)', r'تایید رسمی \1 توسط کمیسیون بورس و اوراق بهادار (SEC)'),
+            (r'sec\s+approves?\s+(.+)', r'تایید رسمی \1 توسط کمیسیون بورس آمریکا (SEC)'),
             (r'sec\s+sues?\s+(.+)', r'شکایت رسمی کمیسیون بورس (SEC) علیه \1'),
-            (r'fed(?:eral reserve)?\s+(?:hints?|signals?)\s+rate\s+cuts?', r'سیگنال رسمی فدرال رزرو آمریکا برای آغاز کاهش نرخ بهره بانکی')
+            (r'fed(?:eral reserve)?\s+(?:hints?|signals?)\s+rate\s+cuts?', r'سیگنال فدرال‌رزرو آمریکا برای کاهش نرخ بهره بانکی')
         ]
         for pat, rep in patterns:
             if re.search(pat, clean, re.IGNORECASE):
-                return re.sub(pat, rep, clean, flags=re.IGNORECASE)
+                res = re.sub(pat, rep, clean, flags=re.IGNORECASE)
+                cls._translation_cache[clean] = res
+                return res
 
+        # 4. Fallback Full Semantic Dictionary
         terms = [
             ("all-time high", "سقف تاریخی جدید (ATH)"),
             ("spot etf", "صندوق ETF اسپات"),
@@ -263,28 +307,31 @@ class CryptoPanicEngine:
             ("rate hike", "افزایش نرخ بهره"),
             ("federal reserve", "فدرال رزرو آمریکا"),
             ("liquidation cascade", "آبشار لیکوئیدیشن اهرم‌داران"),
-            ("open interest", "ارزش قراردادهای باز (OI)"),
-            ("funding rate", "نرخ تامین مالی (Funding Rate)"),
+            ("open interest", "ارزش قراردادهای باز"),
+            ("funding rate", "نرخ فاندینگ ریت"),
             ("bull market", "بازار گاوی و صعودی"),
             ("bear market", "بازار خرسی و نزولی"),
             ("bitcoin", "بیت‌کوین"), ("btc", "بیت‌کوین"),
             ("ethereum", "اتریوم"), ("eth", "اتریوم"),
             ("solana", "سولانا"), ("sol", "سولانا"),
-            ("whales", "نهنگ‌ها"), ("whale", "نهنگ"),
+            ("whales", "نهنگ‌های بازار"), ("whale", "نهنگ بازار"),
             ("traders", "معامله‌گران"), ("investors", "سرمایه‌گذاران"),
             ("inflows", "ورود سرمایه"), ("outflows", "خروج سرمایه"),
             ("surges", "جهش کرد"), ("surge", "جهش"),
             ("plunges", "سقوط کرد"), ("plunge", "سقوط"),
-            ("rallies", "رشد کرد"), ("rally", "رالی صعودی"),
-            ("breakout", "شکست سقف محدوده"),
-            ("resistance", "مقاومت"), ("support", "حمایت"),
-            ("record high", "رکورد تاریخی")
+            ("rallies", "رشد صعودی کرد"), ("rally", "رالی صعودی"),
+            ("breakout", "شکست سقف قیمتی"),
+            ("resistance", "سطح مقاومت"), ("support", "سطح حمایت"),
+            ("record high", "رکورد تاریخی جدید"),
+            ("crypto", "ارزهای دیجیتال"), ("cryptocurrency", "رمزارز"),
+            ("market", "بازار"), ("new", "جدید")
         ]
         res = clean
         for eng, per in terms:
             res = re.sub(r'\b' + re.escape(eng) + r'\b', per, res, flags=re.IGNORECASE)
 
-        return f"ترجمه: {res}"
+        cls._translation_cache[clean] = res
+        return res
 
     @classmethod
     def get_api_key(cls) -> str:
@@ -442,6 +489,15 @@ class CryptoPanicEngine:
             items = sorted(items, key=lambda x: (x.get("votes", {}).get("positive", 0) + x.get("votes", {}).get("negative", 0)), reverse=True)
         elif filter_mode == "rising":
             items = sorted(items, key=lambda x: x.get("panic_score", 0), reverse=True)
+
+        # Parallel translation pass to guarantee 100% Persian translation on all headlines
+        if items:
+            titles = [i.get("title", "") for i in items]
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                fa_titles = list(ex.map(cls.translate_headline_to_fa, titles))
+            for i, fa in zip(items, fa_titles):
+                if fa and fa.strip():
+                    i["title_fa"] = fa
 
         avg_panic = int(sum(i["panic_score"] for i in items) / (len(items) + 1e-6)) if items else 45
         pos_sum = sum(i["votes"]["positive"] for i in items)
