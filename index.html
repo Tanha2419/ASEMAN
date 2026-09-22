@@ -1508,11 +1508,11 @@
           <div class="card-title-group">
             <span class="card-icon">⚡</span>
             <div>
-              <div class="card-title">ستاپ اسکالپینگ اسمارت‌مانی (Scalp Setup)</div>
-              <div class="card-subtitle">تایم‌فریم ۵ و ۱۵ دقیقه | هانت نقدینگی و ورود در FVG</div>
+              <div class="card-title">ستاپ اسکالپینگ فوق‌سریع اسمارت‌مانی (M1 &amp; M5 Scalp Setup)</div>
+              <div class="card-subtitle">تایم‌فریم ۱ و ۵ دقیقه | تریگر جریان سفارشات (Order Flow) و هانت نقدینگی</div>
             </div>
           </div>
-          <div class="action-badge action-buy" id="scalpActionBadge">LONG (خرید سریع)</div>
+          <div class="action-badge action-buy" id="scalpActionBadge">LONG (خرید سریع M1/M5)</div>
         </div>
 
         <!-- Scalp Setup UTC Timing & Validity Strip -->
@@ -1523,8 +1523,8 @@
               <strong style="color: #f8fafc; font-family: monospace; font-size: 0.88rem;" id="scalpIssuedUtc">--:--:-- UTC</strong>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="color: #f59e0b;">⏳ افق اعتبار ستاپ:</span>
-              <span style="color: #fef08a; font-family: monospace; font-weight: 700; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3);" id="scalpValidUntilUtc">۳ ساعت (تا --:-- UTC)</span>
+              <span style="color: #f59e0b;">⏳ افق اعتبار ستاپ (۱m/۵m):</span>
+              <span style="color: #fef08a; font-family: monospace; font-weight: 700; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3);" id="scalpValidUntilUtc">۳۰ الی ۴۵ دقیقه (تا --:-- UTC)</span>
             </div>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px; font-size: 0.74rem; color: #94a3b8;">
@@ -1789,20 +1789,25 @@
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-          <div>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 4px;">اهرم انتخابی (Leverage):</label>
-            <select id="calcLeverage" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; color: #fff; font-family: var(--font-mono); font-size: 0.9rem;" onchange="updatePositionCalc()">
-              <option value="1">1x (اسپات بدون اهرم)</option>
-              <option value="2">2x</option>
-              <option value="3" selected>3x (پیشنهادی)</option>
-              <option value="5">5x (اسکالپ)</option>
-              <option value="10">10x (حرفه‌ای پرریسک)</option>
-            </select>
+        <div style="margin-bottom: 14px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700;">اهرم انتخابی معامله (Leverage 1x - 100x):</label>
+            <span style="font-size: 0.85rem; color: #00d2ff; font-weight: 800; font-family: var(--font-mono);" id="calcLeverageLabel">10x</span>
           </div>
-          <div>
-            <label style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 4px;">حداکثر ضرر در استاپ (Loss):</label>
-            <div style="padding: 6px 10px; background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.3); border-radius: 6px; font-family: var(--font-mono); font-weight: 700; color: var(--red);" id="calcMaxLoss">$15.00</div>
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+            <input type="number" id="calcLeverage" min="1" max="100" value="10" step="1" style="width: 80px; background: var(--bg-input); border: 1px solid #00d2ff; border-radius: 6px; padding: 6px 10px; color: #00d2ff; font-weight: 800; font-family: var(--font-mono); font-size: 0.95rem; text-align: center;" oninput="updatePositionCalc()" />
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+              <button type="button" onclick="setLeverage(1)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: #fff; cursor: pointer;">1x</button>
+              <button type="button" onclick="setLeverage(5)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: #fff; cursor: pointer;">5x</button>
+              <button type="button" onclick="setLeverage(10)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(0,210,255,0.18); border: 1px solid #00d2ff; color: #00d2ff; font-weight: 700; cursor: pointer;">10x</button>
+              <button type="button" onclick="setLeverage(20)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: #fff; cursor: pointer;">20x</button>
+              <button type="button" onclick="setLeverage(50)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,193,7,0.18); border: 1px solid #ffc107; color: #ffc107; font-weight: 700; cursor: pointer;">50x</button>
+              <button type="button" onclick="setLeverage(100)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,51,102,0.18); border: 1px solid #ff3366; color: #ff3366; font-weight: 700; cursor: pointer;">100x</button>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+            <span style="color: var(--text-dim);">حداکثر ضرر مجاز در استاپ (Loss):</span>
+            <span style="color: var(--red); font-family: var(--font-mono); font-weight: 800;" id="calcMaxLoss">$15.00</span>
           </div>
         </div>
 
@@ -1812,16 +1817,30 @@
             <strong style="color: var(--blue); font-family: var(--font-mono);" id="calcPosValue">$2,500 USD</strong>
           </div>
           <div class="level-row">
-            <span style="font-size: 0.8rem; color: var(--text-muted);">مارجین درگیر از حسابتان (Margin):</span>
-            <strong style="color: var(--yellow); font-family: var(--font-mono);" id="calcReqMargin">$833.33 USD</strong>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">مارجین درگیر از حسابتان (Margin Required):</span>
+            <strong style="color: var(--yellow); font-family: var(--font-mono);" id="calcReqMargin">$250.00 USD</strong>
           </div>
           <div class="level-row">
-            <span style="font-size: 0.8rem; color: var(--text-muted);">تعداد توکن/کوین برای خرید:</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">درصد درگیری بالانس (Margin Usage %):</span>
+            <strong style="color: #00d2ff; font-family: var(--font-mono);" id="calcMarginUsage">25.0%</strong>
+          </div>
+          <div class="level-row">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">قیمت تخمینی لیکویید شدن (Est. Liq Price):</span>
+            <strong style="color: #ff3366; font-family: var(--font-mono);" id="calcEstLiqPrice">$0.00</strong>
+          </div>
+          <div class="level-row">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">تعداد کوین/توکن برای معامله:</span>
             <strong style="color: #fff; font-family: var(--font-mono);" id="calcCoinQty">0.0308</strong>
           </div>
           <div class="level-row">
-            <span style="font-size: 0.8rem; color: var(--text-muted);">سود خالص در صورت لمس TP1:</span>
-            <strong style="color: var(--green); font-family: var(--font-mono);" id="calcTp1Profit">+$22.50 USD</strong>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">سود خالص در تارگت ۱ (TP 1):</span>
+            <strong style="color: var(--green); font-family: var(--font-mono);" id="calcTp1Profit">+$18.00 USD</strong>
+          </div>
+          <div class="level-row">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">سود خالص در تارگت ۲ (TP 2):</span>
+            <strong style="color: #00e676; font-family: var(--font-mono);" id="calcTp2Profit">+$33.00 USD</strong>
+          </div>
+          <div id="calcMarginWarning" style="display: none; margin-top: 8px; padding: 8px 12px; background: rgba(255,51,102,0.15); border: 1px solid #ff3366; border-radius: 6px; font-size: 0.74rem; color: #ff3366; line-height: 1.5;">
           </div>
         </div>
       </div>
@@ -1836,6 +1855,7 @@
         <button class="tab-btn" id="tabBtnAlpha" onclick="switchTab('alphaTab', this)" style="border: 1px solid rgba(255, 193, 7, 0.4); color: #ffc107; font-weight: 800;">🗺️ ماتریس لیدرهای بازار (Alpha Matrix)</button>
         <button class="tab-btn" id="tabBtnKelly" onclick="switchTab('kellyTab', this)" style="border: 1px solid rgba(0, 230, 118, 0.4); color: #00e676; font-weight: 800;">🧮 ماشین‌حساب مدیریت سرمایه و کِلی (Kelly Calculator)</button>
         <button class="tab-btn" id="tabBtnGolden" onclick="switchTab('goldenTab', this)" style="border: 1px solid rgba(255, 215, 0, 0.45); color: #ffd700; font-weight: 800;">⭐ ۶ فیلتر طلایی (Golden 6 Filters)</button>
+        <button class="tab-btn" id="tabBtnExchange" onclick="switchTab('exchangeTab', this)" style="border: 1px solid rgba(0, 210, 255, 0.5); color: #00d2ff; font-weight: 800;">⚡ رادار صرافی‌ها و کلان (Toobit, LBank & Macro)</button>
         <button class="tab-btn" onclick="switchTab('backtestTab', this)">🧪 بک‌تست تاریخی و وین‌ریت (Backtest)</button>
         <button class="tab-btn" onclick="switchTab('macroTab', this)">🌐 رادار کلان و آن‌چین (Macro &amp; On-Chain)</button>
         <button class="tab-btn" id="tabBtnNews" onclick="switchTab('newsTab', this)">📰 اخبار و سنتیمنت (CryptoPanic)</button>
@@ -2220,11 +2240,14 @@
 
           <!-- Filter Pills -->
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="chat-prompt-pill" id="cpFilterRising" style="background: rgba(255,255,255,0.12); color: #fff;" onclick="applyCryptoPanicFilter('rising', this)">⚡ در حال رشد (Rising)</button>
-            <button class="chat-prompt-pill" id="cpFilterHot" onclick="applyCryptoPanicFilter('hot', this)">🔥 داغ‌ترین‌ها (Hot)</button>
+            <button class="chat-prompt-pill" id="cpFilterAll" style="background: rgba(255,255,255,0.12); color: #fff;" onclick="applyCryptoPanicFilter('all', this)">🌐 تمام منابع (All Feeds)</button>
+            <button class="chat-prompt-pill" id="cpFilterRising" onclick="applyCryptoPanicFilter('rising', this)">⚡ داغ‌ترین‌ها (Rising)</button>
             <button class="chat-prompt-pill" id="cpFilterBullish" onclick="applyCryptoPanicFilter('bullish', this)">🟢 صعودی (Bullish)</button>
-            <button class="chat-prompt-pill" id="cpFilterBearish" onclick="applyCryptoPanicFilter('bearish', this)">🔴 نزولی / پنیک (Bearish/Panic)</button>
-            <button class="chat-prompt-pill" id="cpFilterImportant" onclick="applyCryptoPanicFilter('important', this)">⚠️ حیاتی (Important)</button>
+            <button class="chat-prompt-pill" id="cpFilterBearish" onclick="applyCryptoPanicFilter('bearish', this)">🔴 پرریسک (Bearish/Panic)</button>
+            <button class="chat-prompt-pill" id="cpFilterDecrypt" style="border: 1px solid rgba(0, 210, 255, 0.4); color: #00d2ff;" onclick="applyCryptoPanicFilter('decrypt', this)">⚡ Decrypt News</button>
+            <button class="chat-prompt-pill" id="cpFilterCoindesk" style="border: 1px solid rgba(255, 193, 7, 0.4); color: #ffc107;" onclick="applyCryptoPanicFilter('coindesk', this)">🏛️ CoinDesk</button>
+            <button class="chat-prompt-pill" id="cpFilterTheblock" style="border: 1px solid rgba(168, 85, 247, 0.4); color: #a855f7;" onclick="applyCryptoPanicFilter('theblock', this)">📰 The Block</button>
+            <button class="chat-prompt-pill" id="cpFilterCointelegraph" style="border: 1px solid rgba(0, 230, 118, 0.4); color: #00e676;" onclick="applyCryptoPanicFilter('cointelegraph', this)">💎 CoinTelegraph</button>
           </div>
         </div>
 
@@ -2232,7 +2255,7 @@
         <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 18px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
             <div style="font-size: 1.05rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
-              <span>📰</span> جریان اخبار فوری و احساسات تریدرها (CryptoPanic Feed)
+              <span>📰</span> جریان تجمیعی اخبار فوری وال‌استریت و کریپتو (Decrypt, CoinDesk, CoinTelegraph, The Block)
             </div>
             <span style="font-size: 0.75rem; color: var(--text-dim);" id="newsUpdatedTime">به‌روزرسانی خودکار</span>
           </div>
@@ -2563,6 +2586,132 @@
         </div>
       </div>
 
+      <!-- Tab Exchange & Macro Data Hub -->
+      <div class="tab-content" id="exchangeTab">
+        <!-- Security & Policy Header -->
+        <div style="background: linear-gradient(135deg, rgba(0, 210, 255, 0.08), rgba(0, 230, 118, 0.08)); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: var(--radius); padding: 18px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div style="font-size: 1.15rem; font-weight: 800; color: #00d2ff; display: flex; align-items: center; gap: 8px;">
+                <span>⚡</span> مرکز تجمیع داده‌های تحلیلی صرافی‌ها و کلان (Toobit, LBank, Bybit & Macro Hub)
+              </div>
+              <div style="font-size: 0.82rem; color: #00e676; margin-top: 5px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                <span>🛡️</span> حالت صرفاً تحلیلی و خواندن اطلاعات (Strict Read-Only Mode) — اردرگذاری و تراکنش مسدود است.
+              </div>
+            </div>
+            <button onclick="fetchExchangeData(currentSymbol)" class="copy-btn" style="padding: 7px 18px; font-size: 0.82rem; background: rgba(0,210,255,0.15); border: 1px solid #00d2ff; color: #00d2ff;">
+              🔄 به‌روزرسانی داده‌های صرافی‌ها
+            </button>
+          </div>
+        </div>
+
+        <!-- Alpha Vantage Macro Confluence Card -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 18px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 1.05rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
+              <span>🌐</span> شاخص کلان دلار آمریکا و جهت نقدینگی (Alpha Vantage Macro Confluence)
+            </div>
+            <span style="font-size: 0.72rem; color: var(--text-dim);" id="macroSourceLabel">Alpha Vantage Live API</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+              <div style="font-size: 0.75rem; color: var(--text-dim);">برابری یورو به دلار (EUR/USD Live):</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #00d2ff; margin-top: 4px; font-family: var(--font-mono);" id="macroEurUsd">--</div>
+              <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 4px;">وزن ۵۷.۶٪ در سبد شاخص دلار (DXY)</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+              <div style="font-size: 0.75rem; color: var(--text-dim);">جهت شاخص دلار (DXY Proxy Direction):</div>
+              <div style="font-size: 1.15rem; font-weight: 800; color: #00e676; margin-top: 4px;" id="macroDxyDirection">--</div>
+              <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 4px;">رابطه معکوس مستقیم با جریان سرمایه بیت‌کوین</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; grid-column: span 2;">
+              <div style="font-size: 0.75rem; color: var(--text-dim);">تحلیل و ارزیابی کلان اقتصاد:</div>
+              <div style="font-size: 0.95rem; font-weight: 700; color: #ffd700; margin-top: 6px; line-height: 1.6;" id="macroFaVerdict">--</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cross-Exchange Comparison: LBank vs Toobit vs Global -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 20px;">
+          <!-- LBank Card -->
+          <div style="background: var(--bg-card); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: var(--radius); padding: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div style="font-size: 1.1rem; font-weight: 800; color: #00d2ff; display: flex; align-items: center; gap: 6px;">
+                <span>🏛️</span> صرافی ال‌بانک (LBank Live)
+              </div>
+              <span class="indicator-badge" style="background: rgba(0, 230, 118, 0.15); color: #00e676; font-size: 0.72rem;">● آنلاین (Read-Only)</span>
+            </div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #fff; font-family: var(--font-mono); margin-bottom: 8px;" id="lbPrice">--</div>
+            <div style="display: flex; gap: 10px; margin-bottom: 12px; font-size: 0.8rem;">
+              <span>تغییر ۲۴ ساعته: <strong id="lbChange" style="color: #00e676;">--</strong></span>
+              <span>حجم ۲۴h: <strong id="lbVol" style="color: #ccc;">--</strong></span>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-size: 0.76rem;">
+              <div style="color: var(--text-dim); margin-bottom: 4px;">عمق سفارشات ۵ لایه (Orderbook Depth):</div>
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-mono);">
+                <span style="color: #00e676;">خرید: <span id="lbBidVol">--</span></span>
+                <span style="color: #ff3366;">فروش: <span id="lbAskVol">--</span></span>
+              </div>
+              <div style="margin-top: 6px; font-weight: 700; color: #fde047;" id="lbBias">--</div>
+            </div>
+          </div>
+
+          <!-- Toobit Card -->
+          <div style="background: var(--bg-card); border: 1px solid rgba(255, 193, 7, 0.25); border-radius: var(--radius); padding: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div style="font-size: 1.1rem; font-weight: 800; color: #ffc107; display: flex; align-items: center; gap: 6px;">
+                <span>⚡</span> صرافی توبیت (Toobit Live)
+              </div>
+              <span class="indicator-badge" style="background: rgba(0, 230, 118, 0.15); color: #00e676; font-size: 0.72rem;">● آنلاین (Read-Only)</span>
+            </div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #fff; font-family: var(--font-mono); margin-bottom: 8px;" id="tbPrice">--</div>
+            <div style="display: flex; gap: 10px; margin-bottom: 12px; font-size: 0.8rem;">
+              <span>تغییر ۲۴ ساعته: <strong id="tbChange" style="color: #00e676;">--</strong></span>
+              <span>گردش دلاری ۲۴h: <strong id="tbTurnover" style="color: #ccc;">--</strong></span>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-size: 0.76rem;">
+              <div style="color: var(--text-dim); margin-bottom: 4px;">عمق سفارشات ۵ لایه (Orderbook Depth):</div>
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-mono);">
+                <span style="color: #00e676;">خرید: <span id="tbBidVol">--</span></span>
+                <span style="color: #ff3366;">فروش: <span id="tbAskVol">--</span></span>
+              </div>
+              <div style="margin-top: 6px; font-weight: 700; color: #fde047;" id="tbBias">--</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cross-Exchange Spread & Arbitrage Notice -->
+        <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <span style="font-size: 0.82rem; color: var(--text-dim);">اسپرد قیمتی (توبیت در برابر ال‌بانک):</span>
+            <strong style="font-size: 1.05rem; font-family: var(--font-mono); margin-right: 8px;" id="spreadToobitLbank">0.00%</strong>
+          </div>
+          <div style="font-size: 0.82rem; color: #00d2ff; font-weight: 600;" id="arbitrageAdvice">
+            تعادل کامل قیمتی میان صرافی‌ها
+          </div>
+        </div>
+
+        <!-- LBank New Gems & Listings -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 18px; margin-bottom: 20px;">
+          <div style="font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span>💎</span> رادار میم‌کوین‌ها و جم‌های جدید ال‌بانک (LBank New Listings & Gems)
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;" id="lbankGemsContainer">
+            <div style="color: var(--text-dim); font-size: 0.8rem;">در حال دریافت لیست جم‌ها...</div>
+          </div>
+        </div>
+
+        <!-- API Sources & Read-Only Status Panel -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 18px;">
+          <div style="font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+            <span>🔑</span> وضعیت کلیدهای ارتباطی ارائه‌شده (Data-Only Telemetry Status)
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;" id="apiStatusGrid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
       <!-- Tab Precision Suite -->
       <div class="tab-content" id="precisionTab">
         <!-- Suite Header -->
@@ -2630,20 +2779,35 @@
           </div>
         </div>
 
-        <!-- 2. Whale Netflow Tracker (Glassnode Style) -->
+        <!-- 2. Whale Netflow & Wallet Cost Basis Tracker -->
         <div class="precision-card" style="border-top: 3px solid #00b4d8;">
           <div class="precision-header">
             <div>
               <div style="font-size: 1.05rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
-                <span>🐋</span> ۲. پایش ورود و خروج نهنگ‌ها به صرافی‌ها (Whale Netflow Tracker)
+                <span>🐋</span> ۲. ردیاب ولت‌های نهنگ، مقدار خرید و میانگین قیمت ورود (Whale Wallets & Cost Basis)
               </div>
               <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 2px;">
-                پایش تراکنش‌های زنجیره‌ای بالای ۲۵ بیت‌کوین و تفکیک انباشت در کیف‌پول سرد از خطر عرضه نهنگ در صرافی
+                پایش لحظه‌ای کیف‌پول‌های سنگین و هوشمند برای ارز <strong style="color: #00d2ff;" id="whaleTargetSym">BTC</strong>: چه مقدار و در چه قیمتی خریده‌اند و اکنون در چه سودی هستند
               </div>
             </div>
             <span class="indicator-badge" id="whaleFlowBadge" style="background: rgba(0, 180, 216, 0.15); color: #00b4d8;">
               در حال پایش...
             </span>
+          </div>
+
+          <!-- Whale Cost Basis Banner -->
+          <div style="background: rgba(0, 210, 255, 0.08); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">میانگین وزنی قیمت خرید کل نهنگ‌ها (Whale Average Cost Basis):</div>
+              <div style="font-size: 1.35rem; font-weight: 900; color: #00d2ff; font-family: var(--font-mono); margin-top: 2px;" id="whaleAvgCostBasis">$0.00</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">فاصله قیمت لحظه‌ای از خرید نهنگ‌ها:</div>
+              <div style="font-size: 1.15rem; font-weight: 800; color: #00e676; font-family: var(--font-mono); margin-top: 2px;" id="whaleDistPct">+0.0%</div>
+            </div>
+            <div style="flex-basis: 100%; font-size: 0.78rem; color: #cbd5e1; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;" id="whaleSupportDesc">
+              محدوده میانگین خرید نهنگ‌ها به عنوان کف حمایت بتنی عمل می‌کند.
+            </div>
           </div>
 
           <!-- Netflow Summary Grid -->
@@ -2662,20 +2826,47 @@
             </div>
           </div>
 
-          <!-- Recent Whale Transactions Table -->
+          <!-- Top Whale Wallets Table -->
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: #00d2ff; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              <span>👛</span> جدول ولت‌های شاخص نهنگ‌ها: مقدار خرید، قیمت ورود و سود/زیان
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="crypto-table">
+                <thead>
+                  <tr>
+                    <th>ولت / نهنگ سازمانی</th>
+                    <th>مقدار خرید (Coin Qty)</th>
+                    <th>قیمت خرید میانگین (Entry $)</th>
+                    <th>ارزش دلاری کل (USD)</th>
+                    <th>سود/زیان فعلی (% PnL)</th>
+                    <th>استراتژی و وضعیت</th>
+                  </tr>
+                </thead>
+                <tbody id="whaleWalletsTbody">
+                  <tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-dim);">در حال واکشی ولت‌های نهنگ برای این ارز...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Recent Large On-Chain Transactions Table -->
+          <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+            تراکنش‌های زنجیره‌ای بزرگ ثبت‌شده در شبکه:
+          </div>
           <div style="overflow-x: auto;">
             <table class="crypto-table">
               <thead>
                 <tr>
                   <th>هش تراکنش (Tx Hash)</th>
-                  <th>مقدار بیت‌کوین (BTC)</th>
+                  <th>مقدار جابجایی</th>
                   <th>ارزش دلاری (USD)</th>
                   <th>نوع تراکنش و مقصد</th>
                   <th>زمان ثبت</th>
                 </tr>
               </thead>
               <tbody id="whaleTxsTbody">
-                <tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-dim);">در حال دریافت آخرین تراکنش‌های نهنگ...</td></tr>
+                <tr><td colspan="5" style="text-align: center; padding: 16px; color: var(--text-dim);">در حال دریافت آخرین تراکنش‌های نهنگ...</td></tr>
               </tbody>
             </table>
           </div>
@@ -3233,6 +3424,8 @@
         } else {
           recalculateGoldenLive();
         }
+      } else if (tabId === 'exchangeTab') {
+        fetchExchangeData(currentSymbol);
       }
     }
 
@@ -3383,7 +3576,15 @@
               <strong style="color: #fff; font-size: 0.95rem;">${d.symbol}</strong>
               <div style="font-size: 0.72rem; color: var(--text-dim);">${d.pair}</div>
             </td>
-            <td><span class="indicator-badge" style="background: rgba(255,255,255,0.06); color: #ccc;">15M</span></td>
+            <td>
+              <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                <span class="indicator-badge" style="background: rgba(255,255,255,0.08); color: #fff; font-weight: 700;">15M</span>
+                <span class="indicator-badge" style="background: ${d.trend_4h === 'BULLISH' ? 'rgba(0,230,118,0.18)' : 'rgba(255,51,102,0.18)'}; color: ${d.trend_4h === 'BULLISH' ? '#00e676' : '#ff3366'}; font-weight: 800;">
+                  4H: ${d.trend_4h === 'BULLISH' ? '▲ صعودی' : '▼ نزولی'}
+                </span>
+              </div>
+              ${d.confluence_fa ? `<div style="font-size: 0.68rem; color: #facc15; margin-top: 3px; font-weight: 700;">${d.confluence_fa}</div>` : ''}
+            </td>
             <td>
               <div style="font-weight: 700; color: ${badgeCol};">${d.divergence !== 'فاقد واگرایی' ? d.divergence : d.sweep !== 'نرمال' ? d.sweep : (d.volume_spike ? '⚡ جهش غیرعادی حجم' : 'شتاب مومنتوم')}</div>
               <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 2px;">RSI: <strong style="color: #fff;">${d.rsi}</strong> | نوسان: <strong style="color: ${d.change_pct >= 0 ? '#00e676' : '#ff3366'}">${d.change_pct >= 0 ? '+' : ''}${d.change_pct}%</strong></div>
@@ -3486,7 +3687,7 @@
       try {
         const [liqRes, whaleRes, calRes, optRes, depthRes] = await Promise.all([
           fetch(`/api/liquidations?symbol=${encodeURIComponent(targetSym)}`).then(r => r.json()),
-          fetch('/api/whales').then(r => r.json()),
+          fetch(`/api/whales?symbol=${encodeURIComponent(targetSym)}`).then(r => r.json()),
           fetch('/api/calendar').then(r => r.json()),
           fetch(`/api/options?currency=${encodeURIComponent(targetSym)}`).then(r => r.json()),
           fetch(`/api/depth-spoofing?symbol=${encodeURIComponent(targetSym)}`).then(r => r.json())
@@ -3566,9 +3767,25 @@
         });
       }
 
-      // 2. Whale Flow
+      // 2. Whale Flow & Coin-Specific Whale Wallets
       if (suite.whales) {
         const w = suite.whales;
+        const symEl = document.getElementById('whaleTargetSym');
+        if (symEl) symEl.innerText = w.symbol || currentSymbol || 'BTC';
+
+        const basisEl = document.getElementById('whaleAvgCostBasis');
+        if (basisEl) basisEl.innerText = w.whale_avg_cost_basis_fmt || '$0.00';
+
+        const distEl = document.getElementById('whaleDistPct');
+        if (distEl) {
+          const d = w.distance_from_whale_entry_pct || 0;
+          distEl.innerText = `${d >= 0 ? '+' : ''}${d.toFixed(2)}%`;
+          distEl.style.color = d >= 0 ? '#00e676' : '#ff3366';
+        }
+
+        const descEl = document.getElementById('whaleSupportDesc');
+        if (descEl) descEl.innerText = w.whale_support_status || '';
+
         document.getElementById('whaleNetflowVal').innerText = w.netflow_fmt || '0 BTC';
         document.getElementById('whaleAccumScore').innerText = `${w.accumulation_score || 0} / 100`;
         
@@ -3590,6 +3807,34 @@
         } else {
           dumpAlertEl.style.color = '#00e676';
           dumpAlertEl.innerText = 'ایمن و بدون هشدار دامپ (Safe)';
+        }
+
+        // Render Coin-Specific Whale Wallets Table
+        const wTbody = document.getElementById('whaleWalletsTbody');
+        if (wTbody) {
+          wTbody.innerHTML = '';
+          (w.whale_wallets || []).forEach(wl => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>
+                <strong style="color: #00d2ff; font-size: 0.82rem;">${wl.wallet}</strong>
+                <div style="font-size: 0.70rem; color: #94a3b8;">${wl.entity}</div>
+              </td>
+              <td><strong style="color: #f7931a; font-family: var(--font-mono);">${wl.amount_fmt}</strong></td>
+              <td><span class="mono" style="font-weight: 700; color: #fff;">${wl.avg_buy_price_fmt}</span></td>
+              <td><span class="mono" style="color: #cbd5e1;">${wl.usd_val_fmt}</span></td>
+              <td>
+                <span class="indicator-badge" style="background: ${wl.pnl_pct >= 0 ? 'rgba(0,230,118,0.15)' : 'rgba(255,51,102,0.15)'}; color: ${wl.pnl_color}; font-weight: 700;">
+                  ${wl.pnl_status}
+                </span>
+              </td>
+              <td>
+                <div style="font-size: 0.74rem; color: #a5b4fc; font-weight: 600;">${wl.strategy}</div>
+                <div style="font-size: 0.68rem; color: var(--text-dim);">${wl.last_active}</div>
+              </td>
+            `;
+            wTbody.appendChild(tr);
+          });
         }
 
         const tbody = document.getElementById('whaleTxsTbody');
@@ -4629,7 +4874,7 @@
           <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 14px 18px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 260px;">
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                <span style="font-size: 0.72rem; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #ccc;">${it.domain || it.source_title || 'CryptoPanic'}</span>
+                <span style="font-size: 0.74rem; background: rgba(0, 210, 255, 0.12); border: 1px solid rgba(0, 210, 255, 0.3); color: #00d2ff; padding: 2px 8px; border-radius: 4px; font-weight: 700;">${it.source_title || it.domain || 'CryptoNews'}</span>
                 <span style="font-size: 0.72rem; color: var(--text-dim);">${it.published_at || ''}</span>
               </div>
               <a href="${it.url || '#'}" target="_blank" style="font-size: 0.95rem; font-weight: 700; color: #fff; text-decoration: none; line-height: 1.5; display: block;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color='#fff'">
@@ -5055,21 +5300,21 @@ ${s3d.action_advice || ''}
       if (!currentAnalysis || !currentAnalysis.scalp_setup) return;
       const s = currentAnalysis.scalp_setup;
       const sym = currentAnalysis.symbol;
-      const text = `⚡ سیگنال اسکالپ اسمارت‌مانی | ${sym}
+      const text = `⚡ سیگنال اسکالپ فوق‌سریع اسمارت‌مانی (تایم‌فریم ۱ و ۵ دقیقه) | ${sym}
 ⏰ زمان صدور سیگنال (UTC): ${s.generated_at_utc || 'N/A'}
-⏳ افق اعتبار ستاپ: ${s.validity_window_text || '۳ ساعت'} (تا ${s.valid_until_utc || 'N/A'})
+⏳ افق اعتبار ستاپ (۱m/۵m): ${s.validity_window_text || '۳۰ الی ۴۵ دقیقه'} (تا ${s.valid_until_utc || 'N/A'})
 📌 جهت: ${s.action}
 🔹 محدوده ورود: ${s.entry_zone}
 🛑 حد ضرر: ${formatPrice(s.stop_loss)} (-${s.stop_loss_pct}%)
 🎯 تارگت اول: ${formatPrice(s.tp1)} (+${s.tp1_pct}%)
 🎯 تارگت دوم: ${formatPrice(s.tp2)} (+${s.tp2_pct}%)
-🎯 تارگت سوم (BSL): ${formatPrice(s.tp3)} (+${s.tp3_pct}%)
+🎯 تارگت سوم: ${formatPrice(s.tp3)} (+${s.tp3_pct}%)
 ⚖️ لوریج پیشنهادی: ${s.suggested_leverage}
 📊 ریسک به ریوارد: ${s.risk_reward}
-🛡️ قانون مدیریت ریسک: سیو سود ۵۰٪ در تارگت ۱ و انتقال بی‌درنگ استاپ به نقطه ورود (Breakeven)`;
+🛡️ مدیریت ریسک: سیو سود ۵۰٪ در تارگت ۱ و انتقال بی‌درنگ استاپ به نقطه ورود (Breakeven)`;
 
       navigator.clipboard.writeText(text).then(() => {
-        showToast('سیگنال اسکالپ با مهر زمانی UTC کپی شد');
+        showToast('سیگنال اسکالپ M1/M5 با مهر زمانی UTC کپی شد');
       });
     }
 
@@ -5096,33 +5341,87 @@ ${s3d.action_advice || ''}
       });
     }
 
-    // Interactive Position Sizer & Margin Calculator
+    function setLeverage(lev) {
+      const el = document.getElementById('calcLeverage');
+      if (el) {
+        el.value = lev;
+        updatePositionCalc();
+      }
+    }
+
+    // Interactive Position Sizer & Margin Calculator (Supports up to 100x leverage)
     function updatePositionCalc() {
       if (!currentAnalysis) return;
       const balance = parseFloat(document.getElementById('calcBalance').value) || 1000;
       const riskPct = parseFloat(document.getElementById('calcRiskPct').value) || 1.5;
-      const leverage = parseFloat(document.getElementById('calcLeverage').value) || 3;
+      const leverageInput = document.getElementById('calcLeverage');
+      const leverage = Math.min(100, Math.max(1, parseFloat(leverageInput ? leverageInput.value : 10) || 1));
       
+      const levLabel = document.getElementById('calcLeverageLabel');
+      if (levLabel) levLabel.innerText = `${leverage}x`;
+
       const price = currentAnalysis.price || 1;
       const scalp = currentAnalysis.scalp_setup || {};
-      const sl = scalp.stop_loss || (price * 0.985);
-      const tp1 = scalp.tp1 || (price * 1.015);
-      
+      const isBuy = !scalp.action_code || scalp.action_code === 'BUY';
+      const sl = scalp.stop_loss || (isBuy ? price * 0.985 : price * 1.015);
+      const tp1 = scalp.tp1 || (isBuy ? price * 1.015 : price * 0.985);
+      const tp2 = scalp.tp2 || (isBuy ? price * 1.025 : price * 0.975);
+
       const maxLossDollars = balance * (riskPct / 100.0);
       const slDistPct = Math.abs(price - sl) / price;
-      
+
       if (slDistPct <= 0.0001) return;
-      
+
       const positionValueUsd = maxLossDollars / slDistPct;
       const requiredMargin = positionValueUsd / leverage;
+      const marginUsagePct = (requiredMargin / balance) * 100.0;
       const coinQty = positionValueUsd / price;
       const tp1Profit = positionValueUsd * (Math.abs(tp1 - price) / price);
-      
+      const tp2Profit = positionValueUsd * (Math.abs(tp2 - price) / price);
+
+      // Estimated Liquidation Price
+      let estLiq = 0;
+      if (isBuy) {
+        estLiq = price * (1.0 - (1.0 / leverage) + 0.005);
+        if (estLiq < 0) estLiq = 0;
+      } else {
+        estLiq = price * (1.0 + (1.0 / leverage) - 0.005);
+      }
+
       document.getElementById('calcMaxLoss').innerText = `$${maxLossDollars.toFixed(2)}`;
       document.getElementById('calcPosValue').innerText = `$${Math.round(positionValueUsd).toLocaleString()} USD`;
       document.getElementById('calcReqMargin').innerText = `$${requiredMargin.toFixed(2)} USD`;
+      
+      const usageEl = document.getElementById('calcMarginUsage');
+      if (usageEl) {
+        usageEl.innerText = `${marginUsagePct.toFixed(1)}%`;
+        usageEl.style.color = marginUsagePct > 100 ? '#ff3366' : (marginUsagePct > 70 ? '#ffc107' : '#00d2ff');
+      }
+
+      const liqEl = document.getElementById('calcEstLiqPrice');
+      if (liqEl) liqEl.innerText = formatPrice(estLiq);
+
       document.getElementById('calcCoinQty').innerText = coinQty >= 1 ? coinQty.toFixed(4) : coinQty.toFixed(6);
       document.getElementById('calcTp1Profit').innerText = `+$${tp1Profit.toFixed(2)} USD`;
+      
+      const tp2El = document.getElementById('calcTp2Profit');
+      if (tp2El) tp2El.innerText = `+$${tp2Profit.toFixed(2)} USD`;
+
+      const warnEl = document.getElementById('calcMarginWarning');
+      if (warnEl) {
+        if (requiredMargin > balance) {
+          warnEl.style.display = 'block';
+          warnEl.innerHTML = `⚠️ <b>کمبود موجودی:</b> مارجین مورد نیاز ($${requiredMargin.toFixed(0)}) از کل بالانس شما ($${balance}) بیشتر است! یا اهرم را بالاتر ببرید یا درصد ریسک را کاهش دهید.`;
+        } else if (isBuy && sl < estLiq) {
+          warnEl.style.display = 'block';
+          warnEl.innerHTML = `⚠️ <b>هشدار لیکوئید شدن:</b> با اهرم ${leverage}x قیمت لیکویید (${formatPrice(estLiq)}) بالاتر از استاپ شما (${formatPrice(sl)}) است! لوریج را به زیر ${Math.floor(1 / slDistPct)}x کاهش دهید تا قبل از استاپ لیکویید نشوید.`;
+        } else if (!isBuy && sl > estLiq) {
+          warnEl.style.display = 'block';
+          warnEl.innerHTML = `⚠️ <b>هشدار لیکوئید شدن:</b> با اهرم ${leverage}x قیمت لیکویید (${formatPrice(estLiq)}) پایین‌تر از استاپ شما (${formatPrice(sl)}) است! لوریج را کاهش دهید.`;
+        } else {
+          warnEl.style.display = 'none';
+        }
+      }
     }
 
 
@@ -5367,6 +5666,89 @@ ${s3d.action_advice || ''}
       } catch (e) {
         console.debug('F&G live fetch:', e);
       }
+    }
+
+    async function fetchExchangeData(sym) {
+      sym = sym || currentSymbol || 'BTC';
+      try {
+        const res = await fetch(`/api/exchange/cross-compare?symbol=${encodeURIComponent(sym)}`);
+        const data = await res.json();
+        if (data) {
+          // Macro
+          if (data.macro_confluence) {
+            document.getElementById('macroEurUsd').innerText = data.macro_confluence.eur_usd || '--';
+            document.getElementById('macroDxyDirection').innerText = data.macro_confluence.dxy_proxy_direction || '--';
+            document.getElementById('macroFaVerdict').innerText = data.macro_confluence.macro_fa || '--';
+            document.getElementById('macroSourceLabel').innerText = data.macro_confluence.source || 'Alpha Vantage';
+          }
+          // LBank
+          if (data.lbank && data.lbank.price) {
+            document.getElementById('lbPrice').innerText = '$' + Number(data.lbank.price).toLocaleString();
+            document.getElementById('lbChange').innerText = (data.lbank.change_24h > 0 ? '+' : '') + data.lbank.change_24h + '%';
+            document.getElementById('lbChange').style.color = data.lbank.change_24h >= 0 ? '#00e676' : '#ff3366';
+            document.getElementById('lbVol').innerText = Number(data.lbank.vol_coin).toLocaleString() + ' ' + sym;
+            document.getElementById('lbBidVol').innerText = data.lbank.bid_volume_top5 + ' ' + sym;
+            document.getElementById('lbAskVol').innerText = data.lbank.ask_volume_top5 + ' ' + sym;
+            document.getElementById('lbBias').innerText = data.lbank.orderbook_bias || '--';
+          }
+          // Toobit
+          if (data.toobit && data.toobit.price) {
+            document.getElementById('tbPrice').innerText = '$' + Number(data.toobit.price).toLocaleString();
+            document.getElementById('tbChange').innerText = (data.toobit.change_24h > 0 ? '+' : '') + data.toobit.change_24h + '%';
+            document.getElementById('tbChange').style.color = data.toobit.change_24h >= 0 ? '#00e676' : '#ff3366';
+            document.getElementById('tbTurnover').innerText = '$' + (Number(data.toobit.turnover_usd) / 1e6).toFixed(1) + 'M';
+            document.getElementById('tbBidVol').innerText = data.toobit.bid_volume_top5 + ' ' + sym;
+            document.getElementById('tbAskVol').innerText = data.toobit.ask_volume_top5 + ' ' + sym;
+            document.getElementById('tbBias').innerText = data.toobit.orderbook_bias || '--';
+          }
+          // Spread
+          if (data.spread) {
+            document.getElementById('spreadToobitLbank').innerText = (data.spread.toobit_vs_lbank_pct > 0 ? '+' : '') + data.spread.toobit_vs_lbank_pct + '%';
+            document.getElementById('arbitrageAdvice').innerText = data.spread.arbitrage_advice || '';
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching exchange data:', e);
+      }
+
+      fetchLbankGems();
+      fetchApiStatusReport();
+    }
+
+    async function fetchLbankGems() {
+      try {
+        const res = await fetch('/api/exchange/lbank/gems?limit=8');
+        const gems = await res.json();
+        const c = document.getElementById('lbankGemsContainer');
+        if (gems && gems.length) {
+          c.innerHTML = gems.map(g => `
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; display: flex; align-items: center; gap: 8px;">
+              <strong style="color: #00d2ff;">${g.pair}</strong>
+              <span style="font-family: var(--font-mono); color: #fff;">$${g.price}</span>
+            </div>
+          `).join('');
+        }
+      } catch (e) {}
+    }
+
+    async function fetchApiStatusReport() {
+      try {
+        const res = await fetch('/api/exchange/api-status');
+        const data = await res.json();
+        const grid = document.getElementById('apiStatusGrid');
+        if (data && data.sources) {
+          grid.innerHTML = Object.values(data.sources).map(s => `
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <strong style="font-size: 0.85rem; color: #fff;">${s.name}</strong>
+                <span style="font-size: 0.72rem; font-weight: 700;">${s.badge}</span>
+              </div>
+              <div style="font-size: 0.74rem; color: var(--text-dim); line-height: 1.4;">${s.role || s.note || ''}</div>
+              ${s.key_masked ? `<div style="font-size: 0.68rem; font-family: var(--font-mono); color: #00d2ff; margin-top: 4px;">Key: ${s.key_masked}</div>` : ''}
+            </div>
+          `).join('');
+        }
+      } catch (e) {}
     }
 
     window.addEventListener('DOMContentLoaded', () => {

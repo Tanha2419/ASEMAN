@@ -1137,19 +1137,24 @@ class CryptoTradingAgent:
 
         current_price = ticker["last_price"]
 
-        # 2. Fetch Multi-Timeframe Candles
-        klines_15m = self.fetcher.fetch_klines(symbol, "15m", 300)
-        klines_1h = self.fetcher.fetch_klines(symbol, "1h", 150)
-        klines_4h = self.fetcher.fetch_klines(symbol, "4h", 150)
-        klines_1d = self.fetcher.fetch_klines(symbol, "1d", 100)
+        # 2. Fetch Multi-Timeframe Candles (M1, M5, M15, 1H, 4H, 1D)
+        klines_1m = self.fetcher.fetch_klines(symbol, "1m", 120)
+        klines_5m = self.fetcher.fetch_klines(symbol, "5m", 150)
+        klines_15m = self.fetcher.fetch_klines(symbol, "15m", 250)
+        klines_1h = self.fetcher.fetch_klines(symbol, "1h", 120)
+        klines_4h = self.fetcher.fetch_klines(symbol, "4h", 120)
+        klines_1d = self.fetcher.fetch_klines(symbol, "1d", 80)
 
         # 3. Analyze Technicals
+        ta_1m = self.analyzer.analyze_candles(klines_1m, "1m") if klines_1m else {}
+        ta_5m = self.analyzer.analyze_candles(klines_5m, "5m") if klines_5m else {}
         ta_15m = self.analyzer.analyze_candles(klines_15m, "15m") if klines_15m else {}
         ta_1h = self.analyzer.analyze_candles(klines_1h, "1h") if klines_1h else {}
         ta_4h = self.analyzer.analyze_candles(klines_4h, "4h") if klines_4h else {}
         ta_1d = self.analyzer.analyze_candles(klines_1d, "1d") if klines_1d else {}
 
-        # 4. Smart Money Concepts, Order Flow, VWAP, CVD, Value Area
+        # 4. Smart Money Concepts, Order Flow, VWAP, CVD, Value Area (5m Scalp & 4h Swing)
+        smc_5m = self.smc.analyze_smc(klines_5m, current_price, "5m") if klines_5m else {}
         smc_15m = self.smc.analyze_smc(klines_15m, current_price, "15m") if klines_15m else {}
         smc_4h = self.smc.analyze_smc(klines_4h, current_price, "4h") if klines_4h else {}
 
@@ -1170,8 +1175,8 @@ class CryptoTradingAgent:
         # 8. CoinGecko Fundamentals
         fundamentals = self.fetcher.fetch_coingecko_details(base_coin)
 
-        # 9. Generate Scalp & Swing Setups
-        scalp_setup = self._build_scalp_setup(current_price, ta_15m, ta_1h, orderbook, smc_15m, ta_4h=ta_4h, derivatives=derivatives)
+        # 9. Generate Scalp (1m/5m) & Swing (4h/1d) Setups
+        scalp_setup = self._build_scalp_setup(current_price, ta_5m=ta_5m, ta_1m=ta_1m, ob=orderbook, smc=smc_5m if smc_5m else smc_15m, ta_15m=ta_15m, ta_4h=ta_4h, derivatives=derivatives)
         swing_setup = self._build_swing_setup(current_price, ta_4h, ta_1d, fundamentals, smc_4h)
 
         # 10. Macro Market, Dominance & Correlations (Layer 6)
@@ -1249,12 +1254,15 @@ class CryptoTradingAgent:
             "price": current_price,
             "ticker": ticker,
             "timeframes": {
+                "1m": ta_1m,
+                "5m": ta_5m,
                 "15m": ta_15m,
                 "1h": ta_1h,
                 "4h": ta_4h,
                 "1d": ta_1d
             },
             "smc": {
+                "5m": smc_5m,
                 "15m": smc_15m,
                 "4h": smc_4h
             },
@@ -1458,60 +1466,68 @@ class CryptoTradingAgent:
 
         return table
 
-    def _build_scalp_setup(self, price: float, ta_15m: Dict[str, Any], ta_1h: Dict[str, Any], ob: Dict[str, Any], smc: Dict[str, Any], ta_4h: Optional[Dict[str, Any]] = None, derivatives: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _build_scalp_setup(self, price: float, ta_5m: Dict[str, Any], ta_1m: Dict[str, Any], ob: Dict[str, Any], smc: Dict[str, Any], ta_15m: Optional[Dict[str, Any]] = None, ta_4h: Optional[Dict[str, Any]] = None, derivatives: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Ultra-Fast Scalp Setup engine calibrated specifically for 1-minute (M1) and 5-minute (M5) execution.
+        Validity Horizon: 30 to 45 minutes from generation time (high-frequency turnover).
+        """
         now_utc = datetime.now(timezone.utc)
         generated_at_utc = now_utc.strftime("%Y-%m-%d %H:%M:%S UTC")
-        valid_until_utc = (now_utc + timedelta(hours=3)).strftime("%Y-%m-%d %H:%M:%S UTC")
-        validity_window_text = "۳ ساعت از زمان صدور (تایم‌فریم ۱۵ دقیقه)"
+        valid_until_utc = (now_utc + timedelta(minutes=45)).strftime("%Y-%m-%d %H:%M:%S UTC")
+        validity_window_text = "۳۰ الی ۴۵ دقیقه از زمان صدور (تایم‌فریم ۱ و ۵ دقیقه)"
 
-        if not ta_15m:
+        ref_ta = ta_5m if ta_5m else (ta_15m if ta_15m else {})
+        if not ref_ta:
             return {
                 "action": "WAIT",
                 "action_code": "WAIT",
-                "message": "داده‌های تایم‌فریم اسکالپ ناکافی است.",
+                "message": "داده‌های تایم‌فریم ۱ و ۵ دقیقه ناکافی است.",
                 "generated_at_utc": generated_at_utc,
                 "valid_until_utc": valid_until_utc,
                 "validity_window_text": validity_window_text
             }
 
-        atr = ta_15m.get("atr", price * 0.01)
-        rsi = ta_15m.get("rsi", 50)
-        bias_15m = ta_15m.get("bias", "NEUTRAL")
-        ema20 = ta_15m.get("ema20", price)
-        nearest_sup = ta_15m.get("nearest_support", price - atr)
-        nearest_res = ta_15m.get("nearest_resistance", price + atr)
+        atr = ref_ta.get("atr", price * 0.005)
+        rsi_5m = ref_ta.get("rsi", 50)
+        rsi_1m = ta_1m.get("rsi", 50) if ta_1m else rsi_5m
+        bias_5m = ref_ta.get("bias", "NEUTRAL")
+        bias_1m = ta_1m.get("bias", "NEUTRAL") if ta_1m else bias_5m
+        ema20 = ref_ta.get("ema20", price)
+        nearest_sup = ref_ta.get("nearest_support", price - atr)
+        nearest_res = ref_ta.get("nearest_resistance", price + atr)
         ob_ratio = ob.get("ratio", 1.0)
         fake_badge = smc.get("fake_trend", {}).get("badge", "ORGANIC")
         latest_sweep = smc.get("latest_sweep", {})
 
-        # Multi-Timeframe (MTF) & Volatility Consistency Check
+        # Multi-Timeframe Confluence (M1/M5 Scalp filtered against 4H Macro Trend)
         bias_4h = (ta_4h.get("bias", "NEUTRAL") if ta_4h else "NEUTRAL")
         atr_pct = (atr / price) * 100.0 if price > 0 else 0.0
-        is_dead_chop = atr_pct < 0.20
+        is_dead_chop = atr_pct < 0.08
 
-        # Institutional Confluence Gates (High Precision / High Selectivity)
+        # Institutional Confluence Gates for M1/M5 Scalping
         bullish_aligned = (
-            ("BULLISH" in bias_15m or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP"))
+            ("BULLISH" in bias_5m or "BULLISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP"))
             and (bias_4h != "BEARISH_STRONG" or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP"))
-            and (38 <= rsi <= 66)
-            and ob_ratio >= 0.92
+            and (35 <= rsi_5m <= 68)
+            and ob_ratio >= 0.90
             and fake_badge != "BULL_TRAP"
             and not is_dead_chop
         )
 
         bearish_aligned = (
-            ("BEARISH" in bias_15m or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP"))
+            ("BEARISH" in bias_5m or "BEARISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP"))
             and (bias_4h != "BULLISH_STRONG" or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP"))
-            and (34 <= rsi <= 62)
-            and ob_ratio <= 1.08
+            and (32 <= rsi_5m <= 65)
+            and ob_ratio <= 1.10
             and fake_badge != "BEAR_TRAP"
             and not is_dead_chop
         )
 
-        # Bullish Scalp Setup
+        # Bullish M1/M5 Scalp Setup
         if bullish_aligned:
-            action = "LONG (خرید سریع اسمارت‌مانی)"
+            action = "LONG (خرید سریع M1/M5)"
             action_code = "BUY"
+            direction = "LONG"
             
             fvg = smc.get("nearest_fvg")
             if fvg and fvg.get("type") == "BULLISH_FVG" and fvg.get("top") < price:
@@ -1523,27 +1539,29 @@ class CryptoTradingAgent:
                 
             entry_str = f"{entry_low} - {entry_high}"
             
-            sl_distance = max(1.25 * atr, price * 0.007)
-            sl = round(max(nearest_sup * 0.998, price - sl_distance), 6)
+            # Tight 1m/5m scalp stop loss
+            sl_distance = max(1.15 * atr, price * 0.0035)
+            sl = round(max(nearest_sup * 0.999, price - sl_distance), 6)
             risk = price - sl
-            if risk <= 0: risk = price * 0.01; sl = round(price - risk, 6)
+            if risk <= 0: risk = price * 0.005; sl = round(price - risk, 6)
             
-            tp1 = round(price + 1.5 * risk, 6)
-            tp2 = round(price + 2.5 * risk, 6)
-            tp3 = round(max(price + 3.5 * risk, smc.get("bsl_pool_target", price * 1.03)), 6)
-            confidence = "88%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "82%"
+            tp1 = round(price + 1.2 * risk, 6) # Quick scalp ~0.5-0.8%
+            tp2 = round(price + 2.2 * risk, 6) # Target 2 ~1.2-1.8%
+            tp3 = round(max(price + 3.2 * risk, smc.get("bsl_pool_target", price * 1.025)), 6)
+            confidence = "90%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "84%"
             
             triggers = [
-                "ورود در برخورد به خلاء نقدینگی (FVG) یا لمس VWAP/EMA20 با تایید تقاضای اردر بوک",
+                "ورود فوق‌سریع در تایم‌فریم ۱ و ۵ دقیقه با تاییدیه پرتاب اردر بوک",
                 "سیو سود ۵۰٪ در تارگت ۱ و انتقال فوری حد ضرر به نقطه ورود (Breakeven)",
-                "هدف‌گذاری شکار استخرهای نقدینگی بالای سقف (BSL Liquidity Pool)"
+                "شکار استخر نقدینگی سقف (BSL Liquidity Pool)"
             ]
-            warning = "در صورت شکست قطعی کف FVG یا ابطال کندل هانت، بلافاصله حد ضرر فعال شود."
+            warning = "در معاملات ۱ و ۵ دقیقه، سرعت عمل و پایبندی به حد ضرر حیاتی است."
 
-        # Bearish Scalp Setup
+        # Bearish M1/M5 Scalp Setup
         elif bearish_aligned:
-            action = "SHORT (فروش سریع / هانت BSL)"
+            action = "SHORT (فروش سریع M1/M5)"
             action_code = "SELL"
+            direction = "SHORT"
             
             fvg = smc.get("nearest_fvg")
             if fvg and fvg.get("type") == "BEARISH_FVG" and fvg.get("bottom") > price:
@@ -1555,46 +1573,49 @@ class CryptoTradingAgent:
                 
             entry_str = f"{entry_low} - {entry_high}"
             
-            sl_distance = max(1.25 * atr, price * 0.007)
-            sl = round(min(nearest_res * 1.002, price + sl_distance), 6)
+            sl_distance = max(1.15 * atr, price * 0.0035)
+            sl = round(min(nearest_res * 1.001, price + sl_distance), 6)
             risk = sl - price
-            if risk <= 0: risk = price * 0.01; sl = round(price + risk, 6)
+            if risk <= 0: risk = price * 0.005; sl = round(price + risk, 6)
             
-            tp1 = round(price - 1.5 * risk, 6)
-            tp2 = round(price - 2.5 * risk, 6)
-            tp3 = round(min(price - 3.5 * risk, smc.get("ssl_pool_target", price * 0.97)), 6)
-            confidence = "86%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "80%"
+            tp1 = round(price - 1.2 * risk, 6)
+            tp2 = round(price - 2.2 * risk, 6)
+            tp3 = round(min(price - 3.2 * risk, smc.get("ssl_pool_target", price * 0.975)), 6)
+            confidence = "88%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "82%"
             
             triggers = [
-                "ورود پس از ثبت BSL Sweep (ریجکت از سقف و خروج خریداران خرد)",
+                "ورود شورت ۱ و ۵ دقیقه پس از ریجکت سقف و خروج اردرهای خرید هیجانی",
                 "سیو سود ۵۰٪ در تارگت ۱ و ریسک‌فری کردن باقی‌مانده حجم (SL به Breakeven)",
-                "رویت کندل نزولی زیر VWAP و پرتاب قیمت به سمت استخر نقدینگی پایین (SSL)"
+                "رویت کندل زیر میانگین VWAP و شتاب به سمت استخر کف (SSL)"
             ]
             warning = "در معاملات شورت مراقب پامپ‌های ناشی از دستکاری الگوریتمی HFT باشید."
 
         else:
-            action = "WAIT / NO SCALP (صبر برای خروج از رنج و شفافیت روند)"
+            action = "WAIT / NO SCALP (صبر برای شفافیت روند)"
             action_code = "WAIT"
+            direction = "NEUTRAL"
             entry_str = f"محدوده رنج بین {round(nearest_sup, 6)} تا {round(nearest_res, 6)}"
-            sl = round(nearest_sup * 0.99, 6)
+            sl = round(nearest_sup * 0.995, 6)
             risk = price - sl
-            if risk <= 0: risk = price * 0.01
+            if risk <= 0: risk = price * 0.005
             tp1 = round(nearest_res, 6)
-            tp2 = round(nearest_res * 1.015, 6)
-            tp3 = round(nearest_res * 1.03, 6)
+            tp2 = round(nearest_res * 1.01, 6)
+            tp3 = round(nearest_res * 1.02, 6)
             confidence = "50%"
-            reason_chop = "نوسان مرده و اسپرد فشرده بازار" if is_dead_chop else "فقدان همسویی ساختار تایم‌فریم ۴ ساعته با ۱۵ دقیقه یا قرارگیری RSI در منطقه ۵۰/۵۰"
+            reason_chop = "نوسان مرده و اسپرد فشرده بازار" if is_dead_chop else "فقدان همسویی ساختار ۱ و ۵ دقیقه یا قرارگیری RSI در منطقه ۵۰/۵۰"
             triggers = [
-                f"فیلتر سخت‌گیرانه نهادی: {reason_chop}. جهت صیانت از بالانس از ورود اجتناب کنید.",
-                "تنها پس از شکست معتبر خط روند رنج یا رویت Sweep استخرهای نقدینگی وارد شوید."
+                f"فیلتر سخت‌گیرانه نهادی: {reason_chop}. جهت صیانت از بالانس صبوری کنید.",
+                "تنها پس از شکست معتبر یا شکار نقدینگی (Liquidity Sweep) وارد شوید."
             ]
-            warning = "معامله در شرایط رنج فرسایشی بیش از ۸۰٪ خطاهای معاملاتی و کارمزدهای هدررفته را رقم می‌زند."
+            warning = "معامله در شرایط رنج فرسایشی باعث هدررفت کارمزد و فعال‌شدن استاپ‌هاست."
 
         return {
-            "timeframe": "15m / 5m (اسکالپ اسمارت‌مانی)",
+            "timeframe": "1m / 5m (میکرو اسکالپ اسمارت‌مانی)",
             "action": action,
             "action_code": action_code,
+            "direction": direction,
             "entry_zone": entry_str,
+            "entry_price": price,
             "current_price": price,
             "stop_loss": sl,
             "stop_loss_pct": round(abs((sl - price) / price) * 100, 2),
@@ -1604,10 +1625,10 @@ class CryptoTradingAgent:
             "tp1_pct": round(abs((tp1 - price) / price) * 100, 2),
             "tp2_pct": round(abs((tp2 - price) / price) * 100, 2),
             "tp3_pct": round(abs((tp3 - price) / price) * 100, 2),
-            "risk_reward": "1:2.5",
+            "risk_reward": "1:2.2",
             "confidence": confidence,
-            "estimated_duration": "15 دقیقه الی 2 ساعت",
-            "suggested_leverage": "حداکثر 3x الی 5x (یا اسپات)",
+            "estimated_duration": "۵ الی ۴۵ دقیقه",
+            "suggested_leverage": "10x الی 25x (با رعایت سقف مارجین در ماشین‌حساب تا 100x)",
             "triggers": triggers,
             "warning": warning,
             "generated_at_utc": generated_at_utc,
