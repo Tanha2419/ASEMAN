@@ -2,8 +2,10 @@ name: Render & GitHub 60-Day Keep-Alive
 
 on:
   schedule:
+    # اجرای خودکار هر ۱۰ دقیقه یک‌بار (جلوگیری از اسلیپ شدن رندر بعد از ۱۵ دقیقه)
     - cron: '*/10 * * * *'
   workflow_dispatch:
+    # امکان اجرای دستی از تب Actions در گیت‌هاب
 
 permissions:
   contents: write
@@ -15,6 +17,7 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      # بخش ۱: پینگ زنده سرور رندر بدون نیاز به هیچ افزونه‌ای (۱۰۰٪ مستقل)
       - name: Ping Render Service
         run: |
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -51,14 +54,38 @@ jobs:
             fi
           fi
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      # بخش ۲: ثبت فعالیت در گیت‌هاب بدون نیاز به دانلود هیچ اکشن خارجی
+      # این کار مانع از غیرفعال شدن ورک‌فلو بعد از ۶۰ روز توسط گیت‌هاب می‌شود
+      - name: Keep GitHub Repo Active (Native Git)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Checking repository activity..."
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Prevent GitHub 60-Day Inactivity Auto-Disable
-        uses: gautamkrishnar/keepalive-workflow@v2
-        with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
-          commit_message: "chore(ci): keep github actions alive past 60 days [skip ci]"
-          committer_username: "github-actions[bot]"
-          committer_email: "github-actions[bot]@users.noreply.github.com"
-          time_elapsed: 45
+          # کلون مستقیم ریپازیتوری با توکن خودکار
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" repo_dir
+          cd repo_dir
+          mkdir -p .github
+
+          # ثبت ضربان قلب هفتگی
+          CURRENT_WEEK=$(date -u +"%Y-W%U")
+          HEARTBEAT_FILE=".github/keepalive-heartbeat.txt"
+          LAST_WEEK=""
+          if [ -f "$HEARTBEAT_FILE" ]; then
+            LAST_WEEK=$(cat "$HEARTBEAT_FILE" | grep "WEEK:" | cut -d':' -f2 | tr -d ' ')
+          fi
+
+          if [ "$CURRENT_WEEK" != "$LAST_WEEK" ]; then
+            echo "Updating heartbeat for $CURRENT_WEEK..."
+            echo "WEEK: $CURRENT_WEEK" > "$HEARTBEAT_FILE"
+            echo "UPDATED_AT: $(date -u)" >> "$HEARTBEAT_FILE"
+            git add "$HEARTBEAT_FILE"
+            git commit -m "chore(ci): keepalive heartbeat $CURRENT_WEEK [skip ci]"
+            git push origin HEAD
+            echo "✅ GitHub repository activity refreshed successfully!"
+          else
+            echo "✅ Heartbeat already up to date for this week ($CURRENT_WEEK)."
+          fi
