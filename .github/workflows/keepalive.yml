@@ -1,0 +1,64 @@
+name: Render & GitHub 60-Day Keep-Alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    name: Ping Render & Keep GitHub Active
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping Render Service
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          TARGET_URL="https://aseman-1-430y.onrender.com/healthz"
+          echo "[$TIMESTAMP] Starting Keep-Alive ping to: $TARGET_URL"
+
+          HTTP_CODE=$(curl -s -o /tmp/health_response.json -w "%{http_code}" \
+            --connect-timeout 15 \
+            --max-time 40 \
+            --retry 3 \
+            --retry-delay 5 \
+            "$TARGET_URL")
+
+          echo "Response HTTP Code: $HTTP_CODE"
+          if [ -f /tmp/health_response.json ]; then
+            echo "Response Body: $(cat /tmp/health_response.json)"
+          fi
+
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ Render service is awake and healthy!"
+          else
+            echo "⚠️ Fallback pinging root URL..."
+            ROOT_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+              --connect-timeout 20 \
+              --max-time 60 \
+              --retry 2 \
+              "https://aseman-1-430y.onrender.com/")
+            echo "Root URL HTTP Code: $ROOT_CODE"
+            if [ "$ROOT_CODE" -eq 200 ]; then
+              echo "✅ Root URL woke up the service!"
+            else
+              echo "❌ Failed to ping Render service. Code: $ROOT_CODE"
+              exit 1
+            fi
+          fi
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Prevent GitHub 60-Day Inactivity Auto-Disable
+        uses: gautamkrishnar/keepalive-workflow@v2
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_message: "chore(ci): keep github actions alive past 60 days [skip ci]"
+          committer_username: "github-actions[bot]"
+          committer_email: "github-actions[bot]@users.noreply.github.com"
+          time_elapsed: 45
