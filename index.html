@@ -685,6 +685,201 @@
       color: var(--blue);
     }
 
+    /* ==========================================================================
+       Educational Modal & Beginner Glossary Styling
+       ========================================================================== */
+    .edu-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 8, 19, 0.88);
+      backdrop-filter: blur(8px);
+      z-index: 999999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: eduFadeIn 0.25s ease-out;
+    }
+
+    @keyframes eduFadeIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .edu-modal-box {
+      background: #0b1120;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 16px;
+      max-width: 960px;
+      width: 100%;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 35px rgba(56, 189, 248, 0.25);
+      color: #f8fafc;
+      overflow: hidden;
+      direction: rtl;
+    }
+
+    .edu-modal-header {
+      padding: 16px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95));
+    }
+
+    .edu-modal-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.12rem;
+      font-weight: 800;
+      color: #fde047;
+    }
+
+    .edu-modal-close {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #cbd5e1;
+      font-size: 1.2rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .edu-modal-close:hover {
+      background: #ef4444;
+      color: #fff;
+      border-color: #ef4444;
+      transform: scale(1.08);
+    }
+
+    .edu-nav-tabs {
+      display: flex;
+      background: rgba(15, 23, 42, 0.9);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      overflow-x: auto;
+      padding: 8px 16px;
+      gap: 8px;
+    }
+
+    .edu-nav-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #94a3b8;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.83rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .edu-nav-tab:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .edu-nav-tab.active {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .edu-modal-body {
+      padding: 22px 24px;
+      overflow-y: auto;
+      flex: 1;
+      font-size: 0.88rem;
+      line-height: 1.8;
+      color: #cbd5e1;
+    }
+
+    .edu-tab-content {
+      display: none;
+    }
+
+    .edu-tab-content.active {
+      display: block;
+      animation: eduContentFade 0.2s ease-out;
+    }
+
+    @keyframes eduContentFade {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .edu-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .edu-card:hover {
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .edu-card-title {
+      font-size: 0.96rem;
+      font-weight: 800;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .edu-tag {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+
+    .edu-badge-rule {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(34, 197, 94, 0.18);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      color: #4ade80;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .edu-badge-warn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(239, 68, 68, 0.18);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
     /* Content Tabs Section */
     .content-tabs-section {
       background: var(--bg-card);
@@ -1260,15 +1455,24 @@
         <button type="submit" class="search-btn">آنالیز هوشمند</button>
       </form>
 
-      <!-- Live UTC Clock & Global Session Tracker & Fear & Greed -->
-      <div class="header-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-        <!-- Live UTC Clock Badge -->
-        <div class="utc-clock-badge" id="utcClockBadge" title="ساعت زنده بین‌المللی هماهنگ (UTC) و وضعیت سشن فعال بازارهای مالی جهان" style="display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.4); padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; backdrop-filter: blur(6px); box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+      <!-- Live Tehran & UTC Clocks, Global Session Tracker, Education Button & Fear & Greed -->
+      <div class="header-actions" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <!-- Dual Clocks Badge: Tehran & UTC -->
+        <div class="utc-clock-badge" id="utcClockBadge" title="ساعت زنده رسمی ایران و ساعت بین‌المللی هماهنگ (UTC) به همراه وضعیت سشن فعال بازارهای مالی جهان" style="display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.4); padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; backdrop-filter: blur(6px); box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
           <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite;"></span>
+          <span style="font-size: 0.76rem; color: #fde047; font-weight: 700;">🇮🇷 تهران:</span>
+          <span style="font-family: monospace; font-weight: 800; color: #fff; letter-spacing: 0.5px;" id="liveTehranClock">--:--:--</span>
+          <span style="border-right: 1px solid rgba(148, 163, 184, 0.3); height: 14px; margin: 0 2px;"></span>
           <span style="font-family: monospace; font-weight: 700; color: #38bdf8; letter-spacing: 0.5px;" id="liveUtcClock">--:--:-- UTC</span>
           <span style="border-right: 1px solid rgba(148, 163, 184, 0.3); height: 14px; margin: 0 2px;"></span>
-          <span id="activeMarketSession" style="font-size: 0.75rem; color: #facc15; font-weight: 600;">سشن: در حال بررسی...</span>
+          <span id="activeMarketSession" style="font-size: 0.74rem; color: #a3e635; font-weight: 600;">سشن: در حال بررسی...</span>
         </div>
+
+        <!-- Educational Guide Button -->
+        <button type="button" class="edu-header-btn" onclick="openEducationModal()" style="display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(249, 115, 22, 0.3)); border: 1px solid #f59e0b; color: #fef08a; padding: 6px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'" title="راهنمای جامع آموزش مبتدی، اصطلاحات کلیدی و نحوه خواندن سیگنال‌ها">
+          <span style="font-size: 1rem;">🎓</span>
+          <span>آموزش مبتدی و اصطلاحات</span>
+        </button>
 
         <div class="fng-badge" id="fngBadge" title="شاخص احساسات و ترس و طمع زنده کل بازار (CoinMarketCap)">
           <div class="fng-dot" id="fngDot" style="background: #00e676; box-shadow: 0 0 10px rgba(0, 230, 118, 0.9);"></div>
@@ -1322,6 +1526,9 @@
         </button>
         <button type="button" class="portal-chip" style="background: rgba(239, 83, 80, 0.18); color: #ef5350; border: 1px solid rgba(239, 83, 80, 0.4);" onclick="switchTab('newsTab', document.getElementById('tabBtnNews'));" title="مشاهده فید اخبار زنده و تحلیل سنتیمنت CryptoPanic">
           😱 CryptoPanic News
+        </button>
+        <button type="button" class="portal-chip" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(249, 115, 22, 0.3)); color: #fde047; border: 1px solid #f59e0b;" onclick="openEducationModal();" title="راهنمای جامع آموزش مبتدی و اصطلاحات">
+          🎓 آموزش مبتدی و اصطلاحات
         </button>
       </div>
     </div>
@@ -1515,21 +1722,26 @@
           <div class="action-badge action-buy" id="scalpActionBadge">LONG (خرید سریع M1/M5)</div>
         </div>
 
-        <!-- Scalp Setup UTC Timing & Validity Strip -->
+        <!-- Scalp Setup Dual Time (Tehran & UTC) & Validity Strip -->
         <div class="signal-time-strip" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 10px 14px; margin: 12px 0; font-size: 0.8rem; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);">
           <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="color: #38bdf8;">⏰ زمان صدور سیگنال (UTC):</span>
-              <strong style="color: #f8fafc; font-family: monospace; font-size: 0.88rem;" id="scalpIssuedUtc">--:--:-- UTC</strong>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="color: #38bdf8; font-weight: 700;">⏰ صدور سیگنال:</span>
+              <strong style="color: #fde047; font-family: monospace; font-size: 0.86rem;" id="scalpIssuedTehran">--:-- (ایران)</strong>
+              <span style="color: #64748b; font-size: 0.75rem;">|</span>
+              <span style="color: #94a3b8; font-family: monospace; font-size: 0.8rem;" id="scalpIssuedUtc">--:--:-- UTC</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="color: #f59e0b;">⏳ افق اعتبار ستاپ (۱m/۵m):</span>
-              <span style="color: #fef08a; font-family: monospace; font-weight: 700; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3);" id="scalpValidUntilUtc">۳۰ الی ۴۵ دقیقه (تا --:-- UTC)</span>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="color: #f59e0b; font-weight: 700;">⏳ مهلت اعتبار ستاپ (۱m/۵m):</span>
+              <span style="color: #fef08a; font-family: monospace; font-weight: 700; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3);" id="scalpValidUntilUtc">۳۰ الی ۴۵ دقیقه (تا --:--)</span>
             </div>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px; font-size: 0.74rem; color: #94a3b8;">
-            <span>🛡️ <b>مدیریت ریسک نهادی:</b> به محض لمس TP1، استاپ به نقطه ورود (Breakeven) کشیده شود.</span>
-            <span id="scalpStatusBadge" style="color: #4ade80; font-weight: 700;">● تایید شده اسمارت‌مانی</span>
+            <span>🛡️ <b>مدیریت ریسک:</b> به محض لمس TP1، ۵۰٪ سیو سود شده و استاپ به نقطه ورود (Breakeven) کشیده شود.</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" onclick="openEducationModal('eduRules')" style="background: none; border: none; color: #38bdf8; font-size: 0.72rem; cursor: pointer; text-decoration: underline;">راهنمای قوانین ورود ↗</button>
+              <span id="scalpStatusBadge" style="color: #4ade80; font-weight: 700;">● تایید شده اسمارت‌مانی</span>
+            </div>
           </div>
         </div>
 
@@ -1618,21 +1830,26 @@
           <div class="action-badge action-buy" id="swingActionBadge">SWING LONG (خرید روندی)</div>
         </div>
 
-        <!-- Swing Setup UTC Timing & Validity Strip -->
+        <!-- Swing Setup Dual Time (Tehran & UTC) & Validity Strip -->
         <div class="signal-time-strip" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 10px 14px; margin: 12px 0; font-size: 0.8rem; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);">
           <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="color: #c084fc;">⏰ زمان صدور تحلیل (UTC):</span>
-              <strong style="color: #f8fafc; font-family: monospace; font-size: 0.88rem;" id="swingIssuedUtc">--:--:-- UTC</strong>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="color: #c084fc; font-weight: 700;">⏰ صدور تحلیل:</span>
+              <strong style="color: #fde047; font-family: monospace; font-size: 0.86rem;" id="swingIssuedTehran">--:-- (ایران)</strong>
+              <span style="color: #64748b; font-size: 0.75rem;">|</span>
+              <span style="color: #94a3b8; font-family: monospace; font-size: 0.8rem;" id="swingIssuedUtc">--:--:-- UTC</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="color: #38bdf8;">⏳ بازه اعتبار سوئینگ:</span>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="color: #38bdf8; font-weight: 700;">⏳ بازه اعتبار سوئینگ:</span>
               <span style="color: #bae6fd; font-family: monospace; font-weight: 700; background: rgba(56, 189, 248, 0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);" id="swingValidUntilUtc">۳ الی ۷ روز کاری (تا --:--)</span>
             </div>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px; font-size: 0.74rem; color: #94a3b8;">
             <span>🎯 <b>هدف ساختاری:</b> پوزیشن‌های میان‌مدت و خرید پله‌ای منطبق بر POC و پاکت طلایی فیبوناچی.</span>
-            <span id="swingStatusBadge" style="color: #c084fc; font-weight: 700;">● پوزیشن سوئینگ</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" onclick="openEducationModal('eduSmc')" style="background: none; border: none; color: #c084fc; font-size: 0.72rem; cursor: pointer; text-decoration: underline;">آموزش POC و پاکت طلایی ↗</button>
+              <span id="swingStatusBadge" style="color: #c084fc; font-weight: 700;">● پوزیشن سوئینگ</span>
+            </div>
           </div>
         </div>
 
@@ -3441,8 +3658,12 @@
       const num = Number(val);
       if (num >= 1) {
         return "$" + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-      } else {
+      } else if (num >= 0.001) {
+        return "$" + num.toFixed(4);
+      } else if (num >= 0.00001) {
         return "$" + num.toFixed(6);
+      } else {
+        return "$" + num.toFixed(8);
       }
     }
 
@@ -4160,7 +4381,7 @@
       if (overlay) overlay.style.display = 'flex';
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symbol)}`, { signal: controller.signal });
         clearTimeout(timeoutId);
         const data = await res.json();
@@ -4483,10 +4704,29 @@
         else badge.className = 'action-badge action-wait';
 
         if (document.getElementById('scalpIssuedUtc')) {
-          document.getElementById('scalpIssuedUtc').innerText = scalp_setup.generated_at_utc || (new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
+          const utcRaw = scalp_setup.generated_at_utc || (new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
+          document.getElementById('scalpIssuedUtc').innerText = utcRaw.includes('UTC') ? utcRaw : `${utcRaw} UTC`;
+        }
+        if (document.getElementById('scalpIssuedTehran')) {
+          if (scalp_setup.generated_at_tehran) {
+            document.getElementById('scalpIssuedTehran').innerText = `${scalp_setup.generated_at_tehran} (ایران)`;
+          } else {
+            const now = new Date();
+            const tehranDate = new Date(now.getTime() + 3.5 * 3600 * 1000);
+            const pad = n => String(n).padStart(2, '0');
+            document.getElementById('scalpIssuedTehran').innerText = `${pad(tehranDate.getUTCHours())}:${pad(tehranDate.getUTCMinutes())}:${pad(tehranDate.getUTCSeconds())} (ایران)`;
+          }
         }
         if (document.getElementById('scalpValidUntilUtc')) {
-          document.getElementById('scalpValidUntilUtc').innerText = scalp_setup.valid_until_utc ? `${scalp_setup.validity_window_text || '۳ ساعت'} (تا ${scalp_setup.valid_until_utc.substring(11, 19)})` : '۳ ساعت پس از صدور';
+          const tehranValid = scalp_setup.valid_until_tehran ? `تا ${scalp_setup.valid_until_tehran} به وقت ایران` : '';
+          const utcValid = scalp_setup.valid_until_utc ? `${scalp_setup.valid_until_utc.substring(11, 19)} UTC` : '';
+          if (tehranValid && utcValid) {
+            document.getElementById('scalpValidUntilUtc').innerText = `۳۰ الی ۴۵ دقیقه (${tehranValid} | ${utcValid})`;
+          } else if (scalp_setup.validity_window_text) {
+            document.getElementById('scalpValidUntilUtc').innerText = scalp_setup.validity_window_text;
+          } else {
+            document.getElementById('scalpValidUntilUtc').innerText = '۳۰ الی ۴۵ دقیقه از زمان صدور';
+          }
         }
 
         document.getElementById('scalpEntry').innerText = scalp_setup.entry_zone || '-';
@@ -4513,10 +4753,28 @@
         else badge.className = 'action-badge action-wait';
 
         if (document.getElementById('swingIssuedUtc')) {
-          document.getElementById('swingIssuedUtc').innerText = swing_setup.generated_at_utc || (new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
+          const utcRaw = swing_setup.generated_at_utc || (new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
+          document.getElementById('swingIssuedUtc').innerText = utcRaw.includes('UTC') ? utcRaw : `${utcRaw} UTC`;
+        }
+        if (document.getElementById('swingIssuedTehran')) {
+          if (swing_setup.generated_at_tehran) {
+            document.getElementById('swingIssuedTehran').innerText = swing_setup.generated_at_tehran;
+          } else {
+            const now = new Date();
+            const tehranDate = new Date(now.getTime() + 3.5 * 3600 * 1000);
+            const pad = n => String(n).padStart(2, '0');
+            document.getElementById('swingIssuedTehran').innerText = `${pad(tehranDate.getUTCHours())}:${pad(tehranDate.getUTCMinutes())} (ایران)`;
+          }
         }
         if (document.getElementById('swingValidUntilUtc')) {
-          document.getElementById('swingValidUntilUtc').innerText = swing_setup.valid_until_utc ? `${swing_setup.validity_window_text || '۳ الی ۷ روز کاری'} (تا ${swing_setup.valid_until_utc.substring(0, 10)})` : '۳ الی ۷ روز کاری';
+          const tehranValid = swing_setup.valid_until_tehran ? `تا ${swing_setup.valid_until_tehran}` : '';
+          if (tehranValid) {
+            document.getElementById('swingValidUntilUtc').innerText = `۳ الی ۷ روز کاری (${tehranValid})`;
+          } else if (swing_setup.validity_window_text) {
+            document.getElementById('swingValidUntilUtc').innerText = swing_setup.validity_window_text;
+          } else {
+            document.getElementById('swingValidUntilUtc').innerText = '۳ الی ۷ روز کاری';
+          }
         }
 
         document.getElementById('swingPullback').innerText = swing_setup.pullback_entry || '-';
@@ -5300,9 +5558,11 @@ ${s3d.action_advice || ''}
       if (!currentAnalysis || !currentAnalysis.scalp_setup) return;
       const s = currentAnalysis.scalp_setup;
       const sym = currentAnalysis.symbol;
+      const tehranIssue = s.generated_at_tehran ? `${s.generated_at_tehran} (ایران)` : '';
+      const tehranValid = s.valid_until_tehran ? `تا ساعت ${s.valid_until_tehran} (ایران)` : '';
       const text = `⚡ سیگنال اسکالپ فوق‌سریع اسمارت‌مانی (تایم‌فریم ۱ و ۵ دقیقه) | ${sym}
-⏰ زمان صدور سیگنال (UTC): ${s.generated_at_utc || 'N/A'}
-⏳ افق اعتبار ستاپ (۱m/۵m): ${s.validity_window_text || '۳۰ الی ۴۵ دقیقه'} (تا ${s.valid_until_utc || 'N/A'})
+🇮🇷 زمان صدور: ${tehranIssue ? tehranIssue + ' | ' : ''}${s.generated_at_utc || 'N/A'}
+⏳ مهلت اعتبار: ${s.validity_window_text || '۳۰ الی ۴۵ دقیقه'} ${tehranValid ? `(${tehranValid})` : ''}
 📌 جهت: ${s.action}
 🔹 محدوده ورود: ${s.entry_zone}
 🛑 حد ضرر: ${formatPrice(s.stop_loss)} (-${s.stop_loss_pct}%)
@@ -5314,7 +5574,7 @@ ${s3d.action_advice || ''}
 🛡️ مدیریت ریسک: سیو سود ۵۰٪ در تارگت ۱ و انتقال بی‌درنگ استاپ به نقطه ورود (Breakeven)`;
 
       navigator.clipboard.writeText(text).then(() => {
-        showToast('سیگنال اسکالپ M1/M5 با مهر زمانی UTC کپی شد');
+        showToast('سیگنال اسکالپ با مهر زمانی ایران و UTC کپی شد');
       });
     }
 
@@ -5322,9 +5582,11 @@ ${s3d.action_advice || ''}
       if (!currentAnalysis || !currentAnalysis.swing_setup) return;
       const s = currentAnalysis.swing_setup;
       const sym = currentAnalysis.symbol;
+      const tehranIssue = s.generated_at_tehran ? `${s.generated_at_tehran}` : '';
+      const tehranValid = s.valid_until_tehran ? `تا ${s.valid_until_tehran}` : '';
       const text = `🌊 سیگنال سوئینگ تریدینگ | ${sym}
-⏰ زمان صدور تحلیل (UTC): ${s.generated_at_utc || 'N/A'}
-⏳ بازه اعتبار سوئینگ: ${s.validity_window_text || '۳ الی ۷ روز کاری'} (تا ${s.valid_until_utc || 'N/A'})
+🇮🇷 زمان صدور تحلیل: ${tehranIssue ? tehranIssue + ' | ' : ''}${s.generated_at_utc || 'N/A'}
+⏳ بازه اعتبار سوئینگ: ${s.validity_window_text || '۳ الی ۷ روز کاری'} ${tehranValid ? `(${tehranValid})` : ''}
 📌 استراتژی: ${s.action}
 🔹 ورود در اصلاح (POC): ${s.pullback_entry}
 🔹 ورود در شکست: ${s.breakout_entry}
@@ -5334,10 +5596,11 @@ ${s3d.action_advice || ''}
 🎯 تارگت سوم: ${formatPrice(s.target3)} (+${s.target3_pct}%)
 ⏳ افق زمانی: ${s.holding_period}
 📊 ریسک به ریوارد: ${s.risk_reward}
-🛡️ قانون مدیریت سرمایه: ${s.capital_risk_advice}`;
+🛡️ قانون مدیریت سرمایه: ${s.capital_risk_advice}
+🛡️ شرط ابطال: ${s.invalidation_condition || 'شکست کف حمایتی روزانه'}`;
 
       navigator.clipboard.writeText(text).then(() => {
-        showToast('سیگنال سوئینگ با موفقیت در کلیپ‌بورد کپی شد');
+        showToast('سیگنال سوئینگ با مهر زمانی ایران و UTC کپی شد');
       });
     }
 
@@ -5596,6 +5859,12 @@ ${s3d.action_advice || ''}
       
       const clockEl = document.getElementById('liveUtcClock');
       if (clockEl) clockEl.innerText = timeStr;
+
+      // Official Iran Standard Time (UTC + 3:30)
+      const tehranDate = new Date(now.getTime() + (3.5 * 3600 * 1000));
+      const tehranStr = `${pad(tehranDate.getUTCHours())}:${pad(tehranDate.getUTCMinutes())}:${pad(tehranDate.getUTCSeconds())}`;
+      const tehranEl = document.getElementById('liveTehranClock');
+      if (tehranEl) tehranEl.innerText = tehranStr;
       
       const totalMins = now.getUTCHours() * 60 + now.getUTCMinutes();
       let sessionName = 'توکیو و شرق آسیا (Tokyo Session)';
@@ -5759,6 +6028,366 @@ ${s3d.action_advice || ''}
       loadSymbol('BTC');
       loadTelegramConfig();
     });
-  </script>
+  
+    // Education Modal Functions
+    function openEducationModal(tabId) {
+      const modal = document.getElementById('educationModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        if (tabId) {
+          switchEduTab(tabId);
+        }
+      }
+    }
+
+    function closeEducationModal() {
+      const modal = document.getElementById('educationModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function switchEduTab(tabId) {
+      const tabs = ['eduRules', 'eduSmc', 'eduOrderbook', 'eduRisk', 'eduDashboard'];
+      const btnMap = {
+        'eduRules': 'eduTabBtnRules',
+        'eduSmc': 'eduTabBtnSmc',
+        'eduOrderbook': 'eduTabBtnOrderbook',
+        'eduRisk': 'eduTabBtnRisk',
+        'eduDashboard': 'eduTabBtnDashboard'
+      };
+
+      tabs.forEach(t => {
+        const el = document.getElementById(t);
+        const btn = document.getElementById(btnMap[t]);
+        if (el) el.classList.remove('active');
+        if (btn) btn.classList.remove('active');
+      });
+
+      const activeEl = document.getElementById(tabId);
+      const activeBtn = document.getElementById(btnMap[tabId]);
+      if (activeEl) activeEl.classList.add('active');
+      if (activeBtn) activeBtn.classList.add('active');
+    }
+
+    // Close on Escape key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeEducationModal();
+    });
+
+</script>
+
+  <!-- Comprehensive Educational Modal & Beginner Glossary -->
+  <div class="edu-modal-backdrop" id="educationModal" onclick="if(event.target === this) closeEducationModal();">
+    <div class="edu-modal-box">
+      <!-- Modal Header -->
+      <div class="edu-modal-header">
+        <div class="edu-modal-title">
+          <span style="font-size: 1.3rem;">🎓</span>
+          <div>
+            <div style="color: #fde047; font-weight: 800; font-size: 1.08rem;">آموزش جامع، اصطلاحات کلیدی و راهنمای ترید</div>
+            <div style="color: #94a3b8; font-size: 0.76rem; font-weight: 500; margin-top: 2px;">راهنمای خودمانی و روان برای تسلط بر اسمارت‌مانی، اردر بوک و قوانین ورود به سیگنال‌ها</div>
+          </div>
+        </div>
+        <button type="button" class="edu-modal-close" onclick="closeEducationModal()" title="بستن (Esc)">✕</button>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="edu-nav-tabs">
+        <button type="button" class="edu-nav-tab active" id="eduTabBtnRules" onclick="switchEduTab('eduRules')">
+          <span>🚦</span> قوانین ورود به سیگنال
+        </button>
+        <button type="button" class="edu-nav-tab" id="eduTabBtnSmc" onclick="switchEduTab('eduSmc')">
+          <span>🧠</span> اصطلاحات اسمارت‌مانی (ICT)
+        </button>
+        <button type="button" class="edu-nav-tab" id="eduTabBtnOrderbook" onclick="switchEduTab('eduOrderbook')">
+          <span>📊</span> اردر بوک و حجم معاملات
+        </button>
+        <button type="button" class="edu-nav-tab" id="eduTabBtnRisk" onclick="switchEduTab('eduRisk')">
+          <span>🛡️</span> مدیریت سرمایه و ماشین‌حساب
+        </button>
+        <button type="button" class="edu-nav-tab" id="eduTabBtnDashboard" onclick="switchEduTab('eduDashboard')">
+          <span>🗺️</span> راهنمای تمام جداول سایت
+        </button>
+      </div>
+
+      <!-- Modal Body Content -->
+      <div class="edu-modal-body">
+
+        <!-- TAB 1: SIGNAL RULES -->
+        <div class="edu-tab-content active" id="eduRules">
+          <div class="edu-card" style="border-color: rgba(234, 179, 8, 0.4); background: rgba(234, 179, 8, 0.04);">
+            <div class="edu-card-title" style="color: #fde047;">
+              <span>❓</span> چرا همیشه روی سایت سیگنال اسکالپ یا سوئینگ وجود دارد؟
+            </div>
+            <p>
+              سیستم «آسمان» یک هوش مصنوعی تحلیل‌گر زنده ۲۴ ساعته است. در هر ثانیه ۳۵۰ کندل اخیر تایم‌فریم‌های ۱ و ۵ دقیقه و ۴ ساعته اسکن ریاضی می‌شوند تا نقشه راه (Roadmap) لحظه‌ای بازار را به شما نشان دهند.
+              <strong>اما توجه داشته باشید:</strong> وجود نقشه راه به معنای مجوز ورود به هر معامله‌ای نیست! شما فقط زمانی باید دست به معامله بزنید که فیلترهای اعتبارسنجی تایید شوند.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-badge-rule">قانون ۱</span> وضعیت ستاپ (Action Filter)
+            </div>
+            <p>
+              اگر جهت ستاپ <strong style="color: #f87171;">WAIT / NO SCALP</strong> باشد: به هیچ وجه وارد معامله نشوید! این یعنی بازار در فشردگی بدون روند، ریسک بالا یا خطر تله نهنگ‌ها قرار دارد.<br>
+              تنها زمانی مجاز به معامله هستید که وضعیت شفاف <strong style="color: #4ade80;">LONG</strong> (خرید) یا <strong style="color: #f87171;">SHORT</strong> (فروش) با تریگر مشخص ثبت شده باشد.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-badge-rule">قانون ۲</span> رتبه و اعتبار سیگنال (Signal Grade)
+            </div>
+            <p>
+              بهترین بازدهی مربوط به سیگنال‌های <strong style="color: #ffd700;">Grade A+ (امتیاز بالای ۹۰)</strong> و <strong style="color: #38bdf8;">Grade A (امتیاز بالای ۸۰)</strong> است. این رتبه‌ها نشان‌دهنده همگرایی کامل جریان نقدینگی، سفارشات تجمعی و تایید حجم بانک‌ها هستند. در رتبه‌های B یا C، بازار نوسان ضعیف دارد و بهتر است نظاره‌گر باشید.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-badge-rule">قانون ۳</span> تطابق اسکالپ با سوئینگ (Trend Alignment)
+            </div>
+            <p>
+              ستاپ <strong>سوئینگ (تایم ۴ ساعته)</strong> قطب‌نمای حرکت کلان بازار است. اگر سوئینگ صعودی بود، اولویت شما باید گرفتن سیگنال‌های اسکالپ <strong>LONG</strong> باشد و از معاملات خلاف روند بپرهیزید.
+            </p>
+          </div>
+
+          <div class="edu-card" style="border-color: rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.04);">
+            <div class="edu-card-title" style="color: #4ade80;">
+              <span class="edu-badge-rule">قانون ۴</span> قانون طلایی ریسک-فری (Breakeven Rule)
+            </div>
+            <p>
+              به محض این که قیمت به تارگت اول (<strong style="color: #4ade80;">TP1</strong>) رسید:
+              <br>۱. <strong>۵۰٪ از حجم پوزیشن را ببندید</strong> و سود آن را در جیب بگذارید (سیو سود).
+              <br>۲. حد ضرر (Stop Loss) بخش باقی‌مانده را دقیقاً به <strong>نقطه ورود (Entry)</strong> منتقل کنید.
+              <br>با رعایت این اصل، آن معامله تحت هیچ شرایطی منفی نخواهد شد و با خیالی آسوده منتظر تارگت‌های ۲ و ۳ می‌مانید.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-badge-warn">قانون ۵</span> فیوز اضطراری تقویم و اخبار کلان (Circuit Breaker)
+            </div>
+            <p>
+              اگر بنر هشدار فیوز قرمز شد (مثلاً زمان جلسه FOMC فدرال رزرو یا اعلام تورم CPI آمریکا)، پوزیشن جدید باز نکنید؛ زیرا اسپردها باز شده و کندل‌های رفت‌وبرگشتی شدید رخ می‌دهد.
+            </p>
+          </div>
+        </div>
+
+        <!-- TAB 2: SMC / ICT GLOSSARY -->
+        <div class="edu-tab-content" id="eduSmc">
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">FVG</span> Fair Value Gap (خلأ ارزش منصفانه نقدینگی)
+            </div>
+            <p>
+              <strong>به زبان ساده:</strong> وقتی قیمت با یک کندل انفجاری بلند حرکت می‌کند، بین سایه کندل قبل و کندل بعد یک شکاف قیمتی خالی ایجاد می‌شود که در آن معامله متعادلی انجام نشده است.
+              <br><strong>چرا مهم است؟</strong> این خلا مانند یک آهنربا عمل می‌کند. قیمت در ۹۰٪ مواقع دوباره به این شکاف برمی‌گردد تا سفارشات بازمانده بانک‌ها را پر کند. این بازگشت بهترین نقطه برای ورود دقیق و کم‌ریسک به شمار می‌رود.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">BSL & SSL</span> استخرهای نقدینگی و هانت استاپ‌ها (Liquidity Sweep)
+            </div>
+            <p>
+              <strong>BSL (Buy-Side Liquidity):</strong> استخر نقدینگی بالای سقف‌ها که استاپ‌لاس فروشندگان در آن انباشته شده است.
+              <br><strong>SSL (Sell-Side Liquidity):</strong> استخر نقدینگی زیر کف‌ها که استاپ‌لاس خریداران در آن قرار دارد.
+              <br><strong>هانت استاپ‌ها (Sweep):</strong> نهنگ‌ها برای خرید ارزان، ابتدا قیمت را به زیر کف‌های قیمتی پرتاب می‌کنند تا استاپ‌های شما را فعال کنند (جمع‌آوری نقدینگی ارزان)، سپس جهش صعودی اصلی را آغاز می‌کنند!
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">Order Block</span> اوردر بلاک نهادی (OB)
+            </div>
+            <p>
+              آخرین کندل مخالف قبل از یک حرکت شتاب‌دار و سنگین نهادی. این کندل محل ورود صدها میلیون دلار پول هوشمند است. وقتی قیمت در آینده به این محدوده برمی‌گردد، به عنوان دیواری بتنی عمل کرده و پرتاب قیمتی سریعی می‌سازد.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">BOS & CHoCH</span> شکست ساختار و تغییر ماهیت بازار
+            </div>
+            <p>
+              <strong>BOS (Break of Structure):</strong> شکست سقف در روند صعودی یا شکست کف در روند نزولی که نشانه ادامه پرقدرت روند جاری است.
+              <br><strong>CHoCH (Change of Character):</strong> اولین علامت چرخش روند (مثلاً وقتی قیمت در یک روند نزولی برای نخستین بار سقف مهم قبلی را به بالا می‌شکند).
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">POC</span> Point of Control (مرکز ثقل حجم نوسان)
+            </div>
+            <p>
+              سطحی از قیمت در محدوده نوسان که بیشترین حجم دلاری معامله در آن تبادل شده است. قیمت تمایل عجیبی به گردش حول محور POC دارد و ورود در پولبک به POC بهترین نسبت سود به ریسک را می‌دهد.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">Premium vs Discount</span> ناحیه گران‌فروشی در برابر ارزان‌خری
+            </div>
+            <p>
+              رنج قیمتی به دو نیمه ۵۰٪ تقسیم می‌شود: بالای ۵۰٪ ناحیه <strong>Premium (گران‌فروشی)</strong> است و اسمارت‌مانی در این ناحیه فقط شورت می‌زند. زیر ۵۰٪ ناحیه <strong>Discount (ارزان‌خری)</strong> است که موسسات فقط در آن اقدام به خرید پله‌ای می‌کنند.
+            </p>
+          </div>
+        </div>
+
+        <!-- TAB 3: ORDERBOOK & VOLUME -->
+        <div class="edu-tab-content" id="eduOrderbook">
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">CVD</span> Cumulative Volume Delta (دلتا تجمعی حجم)
+            </div>
+            <p>
+              <strong>به زبان ساده:</strong> تفاضل حجم معاملات تهاجمی خرید با فروش. اگر قیمت بالا برود اما نمودار CVD نزولی باشد، یعنی تقاضای خریداران ظاهری است و نهنگ‌ها در حال فروش پنهانی دارایی خود به خریداران عجول هستند (واگرایی جذبی).
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">VWAP</span> Volume-Weighted Average Price (میانگین وزنی بر مبنای حجم)
+            </div>
+            <p>
+              میانگین قیمت وزنی با حجم معاملات؛ معیار استاندارد صندوق‌های بزرگ وال‌استریت. اگر قیمت بالای خط VWAP باشد، کنترل کامل بازار در دست خریداران است؛ اگر قیمت زیر آن برود، خرس‌ها بازار را در دست دارند.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">5-Level Depth</span> عمق دفتر سفارشات ۵ لایه (توبیت و ال‌بانک)
+            </div>
+            <p>
+              نمایش ۵ لایه برتر سفارشات لیمیت خرید (Bids) و فروش (Asks) بدون هیچ‌گونه معامله‌گری خودکار (حالت کاملاً Read-Only). با بررسی این جدول متوجه می‌شوید کدام صرافی دیوارهای خرید قدرتمندتری در کف دارد.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">OI & Funding</span> قراردادهای باز فیوچرز و نرخ فاندینگ
+            </div>
+            <p>
+              <strong>Open Interest (قراردادهای باز):</strong> مجموع ارزش قراردادهای باز در بازار مشتقه. رشد همزمان قیمت و OI نشانه تزریق نقدینگی واقعی جدید و سلامت روند است.
+              <br><strong>Funding Rate:</strong> کارمزد جابجا شده میان معامله‌گران لانگ و شورت. فاندینگ ریت به شدت مثبت به معنی طمع افراطی خریداران است که معمولاً با یک ریزش تند و لیکوئید کردن لانگ‌ها پاسخ داده می‌شود.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">Spoofing</span> شناسایی سفارشات فیک نهنگ‌ها
+            </div>
+            <p>
+              ترفند نهنگ‌ها در قرار دادن سفارشات بسیار بزرگ خرید یا فروش برای ترساندن تریدرها، و لغو ناگهانی آن اردرها قبل از لمس قیمت. ماژول آنتی‌اسپوفینگ این حرکات فریبنده را فیلتر می‌کند.
+            </p>
+          </div>
+        </div>
+
+        <!-- TAB 4: RISK MANAGEMENT & CALCULATOR -->
+        <div class="edu-tab-content" id="eduRisk">
+          <div class="edu-card" style="border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.04);">
+            <div class="edu-card-title" style="color: #f87171;">
+              <span>⚠️</span> چرا اهرم بالا بدون رعایت فرمول ریاضی، قاتل حساب شماست؟
+            </div>
+            <p>
+              اهرم (Leverage) سود و زیان شما را چندین برابر می‌کند. با اهرم ۲۰، اگر قیمت فقط ۵٪ خلاف پوزیشن شما حرکت کند، ۱۰۰٪ مارجین آن معامله از بین می‌رود. تریدرهای هوشمند ابتدا حد ضرر تکنیکال را مشخص می‌کنند، سپس لوریج را با فاصله استاپ تنظیم می‌نمایند، نه برعکس!
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span class="edu-tag">Kelly Criterion</span> فرمول ریاضی کِلی چیست؟
+            </div>
+            <p>
+              یک فرمول مشهور ریاضیاتی برای محاسبه دقیق درصد بهینه سرمایه در هر پوزیشن بر مبنای نرخ برد (Win Rate) و نسبت سود به زیان (R/R):
+              <br><strong style="font-family: monospace; color: #38bdf8; font-size: 1rem;">f* = (p × b - q) / b</strong>
+              <br>هدف این فرمول این است که حتی اگر با چند باخت پی‌درپی مواجه شدید، امکان صفر شدن موجودی کل حساب شما از نظر احتمالات ریاضی غیرممکن باشد.
+            </p>
+          </div>
+
+          <div class="edu-card" style="border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.04);">
+            <div class="edu-card-title" style="color: #38bdf8;">
+              <span>🎯</span> راهنمای سریع استفاده از ماشین‌حساب کِلی سایت:
+            </div>
+            <p>
+              ۱. وارد تب <strong>«🧮 ماشین‌حساب کِلی»</strong> شوید.<br>
+              ۲. دکمه <strong>«🎯 همگام‌سازی با ستاپ لحظه‌ای»</strong> را بزنید تا استاپ‌لاس و تارگت رمزارز جاری به صورت خودکار لود شود.<br>
+              ۳. موجودی دلاری حسابتان (مثلاً ۱۰۰۰ دلار) و درصد ریسک مورد نظرتان (مثلاً ۱٪ تا ۳٪) را بنویسید.<br>
+              ۴. ماشین‌حساب دقیقاً به شما می‌گوید: <strong>«چند دلار وارد معامله شوید، چه اهرمی بگذارید و چقدر سود یا زیان خواهید داشت»</strong> تا حتی ۱ سنت اضافه ریسک نکنید.
+            </p>
+          </div>
+        </div>
+
+        <!-- TAB 5: DASHBOARD MAP -->
+        <div class="edu-tab-content" id="eduDashboard">
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span>⚡</span> کارت ستاپ اسکالپ و سوئینگ (بالای صفحه)
+            </div>
+            <p>
+              خروجی آنی هوش مصنوعی شامل نقطه بهینه ورود، حد ضرر، سه تارگت سود، اهرم پیشنهادی و ساعت دقیق صدور به وقت ایران و UTC با مهلت انقضای معتبر.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span>🏛️</span> ماتریس لایه‌های هفت‌گانه نهادی (تب اول)
+            </div>
+            <p>
+              کالبدشکافی کامل وضعیت رمزارز در ۴ حوزه مجزا: ساختار خرد مارکت (Microstructure)، بازار مشتقه فیوچرز، ستاپ‌های اسمارت‌مانی ICT، و شاخص‌های کلاسیک با تفکیک امتیاز.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span>💎</span> بسته ۵ گانه دقت نهادی (تب اختصاصی)
+            </div>
+            <p>
+              ترکیب ۵ ماژول حرفه‌ای: هیت‌مپ سطوح لیکوئیدیشن اهرم‌ها، ردیاب نهنگ‌های بزرگ آن‌چین، فیوز تقویم اقتصادی آمریکا، دفتر آپشن‌های صرافی دریبیت، و آشکارساز سفارشات فیک اسپوفینگ.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span>🗺️</span> ماتریس لیدرها و ضریب آلفا (Alpha Matrix)
+            </div>
+            <p>
+              پیدا کردن رمزارزهایی که در ریزش‌های اخیر بیت‌کوین ریزش نکرده و مقاومت نشان داده‌اند. این ارزها پول هوشمند جذب کرده‌اند و در رالی بعدی چندین برابر رشد می‌کنند.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span>🦵</span> اسکنر دیتکشن‌های کوین‌لگز (Coinlegs)
+            </div>
+            <p>
+              اسکن زنده ۷۰ رمزارز برتر بازار برای کشف واگرایی‌های مثبت و منفی RSI، الگوهای هارمونیک و شکست‌های معتبر حجم نهادی HFT.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span>🦅</span> استخرهای دکس‌اسکرینر (DexScreener Pools)
+            </div>
+            <p>
+              ردیابی رمزارزهای مستعد رشد و میم‌کوین‌های پرنوسان در صرافی‌های غیرمتمرکز شبکه‌های سولانا، اتریوم و بیس با نسبت خرید به فروش زنده.
+            </p>
+          </div>
+
+          <div class="edu-card">
+            <div class="edu-card-title">
+              <span>⭐</span> ۶ فیلتر طلایی بدون نویز (Golden 6)
+            </div>
+            <p>
+              اعتبارسنجی نهایی با ۶ معیار سخت‌گیرانه جهت حذف ۹۵٪ سیگنال‌های فیک و تله‌های معاملاتی بازار.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

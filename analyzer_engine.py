@@ -1114,6 +1114,20 @@ class TechnicalAnalyzer:
 
 
 class CryptoTradingAgent:
+    @staticmethod
+    def _round_val(val: float) -> float:
+        if val is None:
+            return 0.0
+        val = float(val)
+        if abs(val) >= 100:
+            return round(val, 2)
+        elif abs(val) >= 1:
+            return round(val, 4)
+        elif abs(val) >= 0.001:
+            return round(val, 6)
+        else:
+            return round(val, 8)
+
     def __init__(self):
         self.fetcher = CryptoDataFetcher()
         self.analyzer = TechnicalAnalyzer()
@@ -1474,7 +1488,12 @@ class CryptoTradingAgent:
         now_utc = datetime.now(timezone.utc)
         generated_at_utc = now_utc.strftime("%Y-%m-%d %H:%M:%S UTC")
         valid_until_utc = (now_utc + timedelta(minutes=45)).strftime("%Y-%m-%d %H:%M:%S UTC")
-        validity_window_text = "۳۰ الی ۴۵ دقیقه از زمان صدور (تایم‌فریم ۱ و ۵ دقیقه)"
+
+        now_tehran = now_utc + timedelta(hours=3, minutes=30)
+        valid_tehran = now_tehran + timedelta(minutes=45)
+        generated_at_tehran = now_tehran.strftime("%H:%M:%S")
+        valid_until_tehran = valid_tehran.strftime("%H:%M:%S")
+        validity_window_text = f"۳۰ الی ۴۵ دقیقه (تا ساعت {valid_until_tehran} به وقت ایران)"
 
         ref_ta = ta_5m if ta_5m else (ta_15m if ta_15m else {})
         if not ref_ta:
@@ -1484,6 +1503,8 @@ class CryptoTradingAgent:
                 "message": "داده‌های تایم‌فریم ۱ و ۵ دقیقه ناکافی است.",
                 "generated_at_utc": generated_at_utc,
                 "valid_until_utc": valid_until_utc,
+                "generated_at_tehran": generated_at_tehran,
+                "valid_until_tehran": valid_until_tehran,
                 "validity_window_text": validity_window_text
             }
 
@@ -1531,23 +1552,23 @@ class CryptoTradingAgent:
             
             fvg = smc.get("nearest_fvg")
             if fvg and fvg.get("type") == "BULLISH_FVG" and fvg.get("top") < price:
-                entry_low = round(fvg["bottom"], 6)
-                entry_high = round(min(price, fvg["top"]), 6)
+                entry_low = self._round_val(fvg["bottom"])
+                entry_high = self._round_val(min(price, fvg["top"]))
             else:
-                entry_low = round(min(price, ema20), 6)
-                entry_high = round(price, 6)
+                entry_low = self._round_val(min(price, ema20))
+                entry_high = self._round_val(price)
                 
             entry_str = f"{entry_low} - {entry_high}"
             
             # Tight 1m/5m scalp stop loss
             sl_distance = max(1.15 * atr, price * 0.0035)
-            sl = round(max(nearest_sup * 0.999, price - sl_distance), 6)
+            sl = self._round_val(max(nearest_sup * 0.999, price - sl_distance))
             risk = price - sl
-            if risk <= 0: risk = price * 0.005; sl = round(price - risk, 6)
+            if risk <= 0: risk = price * 0.005; sl = self._round_val(price - risk)
             
-            tp1 = round(price + 1.2 * risk, 6) # Quick scalp ~0.5-0.8%
-            tp2 = round(price + 2.2 * risk, 6) # Target 2 ~1.2-1.8%
-            tp3 = round(max(price + 3.2 * risk, smc.get("bsl_pool_target", price * 1.025)), 6)
+            tp1 = self._round_val(price + 1.2 * risk) # Quick scalp ~0.5-0.8%
+            tp2 = self._round_val(price + 2.2 * risk) # Target 2 ~1.2-1.8%
+            tp3 = self._round_val(max(price + 3.2 * risk, smc.get("bsl_pool_target", price * 1.025)))
             confidence = "90%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "84%"
             
             triggers = [
@@ -1565,22 +1586,22 @@ class CryptoTradingAgent:
             
             fvg = smc.get("nearest_fvg")
             if fvg and fvg.get("type") == "BEARISH_FVG" and fvg.get("bottom") > price:
-                entry_low = round(max(price, fvg["bottom"]), 6)
-                entry_high = round(fvg["top"], 6)
+                entry_low = self._round_val(max(price, fvg["bottom"]))
+                entry_high = self._round_val(fvg["top"])
             else:
-                entry_low = round(price, 6)
-                entry_high = round(max(price, ema20), 6)
+                entry_low = self._round_val(price)
+                entry_high = self._round_val(max(price, ema20))
                 
             entry_str = f"{entry_low} - {entry_high}"
             
             sl_distance = max(1.15 * atr, price * 0.0035)
-            sl = round(min(nearest_res * 1.001, price + sl_distance), 6)
+            sl = self._round_val(min(nearest_res * 1.001, price + sl_distance))
             risk = sl - price
-            if risk <= 0: risk = price * 0.005; sl = round(price + risk, 6)
+            if risk <= 0: risk = price * 0.005; sl = self._round_val(price + risk)
             
-            tp1 = round(price - 1.2 * risk, 6)
-            tp2 = round(price - 2.2 * risk, 6)
-            tp3 = round(min(price - 3.2 * risk, smc.get("ssl_pool_target", price * 0.975)), 6)
+            tp1 = self._round_val(price - 1.2 * risk)
+            tp2 = self._round_val(price - 2.2 * risk)
+            tp3 = self._round_val(min(price - 3.2 * risk, smc.get("ssl_pool_target", price * 0.975)))
             confidence = "88%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "82%"
             
             triggers = [
@@ -1594,13 +1615,13 @@ class CryptoTradingAgent:
             action = "WAIT / NO SCALP (صبر برای شفافیت روند)"
             action_code = "WAIT"
             direction = "NEUTRAL"
-            entry_str = f"محدوده رنج بین {round(nearest_sup, 6)} تا {round(nearest_res, 6)}"
-            sl = round(nearest_sup * 0.995, 6)
+            entry_str = f"محدوده رنج بین {self._round_val(nearest_sup)} تا {self._round_val(nearest_res)}"
+            sl = self._round_val(nearest_sup * 0.995)
             risk = price - sl
             if risk <= 0: risk = price * 0.005
-            tp1 = round(nearest_res, 6)
-            tp2 = round(nearest_res * 1.01, 6)
-            tp3 = round(nearest_res * 1.02, 6)
+            tp1 = self._round_val(nearest_res)
+            tp2 = self._round_val(nearest_res * 1.01)
+            tp3 = self._round_val(nearest_res * 1.02)
             confidence = "50%"
             reason_chop = "نوسان مرده و اسپرد فشرده بازار" if is_dead_chop else "فقدان همسویی ساختار ۱ و ۵ دقیقه یا قرارگیری RSI در منطقه ۵۰/۵۰"
             triggers = [
@@ -1633,6 +1654,8 @@ class CryptoTradingAgent:
             "warning": warning,
             "generated_at_utc": generated_at_utc,
             "valid_until_utc": valid_until_utc,
+            "generated_at_tehran": generated_at_tehran,
+            "valid_until_tehran": valid_until_tehran,
             "validity_window_text": validity_window_text
         }
 
@@ -1640,7 +1663,11 @@ class CryptoTradingAgent:
         now_utc = datetime.now(timezone.utc)
         generated_at_utc = now_utc.strftime("%Y-%m-%d %H:%M:%S UTC")
         valid_until_utc = (now_utc + timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S UTC")
-        validity_window_text = "۳ الی ۷ روز کاری (پوزیشن میان‌مدت سوئینگ)"
+
+        now_tehran = now_utc + timedelta(hours=3, minutes=30)
+        generated_at_tehran = now_tehran.strftime("%Y-%m-%d %H:%M (ایران)")
+        valid_until_tehran = (now_tehran + timedelta(days=5)).strftime("%Y-%m-%d (ایران)")
+        validity_window_text = f"۳ الی ۷ روز کاری (تا {valid_until_tehran})"
 
         if not ta_4h:
             return {
@@ -1740,6 +1767,8 @@ class CryptoTradingAgent:
             "invalidation_condition": invalidation,
             "generated_at_utc": generated_at_utc,
             "valid_until_utc": valid_until_utc,
+            "generated_at_tehran": generated_at_tehran,
+            "valid_until_tehran": valid_until_tehran,
             "validity_window_text": validity_window_text
         }
 
