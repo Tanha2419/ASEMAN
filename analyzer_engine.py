@@ -27,6 +27,30 @@ class CryptoDataFetcher:
         })
         self._fng_cache = {}
 
+    def fetch_binance_ticker(self, symbol: str) -> Optional[Dict[str, Any]]:
+        try:
+            # Binance Official Public Data Cluster (zero geo-block, global tier-1 liquidity benchmark)
+            url = f"https://data-api.binance.vision/api/v3/ticker/24hr?symbol={symbol}"
+            res = self.session.get(url, timeout=3.5)
+            if res.status_code == 200:
+                data = res.json()
+                if "lastPrice" in data and float(data["lastPrice"]) > 0:
+                    return {
+                        "source": "Binance",
+                        "symbol": data["symbol"],
+                        "last_price": float(data["lastPrice"]),
+                        "price_change_pct": round(float(data.get("priceChangePercent", 0)), 2),
+                        "high_24h": float(data.get("highPrice", 0)),
+                        "low_24h": float(data.get("lowPrice", 0)),
+                        "volume_base": float(data.get("volume", 0)),
+                        "volume_quote": float(data.get("quoteVolume", 0)),
+                        "bid": float(data.get("bidPrice", 0)),
+                        "ask": float(data.get("askPrice", 0)),
+                    }
+        except Exception:
+            pass
+        return None
+
     def fetch_mexc_ticker(self, symbol: str) -> Optional[Dict[str, Any]]:
         try:
             url = f"https://api.mexc.com/api/v3/ticker/24hr?symbol={symbol}"
@@ -77,16 +101,22 @@ class CryptoDataFetcher:
         return None
 
     def fetch_ticker(self, symbol: str) -> Optional[Dict[str, Any]]:
+        # Tier 1 Priority: Binance Global (Deepest global spot & futures benchmark)
+        t = self.fetch_binance_ticker(symbol)
+        if t: return t
+        # Tier 2 Fallback: MEXC (Huge catalog of 2,500+ altcoins & early gems)
         t = self.fetch_mexc_ticker(symbol)
         if t: return t
+        # Tier 3 Fallback: Binance US
         t = self.fetch_binance_us_ticker(symbol)
         if t: return t
         return None
 
     def fetch_klines(self, symbol: str, interval: str = "15m", limit: int = 100) -> List[List[float]]:
+        # Tier 1: Try Binance Global (data-api.binance.vision)
         try:
-            url = f"https://api.mexc.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
-            res = self.session.get(url, timeout=5)
+            url = f"https://data-api.binance.vision/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
+            res = self.session.get(url, timeout=3.5)
             if res.status_code == 200:
                 data = res.json()
                 if isinstance(data, list) and len(data) > 0:
@@ -94,9 +124,21 @@ class CryptoDataFetcher:
         except Exception:
             pass
 
+        # Tier 2 Fallback: Try MEXC
+        try:
+            url = f"https://api.mexc.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
+            res = self.session.get(url, timeout=4)
+            if res.status_code == 200:
+                data = res.json()
+                if isinstance(data, list) and len(data) > 0:
+                    return [[int(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), float(k[5])] for k in data]
+        except Exception:
+            pass
+
+        # Tier 3 Fallback: Binance US
         try:
             url = f"https://api.binance.us/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
-            res = self.session.get(url, timeout=5)
+            res = self.session.get(url, timeout=4)
             if res.status_code == 200:
                 data = res.json()
                 if isinstance(data, list) and len(data) > 0:
@@ -107,14 +149,29 @@ class CryptoDataFetcher:
         return []
 
     def fetch_orderbook(self, symbol: str, limit: int = 20) -> Dict[str, Any]:
+        # Tier 1: Binance Depth
         try:
-            url = f"https://api.mexc.com/api/v3/depth?symbol={symbol}&limit={limit}"
-            res = self.session.get(url, timeout=4)
+            url = f"https://data-api.binance.vision/api/v3/depth?symbol={symbol}&limit={limit}"
+            res = self.session.get(url, timeout=3.0)
             if res.status_code == 200:
                 data = res.json()
                 bids = [[float(b[0]), float(b[1])] for b in data.get("bids", [])]
                 asks = [[float(a[0]), float(a[1])] for a in data.get("asks", [])]
-                return self._calculate_depth_metrics(bids, asks)
+                if bids and asks:
+                    return self._calculate_depth_metrics(bids, asks)
+        except Exception:
+            pass
+
+        # Tier 2 Fallback: MEXC Depth
+        try:
+            url = f"https://api.mexc.com/api/v3/depth?symbol={symbol}&limit={limit}"
+            res = self.session.get(url, timeout=3.5)
+            if res.status_code == 200:
+                data = res.json()
+                bids = [[float(b[0]), float(b[1])] for b in data.get("bids", [])]
+                asks = [[float(a[0]), float(a[1])] for a in data.get("asks", [])]
+                if bids and asks:
+                    return self._calculate_depth_metrics(bids, asks)
         except Exception:
             pass
 

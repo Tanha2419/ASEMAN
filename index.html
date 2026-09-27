@@ -3727,6 +3727,15 @@
             pill.innerText = `${ch >= 0 ? '+' : ''}${ch.toFixed(2)}% (24h)`;
             pill.className = `price-change-pill ${ch >= 0 ? 'pill-green' : 'pill-red'}`;
           }
+          if (data.source) {
+            const catEl = document.getElementById('coinCategory');
+            if (catEl) {
+              const srcLabel = data.source === 'Binance' ? 'Binance (بزرگترین نقدینگی جهانی)' : data.source;
+              if (!catEl.innerText.includes(data.source)) {
+                catEl.innerHTML = catEl.innerHTML.replace(/صرافی مرجع: .*/, 'صرافی مرجع: ' + srcLabel);
+              }
+            }
+          }
           lastKnownPrice = newPrice;
           document.title = `${formatPrice(newPrice)} | ${currentSymbol} - ربات ترید هوشمند آسمان`;
         }
@@ -4630,7 +4639,8 @@
       // Hero Identity
       document.getElementById('coinBadge').innerText = base_coin.slice(0, 4);
       document.getElementById('coinTitle').innerHTML = `${fundamentals.name || base_coin} <span style="color: var(--text-muted); font-size: 1rem;" id="coinSymbol">${symbol}</span> <span class="rank-tag">${fundamentals.rank ? 'رتبه #' + fundamentals.rank : 'Crypto'}</span>`;
-      document.getElementById('coinCategory').innerText = `دسته: ${fundamentals.categories ? fundamentals.categories.join('، ') : 'ارز دیجیتال'} | منبع زنده: ${ticker.source || 'MEXC'}`;
+      const srcLabel = ticker.source === 'Binance' ? 'Binance (بزرگترین نقدینگی جهانی)' : (ticker.source || 'MEXC');
+      document.getElementById('coinCategory').innerText = `دسته: ${fundamentals.categories ? fundamentals.categories.join('، ') : 'ارز دیجیتال'} | صرافی مرجع: ${srcLabel}`;
       
       const priceEl = document.getElementById('currentPrice');
       priceEl.innerText = formatPrice(price);
