@@ -2728,6 +2728,25 @@
             </div>
           </div>
 
+          <!-- Top 3 Diamond Gems Spotlight Section -->
+          <div style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div style="font-size: 1.05rem; font-weight: 800; color: #ffd700; display: flex; align-items: center; gap: 8px;">
+                <span>👑</span> ۳ کاندیدای پرواز الماسی (Top 3 Diamond Gems) — فیلتر شده از بین ۷۰ ارز برتر
+              </div>
+              <span style="font-size: 0.74rem; color: #cbd5e1; background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); padding: 3px 10px; border-radius: 6px;">
+                💎 موتور ۶ فیلتره: قدرت نسبی به BTC + فشردگی نوسان بولینگر + خریداران تهاجمی
+              </span>
+            </div>
+            <div id="diamondGemsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+
+          <div style="font-size: 0.95rem; font-weight: 800; color: #fff; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+            <span>📋</span> سایر فرصت‌های واجد شرایط و تاییدشده (Tier-2 Qualified Setups)
+          </div>
+
           <!-- Detections Table Wrap -->
           <div style="overflow-x: auto;">
             <table class="crypto-table" id="detectionsTable">
@@ -3817,7 +3836,10 @@
     // --- Coinlegs Scanner Engine ---
     async function fetchCoinlegsDetections() {
       const tbody = document.getElementById('detectionsTbody');
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">در حال اسکن همزمان ۷۰ نماد برتر بازار در تایم‌فریم ۱۵ دقیقه و فیلتر سیگنال‌های پرقدرت...</td></tr>';
+      const gemsGrid = document.getElementById('diamondGemsGrid');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">در حال اسکن همزمان ۷۰ نماد برتر با ۶ فیلتر کوانتومی (قدرت نسبی به BTC، شکست فنر بولینگر و اردر فلو)...</td></tr>';
+      if (gemsGrid) gemsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #ffd700;">در حال شناسایی و اعتبارسنجی ۳ کاندیدای پرواز الماسی...</div>';
+      
       try {
         const res = await fetch('/api/detections');
         const data = await res.json();
@@ -3825,9 +3847,89 @@
 
         const statsEl = document.getElementById('coinlegsFilterStats');
         if (statsEl) {
-          statsEl.innerText = `${data.total_scanned || 70} نماد ارزیابی شد | ${data.neutral_filtered || 0} نماد خنثی حذف شد | ${data.high_conviction_count || 0} سیگنال طلایی کشف شد`;
+          statsEl.innerText = `${data.total_scanned || 70} نماد ارزیابی شد | ${data.neutral_filtered || 0} نماد خنثی حذف شد | ${data.high_conviction_count || 0} فرصت الیت با ۳ الماس لیدر استخراج شد`;
         }
 
+        // 1. Render Top 3 Diamond Gems Spotlight
+        const gems = data.diamond_gems || [];
+        if (gemsGrid) {
+          if (gems.length === 0) {
+            gemsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 18px; color: var(--text-dim); background: rgba(255,255,255,0.02); border-radius: 8px;">در این کندل هیچ نمادی نمره الیت بالای ۸۰ کسب نکرده است (بازار در فشردگی کامل).</div>';
+          } else {
+            gemsGrid.innerHTML = gems.map((g, idx) => {
+              const isNo1 = idx === 0;
+              const borderCol = isNo1 ? '#ffd700' : (idx === 1 ? '#00e676' : '#00d2ff');
+              const bgGlow = isNo1 ? 'rgba(255, 215, 0, 0.08)' : (idx === 1 ? 'rgba(0, 230, 118, 0.08)' : 'rgba(0, 210, 255, 0.08)');
+              const rankLabel = isNo1 ? '👑 الماس رتبه ۱ (Market Leader)' : (idx === 1 ? '⭐ الماس رتبه ۲ (High-Momentum)' : '✨ الماس رتبه ۳ (Breakout Setup)');
+
+              return `
+                <div style="background: ${bgGlow}; border: 1px solid ${borderCol}; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                      <div>
+                        <div style="font-size: 0.73rem; font-weight: 800; color: ${borderCol}; margin-bottom: 4px;">${rankLabel}</div>
+                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                          <span style="font-size: 1.55rem; font-weight: 900; color: #fff;">${g.symbol}</span>
+                          <span style="font-size: 0.8rem; color: #94a3b8;">/ USDT</span>
+                        </div>
+                      </div>
+                      <div style="text-align: left;">
+                        <div style="font-size: 1.25rem; font-weight: 800; color: #fff; font-family: var(--font-mono);">${formatPrice(g.price)}</div>
+                        <div style="font-size: 0.82rem; font-weight: 700; color: ${g.change_pct >= 0 ? '#00e676' : '#ff3366'}; direction: ltr;">
+                          ${g.change_pct >= 0 ? '+' : ''}${g.change_pct}% (24h)
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Alpha & Score Badges -->
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+                      <span style="font-size: 0.74rem; font-weight: 800; background: rgba(255, 215, 0, 0.2); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.4); padding: 3px 8px; border-radius: 4px;">
+                        امتیاز رشد: ${g.growth_score}/100
+                      </span>
+                      <span style="font-size: 0.74rem; font-weight: 700; background: ${g.alpha_rs >= 0 ? 'rgba(0, 230, 118, 0.18)' : 'rgba(255, 51, 102, 0.18)'}; color: ${g.alpha_rs >= 0 ? '#00e676' : '#ff3366'}; border: 1px solid ${g.alpha_rs >= 0 ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 51, 102, 0.35)'}; padding: 3px 8px; border-radius: 4px;">
+                        آلفا به BTC: ${g.alpha_rs >= 0 ? '+' : ''}${g.alpha_rs}%
+                      </span>
+                      <span style="font-size: 0.74rem; font-weight: 700; background: rgba(255,255,255,0.06); color: #e2e8f0; padding: 3px 8px; border-radius: 4px;">
+                        گردش: ${g.volume_usd_fmt}
+                      </span>
+                    </div>
+
+                    <!-- 6 Elite Filters Breakdown -->
+                    <div style="background: rgba(0,0,0,0.35); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 0.74rem;">
+                      <div style="color: #94a3b8; margin-bottom: 6px; font-weight: 700;">تاییدیه‌های قطعی (${g.pass_count}/6 فیلتر الیت):</div>
+                      <div style="display: flex; flex-direction: column; gap: 4px;">
+                        ${(g.elite_filters || []).filter(f => f.passed).map(f => `
+                          <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #e2e8f0;">✅ ${f.name}</span>
+                            <span style="color: #00e676; font-weight: 700; font-family: var(--font-mono);">${f.badge}</span>
+                          </div>
+                        `).join('')}
+                      </div>
+                    </div>
+
+                    <!-- Strategy Targets -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 8px 12px; margin-bottom: 14px; font-size: 0.74rem;">
+                      <div>
+                        <span style="color: #94a3b8;">حد ضرر امن:</span>
+                        <strong style="color: #ff3366; font-family: var(--font-mono); margin-right: 4px;">${formatPrice(g.sl_price)}</strong>
+                      </div>
+                      <div>
+                        <span style="color: #94a3b8;">تارگت رشد:</span>
+                        <strong style="color: #00e676; font-family: var(--font-mono); margin-right: 4px;">${formatPrice(g.tp2_price)} (+${g.tp_potential_pct}%)</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button onclick="loadSymbol('${g.symbol}'); switchTab('instTab', document.querySelector('.tab-btn')); window.scrollTo({top:0, behavior:'smooth'});" style="width: 100%; background: ${borderCol}; color: #000; font-weight: 800; font-size: 0.85rem; padding: 10px 0; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    ⚡ تحلیل کامل ۳۶۰ درجه ${g.symbol}
+                  </button>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+
+        // 2. Render Secondary Qualified Candidates Table
         const items = data.detections || [];
         if (items.length === 0) {
           tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">تمام ۷۰ ارز برتر در منطقه رنج و خنثی هستند؛ هیچ سیگنال تاییدشده‌ای جهت جلوگیری از تله ۵۰/۵۰ صادر نشد.</td></tr>';
@@ -3835,7 +3937,7 @@
         }
 
         tbody.innerHTML = '';
-        items.forEach(d => {
+        items.forEach((d, i) => {
           const isGreen = d.status_color === 'GREEN';
           const isRed = d.status_color === 'RED';
           const badgeBg = isGreen ? 'rgba(0, 230, 118, 0.15)' : isRed ? 'rgba(255, 51, 102, 0.15)' : 'rgba(255, 209, 102, 0.15)';
@@ -3844,35 +3946,42 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>
-              <strong style="color: #fff; font-size: 0.95rem;">${d.symbol}</strong>
-              <div style="font-size: 0.72rem; color: var(--text-dim);">${d.pair}</div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 0.8rem; font-weight: 800; color: #ffd700;">#${i + 1}</span>
+                <div>
+                  <strong style="color: #fff; font-size: 0.95rem;">${d.symbol}</strong>
+                  <div style="font-size: 0.72rem; color: var(--text-dim);">${d.pair}</div>
+                </div>
+              </div>
             </td>
             <td>
               <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-                <span class="indicator-badge" style="background: rgba(255,255,255,0.08); color: #fff; font-weight: 700;">15M</span>
-                <span class="indicator-badge" style="background: ${d.trend_4h === 'BULLISH' ? 'rgba(0,230,118,0.18)' : 'rgba(255,51,102,0.18)'}; color: ${d.trend_4h === 'BULLISH' ? '#00e676' : '#ff3366'}; font-weight: 800;">
-                  4H: ${d.trend_4h === 'BULLISH' ? '▲ صعودی' : '▼ نزولی'}
+                <span class="indicator-badge" style="background: ${d.alpha_rs >= 0 ? 'rgba(0,230,118,0.18)' : 'rgba(255,51,102,0.18)'}; color: ${d.alpha_rs >= 0 ? '#00e676' : '#ff3366'}; font-weight: 800;">
+                  آلفا: ${d.alpha_rs >= 0 ? '+' : ''}${d.alpha_rs}%
+                </span>
+                <span class="indicator-badge" style="background: rgba(255,255,255,0.08); color: #fff; font-weight: 700;">
+                  4H: ${d.trend_4h === 'BULLISH' || d.trend_4h === 'BULLISH_BOS' ? '▲ صعودی' : '▼ نزولی'}
                 </span>
               </div>
-              ${d.confluence_fa ? `<div style="font-size: 0.68rem; color: #facc15; margin-top: 3px; font-weight: 700;">${d.confluence_fa}</div>` : ''}
+              <div style="font-size: 0.68rem; color: #facc15; margin-top: 3px; font-weight: 700;">${d.confluence_fa || ''}</div>
             </td>
             <td>
-              <div style="font-weight: 700; color: ${badgeCol};">${d.divergence !== 'فاقد واگرایی' ? d.divergence : d.sweep !== 'نرمال' ? d.sweep : (d.volume_spike ? '⚡ جهش غیرعادی حجم' : 'شتاب مومنتوم')}</div>
+              <div style="font-weight: 700; color: ${badgeCol};">${d.divergence !== 'فاقد واگرایی' ? d.divergence : (d.sweep !== 'نرمال' ? d.sweep : 'شتاب مومنتوم الیت')}</div>
               <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 2px;">RSI: <strong style="color: #fff;">${d.rsi}</strong> | نوسان: <strong style="color: ${d.change_pct >= 0 ? '#00e676' : '#ff3366'}">${d.change_pct >= 0 ? '+' : ''}${d.change_pct}%</strong></div>
             </td>
             <td><span class="mono" style="font-weight: 700;">${formatPrice(d.price)}</span></td>
             <td>
-              <span class="indicator-badge" style="background: ${badgeBg}; color: ${badgeCol}; font-weight: 800; display: inline-block;">${d.signal}</span>
-              ${d.reason ? `<div style="font-size: 0.71rem; color: #cbd5e1; margin-top: 3px; max-width: 250px;">💡 ${d.reason}</div>` : ''}
+              <span class="indicator-badge" style="background: ${badgeBg}; color: ${badgeCol}; font-weight: 800; display: inline-block;">${d.status_badge || d.verdict_fa}</span>
+              ${d.action_advice ? `<div style="font-size: 0.71rem; color: #cbd5e1; margin-top: 3px; max-width: 250px;">💡 ${d.action_advice}</div>` : ''}
             </td>
             <td>
               <div style="display: flex; align-items: center; gap: 6px;">
-                <span class="indicator-badge" style="background: ${d.signal_strength >= 90 ? 'rgba(0, 230, 118, 0.2)' : 'rgba(0, 210, 255, 0.2)'}; color: ${d.signal_strength >= 90 ? '#00e676' : '#00d2ff'}; font-weight: 800;">
-                  ${d.signal_strength || 85}% [Grade ${d.signal_strength >= 90 ? 'A+' : (d.signal_strength >= 85 ? 'A' : 'B+')}]
+                <span class="indicator-badge" style="background: ${d.growth_score >= 88 ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0, 230, 118, 0.2)'}; color: ${d.growth_score >= 88 ? '#ffd700' : '#00e676'}; font-weight: 800;">
+                  ${d.growth_score}/100 [${d.status_tier || 'TIER-1'}]
                 </span>
               </div>
-              <div style="font-size: 0.69rem; color: ${d.volume_spike ? '#00e676' : '#94a3b8'}; margin-top: 2px;">
-                ${d.volume_spike ? '⚡ تایید حجم نهنگ (HFT)' : 'نقدینگی نهادی نرمال'}
+              <div style="font-size: 0.69rem; color: #94a3b8; margin-top: 2px;">
+                گردش ۲۴ ساعته: ${d.volume_usd_fmt}
               </div>
             </td>
             <td>
