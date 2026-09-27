@@ -4381,7 +4381,7 @@
       if (overlay) overlay.style.display = 'flex';
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 45000); // ۱۵ ثانیه کم بود؛ با موازی‌سازی معمولا زیر ۵ ثانیه است ولی حاشیه امن می‌گذاریم
+        const timeoutId = setTimeout(() => controller.abort(), 35000);
         const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symbol)}`, { signal: controller.signal });
         clearTimeout(timeoutId);
         const data = await res.json();
@@ -4392,39 +4392,39 @@
           return;
         } else {
           showToast(data.error || 'خطا در واکشی اطلاعات ارز');
+          showConnectionNotice(data.error || 'پاسخ ناموفق از سرور', symbol);
         }
       } catch (err) {
         console.warn('API fetch notice:', err);
-        // Show non-blocking informational guide
-        showConnectionNotice(err.message);
-        // Load high-fidelity fallback data so the dashboard stays 100% interactive
-        const fallback = generateOfflineFallback(symbol);
-        currentAnalysis = fallback;
-        renderDashboard(fallback);
+        showConnectionNotice(err.message || 'عدم دریافت پاسخ از سرور', symbol);
+        showToast('خطا در دریافت داده زنده. لطفاً اینترنت را بررسی کرده و روی تلاش مجدد کلیک کنید.');
       } finally {
         if (overlay) overlay.style.display = 'none';
       }
     }
 
-    function showConnectionNotice(errMsg) {
+    function showConnectionNotice(errMsg, sym) {
       let banner = document.getElementById('connectionNoticeBanner');
       if (!banner) {
         banner = document.createElement('div');
         banner.id = 'connectionNoticeBanner';
-        banner.style.cssText = 'background: rgba(255, 193, 7, 0.15); border: 1px solid rgba(255, 193, 7, 0.45); color: #ffd166; padding: 12px 18px; border-radius: 8px; margin: 12px 16px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 1000;';
+        banner.style.cssText = 'background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.45); color: #fca5a5; padding: 12px 18px; border-radius: 8px; margin: 12px 16px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 1000;';
         const topEl = document.querySelector('.main-wrapper') || document.body;
         topEl.insertBefore(banner, topEl.firstChild);
       }
       banner.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.4rem;">💡</span>
+          <span style="font-size: 1.4rem;">⚠️</span>
           <div>
-            <strong>راهنمای اتصال به سرور زنده:</strong>
-            <span style="color: #fff; margin-right: 6px;">اگر در تب «مشاهده فایل (Viewer)» هستید، لطفاً در بالای صفحه آرنا روی تب <strong>Website (پیش‌نمایش زنده)</strong> کلیک کنید تا مستقیماً به سرور پایتون متصل شوید.</span>
-            <div style="font-size: 0.75rem; color: #aaa; margin-top: 3px;">وضعیت فعلی: حالت پیش‌نمایش آفلاین با داده‌های اخیر بازار فعال شد تا تمامی بخش‌ها قابل بررسی باشند.</div>
+            <strong style="color: #ef4444;">عدم دریافت داده زنده از سرور:</strong>
+            <span style="color: #fff; margin-right: 6px;">ارتباط با سرور برای نماد ${sym || 'BTC'} برقرار نشد یا با تاخیر مواجه گردید.</span>
+            <div style="font-size: 0.75rem; color: #cbd5e1; margin-top: 3px;">سایت طبق دستور صریح شما از نمایش قیمت‌ها یا داده‌های ساختگی و حدسی خودداری می‌کند.</div>
           </div>
         </div>
-        <button onclick="hideConnectionNotice()" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem;">بستن</button>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button onclick="loadSymbol('${sym || 'BTC'}'); hideConnectionNotice();" style="background: #38bdf8; border: none; color: #000; font-weight: 700; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.8rem;">🔄 تلاش مجدد</button>
+          <button onclick="hideConnectionNotice()" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.75rem;">بستن</button>
+        </div>
       `;
       banner.style.display = 'flex';
     }
@@ -4432,89 +4432,6 @@
     function hideConnectionNotice() {
       const banner = document.getElementById('connectionNoticeBanner');
       if (banner) banner.style.display = 'none';
-    }
-
-    function generateOfflineFallback(rawSym) {
-      const sym = (rawSym || 'BTC').toUpperCase();
-      const p = sym === 'BTC' ? 82500.0 : (sym === 'ETH' ? 2450.0 : (sym === 'SOL' ? 145.0 : 1.0));
-      return {
-        success: true,
-        symbol: `${sym}USDT`,
-        base_coin: sym,
-        price: p,
-        ticker: {
-          last_price: p,
-          price_change_percent_24h: 1.25,
-          high_24h: p * 1.025,
-          low_24h: p * 0.98,
-          quote_volume_24h: 850000000
-        },
-        scores_3d: {
-          direction_score: 90,
-          entry_score: 88,
-          risk_score: 96,
-          composite_confidence: 65,
-          grade: 'A',
-          status_fa: 'صعودی با تاییدیه سازمانی'
-        },
-        market_sentiment: {
-          value: 80,
-          classification: 'Extreme Greed',
-          classification_fa: 'طمع شدید (Extreme Greed) - هشدار سقف‌های قیمتی و سیو سود',
-          source: 'CoinMarketCap (Live)'
-        },
-        timeframes: {
-          '15m': { rsi: 44.5, macd: { histogram: 0.5 }, ema_trend: 'Bullish' },
-          '4h': { rsi: 52.0, macd: { histogram: 1.2 }, ema_trend: 'Bullish', fib: { p618: p * 0.98 } }
-        },
-        smc: {
-          fvgs: [{ type: 'BULLISH', top: p * 1.005, bottom: p * 0.995, status: 'FRESH' }],
-          sweeps: [{ type: 'BSL', price: p * 1.015, label: 'BSL Sweep' }]
-        },
-        scalp_setup: {
-          action: 'BUY',
-          direction: 'LONG',
-          entry_price: p,
-          stop_loss: p * 0.985,
-          tp1: p * 1.015,
-          tp2: p * 1.03
-        },
-        golden_six: {
-          success: true,
-          symbol: sym,
-          direction: 'LONG',
-          current_price: p,
-          pass_count: 6,
-          total_filters: 6,
-          score_pct: 100.0,
-          grade: 'AAA',
-          verdict_fa: 'سیگنال طلایی سازمانی بی‌نقص (Institutional Golden Clean)',
-          action_fa: 'ورود قطعی مجاز است. تمامی ۶ فیلتر جریان سفارشات و آنچین سبز هستند و ۹۰٪ تله‌های رایج فیلتر شده‌اند.',
-          color: '#00e676',
-          is_valid_trade: true,
-          filters: [
-            { id: 1, name: 'Funding Rate + Open Interest', name_fa: 'فاندینگ ریت و اوپن اینترست (مشتقات)', passed: true, status: 'PASS', value_display: 'FR: +0.0080% | OI: $2.47B', description: 'فاندینگ ریت در سطح نرمال/خنثی (+0.0080%) قرار دارد و بازار دچار حباب اهرمی نیست.', importance: 'حذف تله‌های ناشی از Over-leverage و آبشار لیکوئیدیشن' },
-            { id: 2, name: 'Exchange Net Flow', name_fa: 'خروج/ورود خالص نهنگ‌ها به صرافی', passed: true, status: 'PASS', value_display: '-1,280 BTC (24h Net Flow)', description: 'جریان خالص صرافی‌ها منفی است؛ نهنگ‌ها در حال برداشت به کیف‌پول‌های سرد هستند.', importance: 'راستی‌آزمایی آنچین جهت رد سیگنال‌های فیک خریداران خرد' },
-            { id: 3, name: 'Stablecoin Supply Ratio (SSR)', name_fa: 'نسبت قدرت خرید استیبل‌کوین‌ها (SSR)', passed: true, status: 'PASS', value_display: 'SSR: 5.63 (Stables: $289.1B)', description: 'شاخص SSR معادل 5.63 است؛ حجم نقدینگی استیبل‌کوین‌ها در حاشیه بازار برای حمایت بسیار بالاست.', importance: 'سنجش مهمات نقدی آماده ورود به بازار' },
-            { id: 4, name: 'BTC Dominance (BTC.D)', name_fa: 'دامیننس بیت‌کوین و رژیم بازار', passed: true, status: 'PASS', value_display: 'BTC.D: 58.84%', description: 'دامیننس بیت‌کوین در سطح قدرتمند قرار دارد و تمرکز سرمایه روی لیدر بازار است.', importance: 'تعیین رژیم جریان سرمایه بین بیت‌کوین و آلت‌کوین‌ها' },
-            { id: 5, name: 'Liquidation Heatmap', name_fa: 'آهنربای استخرهای لیکوئیدیشن', passed: true, status: 'PASS', value_display: `Long Liq: $${Math.round(p*0.985).toLocaleString()} | Short Liq: $${Math.round(p*1.015).toLocaleString()}`, description: 'قیمت در بالای کلاستر متراکم لیکوئیدیشن لانگ به عنوان دیواره حمایتی قرار دارد.', importance: 'عدم ترید در تله‌های نقدینگی مارکت‌میکر' },
-            { id: 6, name: 'MVRV Z-Score', name_fa: 'ارزش بازار به ارزش تحقق‌یافته (MVRV)', passed: true, status: 'PASS', value_display: 'MVRV: 2.26 | Z-Score: +1.83', description: 'شاخص MVRV در محدوده نرمال قرار دارد و بیت‌کوین فرسنگ‌ها با حباب سقف چرخه فاصله دارد.', importance: 'لنگر ارزش منصفانه فاندامنتال آنچین' }
-          ]
-        },
-        news: {
-          circuit_status: 'NORMAL_CLEAR',
-          circuit_title: '🟢 وضعیت خبری امن و باثبات (News Clear)',
-          circuit_advice: 'هیچ خبر فاجعه‌بار یا ناهنجاری احساسی در CryptoPanic گزارش نشده است؛ معاملات مجاز است.',
-          avg_panic_score: 43,
-          panic_level: 'متعادل / عادی',
-          community_sentiment_ratio: 1.94,
-          community_sentiment_label: 'اکثریت صعودی (Bullish)',
-          news_items: [
-            { title: 'Institutional inflows into Bitcoin spot ETFs surge past $400M', sentiment: 'BULLISH_CATALYST', sentiment_fa: '🟢 خبر محرک صعودی', votes: { positive: 64, negative: 5, important: 42 }, panic_score: 22, domain: 'cointelegraph.com' },
-            { title: 'Global macro conditions ease as liquidity indicators stabilize', sentiment: 'NEUTRAL', sentiment_fa: 'ℹ️ خبر عمومی بازار', votes: { positive: 28, negative: 8, important: 15 }, panic_score: 41, domain: 'coindesk.com' }
-          ]
-        }
-      };
     }
 
     function renderDashboard(data) {

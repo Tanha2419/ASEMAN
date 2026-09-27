@@ -1,3 +1,5 @@
+import socket
+socket.setdefaulttimeout(5.0)
 import requests
 import numpy as np
 import time
