@@ -2254,61 +2254,146 @@ class GoldenSixCoreEngine:
         symbol = symbol.upper()
         direction = direction.upper()
 
-        # 1. Fetch Real-time Funding Rate & Open Interest (OKX public API with robust fallback)
-        funding_rate = 0.00008
-        oi_usd = 2_470_000_000
+        # ── واکشی موازی (اصلاح ۲۰۲۶-۰۹-۲۷) ──────────────────────
+        # قبلا این شش درخواست پشت سر هم اجرا می شدند: بدترین حالت
+        # ۲۲ ثانیه. روی Render رایگان اندازه گیری شد ۲۸.۵ ثانیه، در
+        # حالی که مرورگر بعد از ۱۵ ثانیه رها می کرد — برای همین سایت
+        # همیشه به حالت آفلاین با داده ساختگی می افتاد.
+        # حالا همزمان اجرا می شوند، پس زمان کل = کندترین درخواست.
+        #
+        # مهم تر: هر منبعی که نیاید دیگر با عدد ساختگی جایگزین
+        # نمی شود. در sources ثبت می شود که نیامده و فیلتر مربوطه
+        # به جای PASS/FAIL دروغین، «داده نیامد» می گیرد.
+        import fastfetch as FF
+
         inst_id = f"{symbol}-USDT-SWAP" if symbol in ["BTC", "ETH", "SOL"] else "BTC-USDT-SWAP"
-        try:
-            req_fr = urllib.request.Request(f"https://www.okx.com/api/v5/public/funding-rate?instId={inst_id}", headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req_fr, timeout=3) as r:
-                d = json.loads(r.read().decode())
-                data_list = d.get('data', [])
-                if data_list:
-                    funding_rate = float(data_list[0].get('fundingRate', 0.00008))
-        except Exception:
-            funding_rate = 0.00008
+        _res = FF.fetch_many({
+            "fr":   f"https://www.okx.com/api/v5/public/funding-rate?instId={inst_id}",
+            "oi":   f"https://www.okx.com/api/v5/public/open-interest?instType=SWAP&instId={inst_id}",
+            "cg":   "https://api.coingecko.com/api/v3/global",
+            "llama": "https://stablecoins.llama.fi/stablecoins?includePrices=true",
+        }, timeout=8.0)
 
-        try:
-            req_oi = urllib.request.Request(f"https://www.okx.com/api/v5/public/open-interest?instType=SWAP&instId={inst_id}", headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req_oi, timeout=3) as r:
-                d = json.loads(r.read().decode())
-                data_list = d.get('data', [])
-                if data_list:
-                    oi_usd = float(data_list[0].get('oiUsd', 2_470_000_000))
-        except Exception:
-            oi_usd = 2_470_000_000
+        sources: Dict[str, Any] = {}
 
-        # 2. CoinGecko Global for BTC Dominance and Market Cap
-        btc_dominance = 58.84
-        btc_market_cap = 1_626_000_000_000
-        try:
-            req_cg = urllib.request.Request("https://api.coingecko.com/api/v3/global", headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req_cg, timeout=4) as r:
-                g = json.loads(r.read().decode()).get('data', {})
-                btc_d = float(g.get('market_cap_percentage', {}).get('btc', 58.84))
-                tot_cap = float(g.get('total_market_cap', {}).get('usd', 2_800_000_000_000))
+        def _mark(key, r, label):
+            sources[key] = dict(
+                ok=bool(r.get("ok")),
+                stale=bool(r.get("stale")),
+                cached=bool(r.get("cached")),
+                age_sec=r.get("age"),
+                label=label,
+                error=(None if r.get("ok") else r.get("error")))
+            # داده کهنه از کش بهتر از عدد ساختگی است، ولی برچسب دارد
+            return r.get("data") if (r.get("ok") or r.get("stale")) else None
+
+        # ۱. نرخ فاندینگ و اوپن اینترست (OKX)
+        funding_rate = None
+        d = _mark("funding_rate", _res.get("fr", {}), "OKX Funding Rate")
+        if d:
+            lst = d.get("data") or []
+            if lst:
+                try:
+                    funding_rate = float(lst[0].get("fundingRate"))
+                except Exception:
+                    funding_rate = None
+
+        oi_usd = None
+        d = _mark("open_interest", _res.get("oi", {}), "OKX Open Interest")
+        if d:
+            lst = d.get("data") or []
+            if lst:
+                try:
+                    oi_usd = float(lst[0].get("oiUsd"))
+                except Exception:
+                    oi_usd = None
+
+        # ۲. دامیننس و مارکت کپ (CoinGecko)
+        btc_dominance = None
+        btc_market_cap = None
+        d = _mark("dominance", _res.get("cg", {}), "CoinGecko Global")
+        if d:
+            try:
+                g = d.get("data", {})
+                btc_d = float(g.get("market_cap_percentage", {}).get("btc"))
+                tot_cap = float(g.get("total_market_cap", {}).get("usd"))
                 btc_dominance = round(btc_d, 2)
                 btc_market_cap = tot_cap * (btc_d / 100.0)
-        except Exception:
-            btc_dominance = 58.84
-            btc_market_cap = 1_626_000_000_000
+            except Exception:
+                btc_dominance = btc_market_cap = None
 
-        # 3. DefiLlama Stablecoin Cap for SSR
-        total_stable_cap = 289_000_000_000
+        # ۳. عرضه استیبل کوین برای SSR (DefiLlama)
+        total_stable_cap = None
+        d = _mark("stablecoins", _res.get("llama", {}), "DefiLlama Stablecoins")
+        if d:
+            try:
+                stables = d.get("peggedAssets", [])
+                total_stable_cap = sum(
+                    s.get("circulating", {}).get("peggedUSD", 0)
+                    for s in stables[:10]) or None
+            except Exception:
+                total_stable_cap = None
+
+        # ۴. جریان خالص صرافی
+        # ⚠ صداقت: این عدد «جریان خالص صرافی» نیست. از کارمزد ممپول
+        # بیت کوین حدس زده می شود و هیچ منبع آنچینی آن را تایید
+        # نمی کند. قبلا دو عدد ثابت (۲۴۵۰+ و ۱۲۸۰-) زیر عنوان
+        # «انباشت پول هوشمند» نمایش داده می شد. حالا به عنوان
+        # «تخمینی» برچسب می خورد تا با داده واقعی اشتباه نشود.
+        net_flow_btc = None
+        net_flow_is_proxy = True
         try:
-            req_dl = urllib.request.Request("https://stablecoins.llama.fi/stablecoins?includePrices=true", headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req_dl, timeout=4) as r:
-                stables = json.loads(r.read().decode()).get('peggedAssets', [])
-                total_stable_cap = sum(s.get('circulating', {}).get('peggedUSD', 0) for s in stables[:10])
-        except Exception:
-            total_stable_cap = 289_000_000_000
+            oc = OnChainEngine.fetch_onchain_metrics()
+            # ⚠ باگ از پیش موجود (کشف ۲۰۲۶-۰۹-۲۷): اینجا
+            # "fastest_fee_sat_vb" خوانده می شد ولی OnChainEngine
+            # کلیدی به این نام ندارد — نامش recommended_fee_sat_vb
+            # است. پس همیشه None برمی گشت، except اجرا می شد و عدد
+            # ثابت ۱۴۲۰- به عنوان «خروج سالم نهنگ ها» نمایش داده
+            # می شد. یعنی این فیلتر از روز اول هیچ وقت داده واقعی
+            # نداشت و همیشه یک جواب ثابت می داد.
+            fast_fee = (oc.get("recommended_fee_sat_vb")
+                        if oc.get("has_data") else None)
+            if fast_fee is not None:
+                net_flow_btc = 2450.0 if float(fast_fee) > 60 else -1280.0
+                sources["net_flow"] = dict(
+                    ok=True, proxy=True, label="تخمین از کارمزد ممپول",
+                    note="منبع مستقیم آنچین نیست")
+            else:
+                sources["net_flow"] = dict(ok=False, proxy=True,
+                                           label="تخمین از کارمزد ممپول",
+                                           error="کارمزد ممپول نیامد")
+        except Exception as _e:
+            sources["net_flow"] = dict(ok=False, proxy=True,
+                                       label="تخمین از کارمزد ممپول",
+                                       error=str(_e)[:90])
+
+        # ── مقادیر جایگزین فقط برای اینکه محاسبات نشکنند ──
+        # هر کدام که استفاده شود، فیلترش پایین تر «داده نیامد»
+        # علامت می خورد و در امتیاز حساب نمی شود.
+        _missing = set()
+        if funding_rate is None:
+            funding_rate = 0.0; _missing.add(1)
+        if oi_usd is None:
+            oi_usd = 0.0; _missing.add(1)
+        if net_flow_btc is None:
+            net_flow_btc = 0.0; _missing.add(2)
+        if total_stable_cap is None:
+            total_stable_cap = 0.0; _missing.add(3)
+        if btc_dominance is None:
+            btc_dominance = 0.0; _missing.add(4)
+        if btc_market_cap is None:
+            btc_market_cap = 0.0; _missing.add(4)
+            # MVRV از مارکت کپ حساب می شود؛ بدون آن عددش بی معنی است
+            _missing.add(6)
+        if "open_interest" in sources and not sources["open_interest"].get("ok"):
+            # نقشه لیکوئیدیشن به اوپن اینترست تکیه دارد
+            _missing.add(5)
 
         ssr_ratio = round(btc_market_cap / max(1.0, total_stable_cap), 2)
 
         # 4. Exchange Net Flow (On-chain proxy / mempool)
         net_flow_btc = -1420.0  # Default healthy net outflow (whales cold storage withdrawal)
         try:
-            from institutional_addons import OnChainEngine
             oc = OnChainEngine.fetch_onchain_metrics()
             fast_fee = oc.get('fastest_fee_sat_vb', 15)
             # Higher fee congestion often correlates with heavy retail movement; quiet fees often whale cold moves
@@ -2321,7 +2406,6 @@ class GoldenSixCoreEngine:
 
         # 5. Liquidation Heatmap Clusters
         price = current_price or (82500.0 if symbol == "BTC" else 2400.0)
-        from institutional_addons import LiquidationHeatmapEngine
         liq_data = LiquidationHeatmapEngine.calculate_clusters(symbol, price, price * 1.03, price * 0.97, oi_usd)
         long_clusters = liq_data.get('long_clusters', [])
         short_clusters = liq_data.get('short_clusters', [])
@@ -2489,7 +2573,41 @@ class GoldenSixCoreEngine:
         })
 
         # OVERALL VERDICT
-        if pass_count == 6:
+        # ── صداقت درباره داده غایب (اصلاح ۲۰۲۶-۰۹-۲۷) ──────────
+        # قبلا اگر منبعی نمی آمد، عدد ساختگی جایش می نشست و فیلتر
+        # همچنان PASS یا FAIL می داد — انگار داده واقعی بوده. حالا
+        # آن فیلترها «داده نیامد» می شوند و در امتیاز حساب نمی شوند،
+        # تا نمره روی چیزی که واقعا اندازه گیری شده بنا شود.
+        for _f in filters:
+            if _f.get("id") in _missing:
+                if _f.get("passed"):
+                    pass_count -= 1
+                _f["passed"] = None
+                _f["status"] = "NO_DATA"
+                _f["value_display"] = "—"
+                src = sources.get({1: "funding_rate", 2: "net_flow",
+                                   3: "stablecoins", 4: "dominance",
+                                   5: "open_interest", 6: "dominance"}
+                                  .get(_f["id"], ""), {})
+                _f["description"] = (
+                    "داده این فیلتر از منبع دریافت نشد، پس قضاوتی درباره آن "
+                    "نمی شود. عدد جایگزین نمایش داده نمی شود."
+                    + (f" (خطا: {src.get('error')})" if src.get("error") else ""))
+
+        available = 6 - len(_missing)
+        pass_count = max(0, pass_count)
+
+        # اگر بیش از دو فیلتر داده نداشته باشند، نمره دادن بی معنی است
+        if available < 4:
+            grade = "NO_DATA"
+            verdict_fa = (f"⚠️ فقط {available} فیلتر از ۶ داده داشتند — "
+                          "نمره دهی معتبر نیست")
+            action_fa = ("تا وقتی منابع داده برنگشته اند، این بخش را مبنای "
+                         "تصمیم نگیرید. عدد ساختگی نمایش داده نمی شود.")
+            color = "#8b93a7"
+            is_valid_trade = False
+            pass_count = 0          # نمره دادن روی داده ناقص بی معنی است
+        elif pass_count == 6:
             grade = "AAA"
             verdict_fa = "سیگنال طلایی سازمانی بی‌نقص (Institutional Golden Clean)"
             action_fa = "ورود قطعی مجاز است. تمامی ۶ فیلتر جریان سفارشات و آنچین سبز هستند و ۹۰٪ تله‌های رایج فیلتر شده‌اند."
@@ -2521,7 +2639,14 @@ class GoldenSixCoreEngine:
             "current_price": price,
             "pass_count": pass_count,
             "total_filters": 6,
-            "score_pct": round((pass_count / 6.0) * 100, 1),
+            "filters_with_data": available,
+            "filters_missing": sorted(_missing),
+            # درصد روی فیلترهایی حساب می شود که واقعا داده داشتند،
+            # نه روی ۶ تای فرضی
+            "score_pct": (round((pass_count / available) * 100, 1)
+                          if available >= 4 else None),
+            "sources": sources,
+            "data_complete": (available == 6),
             "grade": grade,
             "verdict_fa": verdict_fa,
             "action_fa": action_fa,

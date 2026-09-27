@@ -90,13 +90,20 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
         l24 = float(tk.get("lowPrice", price * 0.98)) if tk else price * 0.98
         base = res.get("base_coin", "BTC")
 
-        res["precision_suite"] = {
-            "liquidations": LiquidationHeatmapEngine.calculate_clusters(sym, price, h24, l24),
-            "whales": WhaleFlowEngine.get_whale_metrics(),
-            "calendar": EconomicCalendarEngine.get_macro_shield_status(),
-            "options": OptionsEngine.get_options_analytics(base),
-            "depth_spoofing": OrderbookDepthSpoofingEngine.scan_depth_and_spoofing(sym)
-        }
+        # ── موازی سازی (اصلاح ۲۰۲۶-۰۹-۲۷) ──────────────────────
+        # این پنج موتور هر کدام درخواست شبکه می زنند و قبلا پشت سر
+        # هم اجرا می شدند. روی Render رایگان مجموعشان چند ده ثانیه
+        # می شد و مرورگر (تایم اوت ۱۵ ثانیه) رهایشان می کرد.
+        # حالا همزمان اجرا می شوند: زمان کل = کندترین، نه جمع.
+        import fastfetch as FF
+        _suite = FF.gather({
+            "liquidations": lambda: LiquidationHeatmapEngine.calculate_clusters(sym, price, h24, l24),
+            "whales": lambda: WhaleFlowEngine.get_whale_metrics(),
+            "calendar": lambda: EconomicCalendarEngine.get_macro_shield_status(),
+            "options": lambda: OptionsEngine.get_options_analytics(base),
+            "depth_spoofing": lambda: OrderbookDepthSpoofingEngine.scan_depth_and_spoofing(sym),
+        })
+        res["precision_suite"] = _suite
 
         # Calculate Default Kelly Risk & Position Sizing
         scalp = res.get("scalp_setup", {})
