@@ -2638,9 +2638,75 @@
             </div>
           </div>
 
+          <!-- 24/7 Auto-Pilot Background Sentinel Settings -->
+          <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.25); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="tgAutoPilotCheck" checked style="width: 18px; height: 18px; accent-color: #00e676; cursor: pointer;" />
+                <label for="tgAutoPilotCheck" style="font-size: 0.95rem; font-weight: 800; color: #00e676; cursor: pointer;">
+                  🤖 فعال‌سازی دیده‌بان خودکار ۲۴ ساعته (Auto-Pilot Alert)
+                </label>
+              </div>
+              <span id="sentinelStatusBadge" style="font-size: 0.74rem; font-weight: 700; background: rgba(0,230,118,0.15); color: #00e676; padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.3);">
+                🟢 دیده‌بان ابری آماده به کار
+              </span>
+            </div>
+            <div style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 14px; line-height: 1.6;">
+              سرور روی کلود به طور پیوسته و ۲۴ ساعته (حتی اگر سایت بسته باشد یا گوشی خاموش باشد) بازار را اسکن کرده و به محض کشف <strong>الماس‌های پرواز یا سیگنال‌های طلایی Grade A+</strong>، پیام کامل را به کانال یا پی‌وی تلگرام شما می‌فرستد.
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+              <div>
+                <label style="font-size: 0.76rem; color: var(--text-dim); display: block; margin-bottom: 4px;">چرخه اسکن خودکار:</label>
+                <select id="tgIntervalSelect" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 7px 10px; color: #fff; font-size: 0.8rem;">
+                  <option value="15">هر ۱۵ دقیقه یک‌بار (سریع)</option>
+                  <option value="20" selected>هر ۲۰ دقیقه یک‌بار (استاندارد سازمانی)</option>
+                  <option value="30">هر ۳۰ دقیقه یک‌بار</option>
+                  <option value="60">هر ۱ ساعت یک‌بار</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.76rem; color: var(--text-dim); display: block; margin-bottom: 4px;">حداقل نمره کیفی برای ارسال:</label>
+                <select id="tgMinScoreSelect" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 7px 10px; color: #fff; font-size: 0.8rem;">
+                  <option value="85" selected>نمره بالای ۸۵ (۳ الماس برتر رادار)</option>
+                  <option value="90">نمره بالای ۹۰ (فقط سیگنال‌های طلایی A+)</option>
+                  <option value="80">نمره بالای ۸۰ (شامل ستاپ‌های مومنتوم قوی)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Live Sentinel Stats -->
+            <div style="display: flex; gap: 16px; margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-dim); flex-wrap: wrap;">
+              <div>آخرین پایش: <strong id="sentinelLastRun" style="color: #fff;">-</strong></div>
+              <div>سیگنال‌های خودکار مخابره‌شده: <strong id="sentinelAlertsCount" style="color: #00e676;">0</strong></div>
+              <div>آخرین ارز ارسالی: <strong id="sentinelLastAlert" style="color: #ffd700;">هیچ</strong></div>
+            </div>
+          </div>
+
           <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button onclick="saveTelegramConfig()" class="copy-btn" style="padding: 8px 16px;">💾 ذخیره تنظیمات تلگرام</button>
-            <button onclick="dispatchTelegramSignal()" class="search-btn" style="padding: 8px 20px;">🚀 ارسال آنی سیگنال به تلگرام</button>
+            <button onclick="saveTelegramConfig()" class="copy-btn" style="padding: 10px 20px; font-weight: 800; background: #00e676; color: #000; border: none;">💾 ذخیره تنظیمات و فعال‌سازی دیده‌بان ۲۴ ساعته</button>
+            <button onclick="dispatchTelegramSignal()" class="search-btn" style="padding: 10px 20px; font-weight: 800;">🚀 تست و ارسال زنده سیگنال به تلگرام</button>
+          </div>
+
+          <!-- Beginner Friendly Guide Inside Telegram Tab -->
+          <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.25); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+            <div style="font-size: 0.9rem; font-weight: 800; color: #ffd700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+              <span>📖</span> راهنمای مبتدی: ساخت کانال و ربات تلگرام در ۳ مرحله ساده
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; font-size: 0.78rem; line-height: 1.6; color: #e2e8f0;">
+              <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;">
+                <strong style="color: #00d2ff; display: block; margin-bottom: 4px;">۱. ساخت کانال تلگرام:</strong>
+                در منوی تلگرام گزینه New Channel را بزنید. نام کانال را تعیین کرده و یک لینک عمومی بسازید (مثلاً <code>@MyAsemanSignals</code>). این آیدی همان Chat ID شماست.
+              </div>
+              <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;">
+                <strong style="color: #00e676; display: block; margin-bottom: 4px;">۲. ساخت ربات در @BotFather:</strong>
+                ربات <code>@BotFather</code> را در تلگرام استارت کنید و دستور <code>/newbot</code> را بفرستید. یک نام و سپس یک یوزرنیم که با <code>bot</code> تمام شود بدهید. کدی که به شما می‌دهد همان Bot Token است.
+              </div>
+              <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;">
+                <strong style="color: #ffd700; display: block; margin-bottom: 4px;">۳. ادمین کردن ربات در کانال:</strong>
+                وارد کانال خود شوید، به بخش Administrators بروید، ربات خود را پیدا کرده و با دسترسی ارسال پیام (Post Messages) ادمین کنید. سپس توکن و آیدی کانال را در کادرهای بالا ذخیره کنید!
+              </div>
+            </div>
           </div>
 
           <!-- Telegram Preview Box -->
@@ -5366,24 +5432,53 @@ ${s3d.action_advice || ''}
           const chatInput = document.getElementById('tgChatId');
           if (chatInput) chatInput.value = cfg.chat_id;
         }
+        if (cfg.masked_token) {
+          const tokenInput = document.getElementById('tgBotToken');
+          if (tokenInput && !tokenInput.value) tokenInput.placeholder = `ذخیره شده: ${cfg.masked_token}`;
+        }
+        const apCheck = document.getElementById('tgAutoPilotCheck');
+        if (apCheck && cfg.auto_pilot !== undefined) apCheck.checked = Boolean(cfg.auto_pilot);
+        const intSel = document.getElementById('tgIntervalSelect');
+        if (intSel && cfg.interval_minutes) intSel.value = String(cfg.interval_minutes);
+        const scSel = document.getElementById('tgMinScoreSelect');
+        if (scSel && cfg.min_score) scSel.value = String(cfg.min_score);
+
+        const stats = cfg.sentinel_stats || {};
+        const lr = document.getElementById('sentinelLastRun');
+        if (lr && stats.last_run) lr.innerText = stats.last_run;
+        const cnt = document.getElementById('sentinelAlertsCount');
+        if (cnt && stats.alerts_sent !== undefined) cnt.innerText = stats.alerts_sent;
+        const la = document.getElementById('sentinelLastAlert');
+        if (la && stats.last_alert) la.innerText = stats.last_alert;
       } catch (e) {}
     }
 
     async function saveTelegramConfig() {
-      const token = document.getElementById('tgBotToken').value;
-      const chat = document.getElementById('tgChatId').value;
-      if (!token || !chat) {
-        showToast('لطفاً توکن ربات و شناسه چت را وارد کنید.');
+      const token = document.getElementById('tgBotToken').value.trim();
+      const chat = document.getElementById('tgChatId').value.trim();
+      const autoPilot = document.getElementById('tgAutoPilotCheck').checked;
+      const interval = parseInt(document.getElementById('tgIntervalSelect').value, 10);
+      const minScore = parseInt(document.getElementById('tgMinScoreSelect').value, 10);
+
+      if (!chat) {
+        showToast('لطفاً شناسه چت یا کانال (Chat ID) را وارد کنید.');
         return;
       }
       try {
         const res = await fetch('/api/telegram/config', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({bot_token: token, chat_id: chat})
+          body: JSON.stringify({
+            bot_token: token,
+            chat_id: chat,
+            auto_pilot: autoPilot,
+            interval_minutes: interval,
+            min_score: minScore
+          })
         });
         const data = await res.json();
-        showToast(data.message || 'تنظیمات تلگرام ذخیره شد.');
+        showToast(data.message || 'تنظیمات تلگرام و دیده‌بان خودکار با موفقیت ذخیره شد.');
+        loadTelegramConfig();
       } catch (err) {
         showToast('خطا در ذخیره تنظیمات: ' + err.message);
       }
