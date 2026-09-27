@@ -490,17 +490,21 @@ class CryptoPanicEngine:
                                 clean_desc = re.sub(r'<[^>]+>', '', desc).strip()[:180]
 
                                 t_lower = (title + " " + clean_desc).lower()
-                                is_panic = any(re.search(r'\b' + re.escape(k) + r'\b', t_lower) for k in cls.PANIC_KEYWORDS)
-                                is_bull = any(re.search(r'\b' + re.escape(k) + r'\b', t_lower) for k in cls.BULLISH_KEYWORDS)
+                                p_matches = [k for k in cls.PANIC_KEYWORDS if re.search(r'\b' + re.escape(k) + r'\b', t_lower)]
+                                b_matches = [k for k in cls.BULLISH_KEYWORDS if re.search(r'\b' + re.escape(k) + r'\b', t_lower)]
 
-                                if is_panic:
+                                # Contextual filter: neutralize false panic phrases like "erasing losses", "recovery from drop", "surges after dip"
+                                if re.search(r'erasing.*(loss|losses)|recover.*from|bounce.*after|surge.*after|ath.*record|winning.*streak', t_lower):
+                                    p_matches = [k for k in p_matches if k not in ["losses", "loss", "drop", "fall", "crash"]]
+
+                                if len(p_matches) > len(b_matches) and len(p_matches) >= 1:
                                     sent = "BEARISH_PANIC"
                                     sent_fa = "⚠️ خبر پرریسک / پنیک"
                                     col = "RED"
                                     p_score = 78
                                     pos_v = 6
                                     neg_v = 38
-                                elif is_bull:
+                                elif len(b_matches) > 0 and len(b_matches) >= len(p_matches):
                                     sent = "BULLISH_CATALYST"
                                     sent_fa = "🟢 خبر محرک صعودی"
                                     col = "GREEN"
