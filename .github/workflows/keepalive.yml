@@ -21,7 +21,7 @@ jobs:
       - name: Ping Render Service
         run: |
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          TARGET_URL="https://aseman-1-430y.onrender.com/healthz"
+          TARGET_URL="https://aseman-9cu6.onrender.com/healthz"
           echo "[$TIMESTAMP] Starting Keep-Alive ping to: $TARGET_URL"
 
           HTTP_CODE=$(curl -s -o /tmp/health_response.json -w "%{http_code}" \
@@ -44,7 +44,7 @@ jobs:
               --connect-timeout 20 \
               --max-time 60 \
               --retry 2 \
-              "https://aseman-1-430y.onrender.com/")
+              "https://aseman-9cu6.onrender.com/")
             echo "Root URL HTTP Code: $ROOT_CODE"
             if [ "$ROOT_CODE" -eq 200 ]; then
               echo "✅ Root URL woke up the service!"
