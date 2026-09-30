@@ -2675,11 +2675,27 @@
               </div>
             </div>
 
+            <!-- Macro News Shield Auto-Protection Banner -->
+            <div style="background: rgba(255, 51, 102, 0.08); border: 1px solid rgba(255, 51, 102, 0.25); border-radius: 8px; padding: 12px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">🛡️</span>
+                <div>
+                  <div style="font-size: 0.82rem; font-weight: 800; color: #fff;">فیوز اضطراری اخبار پرریسک کلان (Macro Trading Shield)</div>
+                  <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 2px;">
+                    مسدودسازی خودکار سیگنال‌ها ۴۵ دقیقه قبل تا ۳۰ دقیقه بعد از اخبار بحرانی (CPI, NFP, FOMC) جهت جلوگیری از شکار استاپ‌ها
+                  </div>
+                </div>
+              </div>
+              <span id="sentinelMacroShieldBadge" style="font-size: 0.75rem; font-weight: 800; background: rgba(0,230,118,0.15); color: #00e676; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.3);">
+                🟢 وضعیت امن (پایش آزاد)
+              </span>
+            </div>
+
             <!-- Live Sentinel Stats -->
             <div style="display: flex; gap: 16px; margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.75rem; color: var(--text-dim); flex-wrap: wrap;">
               <div>آخرین پایش: <strong id="sentinelLastRun" style="color: #fff;">-</strong></div>
               <div>سیگنال‌های خودکار مخابره‌شده: <strong id="sentinelAlertsCount" style="color: #00e676;">0</strong></div>
-              <div>آخرین ارز ارسالی: <strong id="sentinelLastAlert" style="color: #ffd700;">هیچ</strong></div>
+              <div>آخرین وضعیت/ارز: <strong id="sentinelLastAlert" style="color: #ffd700;">هیچ</strong></div>
             </div>
           </div>
 
@@ -5481,6 +5497,21 @@ ${s3d.action_advice || ''}
         if (cnt && stats.alerts_sent !== undefined) cnt.innerText = stats.alerts_sent;
         const la = document.getElementById('sentinelLastAlert');
         if (la && stats.last_alert) la.innerText = stats.last_alert;
+
+        const msBadge = document.getElementById('sentinelMacroShieldBadge');
+        if (msBadge) {
+          if (stats.macro_shield_active) {
+            msBadge.style.background = 'rgba(255, 51, 102, 0.2)';
+            msBadge.style.color = '#ff3366';
+            msBadge.style.borderColor = 'rgba(255, 51, 102, 0.5)';
+            msBadge.innerHTML = `🛑 فیوز فعال: ${stats.macro_shield_event || 'کلان'} (سیگنال‌ها مسدود)`;
+          } else {
+            msBadge.style.background = 'rgba(0, 230, 118, 0.15)';
+            msBadge.style.color = '#00e676';
+            msBadge.style.borderColor = 'rgba(0, 230, 118, 0.3)';
+            msBadge.innerHTML = '🟢 وضعیت امن (پایش آزاد)';
+          }
+        }
       } catch (e) {}
     }
 

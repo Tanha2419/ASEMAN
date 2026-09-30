@@ -1051,6 +1051,38 @@ class TelegramDispatcher:
                 "error": f"خطا در برقراری ارتباط با سرور تلگرام: {str(e)}"
             }
 
+    @classmethod
+    def send_raw_text(cls, bot_token: str, chat_id: str, text: str) -> Dict[str, Any]:
+        """Dispatches custom raw HTML message directly to specified Telegram chat or channel"""
+        if not bot_token or not chat_id:
+            return {"success": False, "simulated": True, "error": "Bot token or Chat ID missing"}
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        payload = json.dumps({
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True
+        }).encode("utf-8")
+        try:
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                res_data = json.loads(resp.read().decode())
+                if res_data.get("ok"):
+                    return {
+                        "success": True,
+                        "simulated": False,
+                        "message": "پیام اضطراری با موفقیت به کانال ارسال شد!",
+                        "telegram_message_id": res_data.get("result", {}).get("message_id")
+                    }
+                else:
+                    return {"success": False, "simulated": False, "error": res_data.get("description", "خطای تلگرام")}
+        except Exception as e:
+            return {"success": False, "simulated": False, "error": str(e)}
+
 
 class DexScreenerEngine:
     """Integration with DexScreener (https://dexscreener.com) for DEX pairs, meme coins & on-chain liquidity"""
@@ -1975,32 +2007,53 @@ class EconomicCalendarEngine:
     @classmethod
     def get_macro_shield_status(cls) -> Dict[str, Any]:
         now_epoch = time.time()
-        upcoming = [e for e in cls.MACRO_EVENTS if e["epoch"] >= now_epoch]
-        if not upcoming:
-            next_ev = cls.MACRO_EVENTS[0]
-            time_diff = 86400 * 3
-        else:
+        
+        # 1. Check if ANY high-impact event is in the active freeze window (45 min before to 30 min after)
+        freeze_ev = None
+        for ev in cls.MACRO_EVENTS:
+            diff = ev["epoch"] - now_epoch
+            # -1800s (30m after) <= diff <= 2700s (45m before)
+            if -1800 <= diff <= 2700:
+                freeze_ev = ev
+                break
+                
+        # 2. Upcoming events (event + 1800s in the future)
+        upcoming = [e for e in cls.MACRO_EVENTS if (e["epoch"] + 1800) >= now_epoch]
+        if freeze_ev:
+            next_ev = freeze_ev
+            time_diff = next_ev["epoch"] - now_epoch
+        elif upcoming:
             next_ev = upcoming[0]
             time_diff = next_ev["epoch"] - now_epoch
+        else:
+            next_ev = cls.MACRO_EVENTS[0]
+            time_diff = 86400 * 3
             
-        hours = int(time_diff // 3600)
-        minutes = int((time_diff % 3600) // 60)
-        seconds = int(time_diff % 60)
+        hours = int(abs(time_diff) // 3600)
+        minutes = int((abs(time_diff) % 3600) // 60)
+        seconds = int(abs(time_diff) % 60)
         
-        if time_diff <= 1800 and time_diff >= -1800:
+        if freeze_ev is not None:
             shield_state = "🛑 حالت فیوز کلان فعال (TRADING FREEZE)"
             shield_color = "RED"
-            shield_action = "معاملات لوریج‌دار را فوراً متوقف کنید؛ خطر هانت دوطرفه استاپ‌ها."
+            if time_diff > 0:
+                shield_action = f"معاملات لوریج‌دار متوقف است. کمتر از {minutes} دقیقه تا انتشار رویداد پرریسک {freeze_ev['code']} باقی مانده؛ خطر هانت دوطرفه استاپ‌ها."
+                countdown_str = f"{minutes} دقیقه تا انتشار خبر"
+            else:
+                shield_action = f"معاملات لوریج‌دار متوقف است. {abs(minutes)} دقیقه از انتشار رویداد {freeze_ev['code']} گذشته؛ صبر کنید تا نوسانات اولیه فروکش کند."
+                countdown_str = f"منتشر شد ({abs(minutes)} دقیقه قبل)"
             is_frozen = True
         elif time_diff <= 21600:
             shield_state = "⚠️ منطقه با ریسک بالا (ELEVATED RISK)"
             shield_color = "YELLOW"
-            shield_action = "حجم پوزیشن را ۵۰٪ کاهش داده و از ورود به معاملات تهاجمی پرهیز کنید."
+            shield_action = f"رویداد {next_ev['code']} تا {hours} ساعت آینده منتشر می‌شود. حجم معاملات را کاهش داده و از ورود به معاملات تهاجمی پرهیز کنید."
+            countdown_str = f"{hours} ساعت و {minutes} دقیقه"
             is_frozen = False
         else:
             shield_state = "🟢 وضعیت کلان باثبات (SAFE MACRO WINDOW)"
             shield_color = "GREEN"
             shield_action = "شرایط معاملاتی نرمال است؛ می‌توانید طبق استراتژی‌های اسمارت‌مانی معامله کنید."
+            countdown_str = f"{hours} ساعت و {minutes} دقیقه"
             is_frozen = False
 
         return {
@@ -2014,7 +2067,7 @@ class EconomicCalendarEngine:
             "date_tehran": next_ev.get("date_tehran", next_ev["date_utc"]),
             "crypto_prediction": next_ev.get("crypto_prediction", {}),
             "countdown_seconds": int(time_diff),
-            "countdown_fmt": f"{hours} ساعت و {minutes} دقیقه و {seconds} ثانیه",
+            "countdown_fmt": countdown_str,
             "forecast": next_ev["forecast"],
             "previous": next_ev["previous"],
             "reaction_inline": next_ev.get("reaction_inline", {}),
@@ -2022,6 +2075,7 @@ class EconomicCalendarEngine:
             "shield_color": shield_color,
             "shield_action": shield_action,
             "is_frozen": is_frozen,
+            "freeze_window_desc": "۴۵ دقیقه قبل تا ۳۰ دقیقه بعد از اخبار کلان قرمز",
             "all_events": cls.MACRO_EVENTS
         }
 
