@@ -2,8 +2,10 @@ name: Render & GitHub 60-Day Keep-Alive
 
 on:
   schedule:
+    # اجرای خودکار هر ۱۰ دقیقه یک‌بار (جلوگیری از اسلیپ شدن رندر بعد از ۱۵ دقیقه)
     - cron: '*/10 * * * *'
   workflow_dispatch:
+    # امکان اجرای دستی از تب Actions در گیت‌هاب
 
 permissions:
   contents: write
@@ -15,6 +17,7 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      # بخش ۱: پینگ زنده سرور رندر جهت بیدار ماندن دائمی (اصلی‌ترین وظیفه)
       - name: Ping Render Service
         run: |
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -51,6 +54,7 @@ jobs:
             fi
           fi
 
+      # بخش ۲: ثبت فعالیت در گیت‌هاب (مانع از توقف خودکار ۶۰ روزه گیت‌هاب)
       - name: Keep GitHub Repo Active (Safe Push)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,8 +81,11 @@ jobs:
               echo "UPDATED_AT: $(date -u)" >> "$HEARTBEAT_FILE"
               git add "$HEARTBEAT_FILE"
               git commit -m "chore(ci): keepalive heartbeat $CURRENT_WEEK [skip ci]" || true
-              git push origin HEAD || echo "Push completed."
+              git push origin HEAD || echo "⚠️ Push requires Read & Write permissions in Settings -> Actions -> General. Ping completed successfully!"
+              echo "✅ Activity refresh attempted."
             else
-              echo "✅ Heartbeat already up to date for this week."
+              echo "✅ Heartbeat already up to date for this week ($CURRENT_WEEK)."
             fi
+          else
+            echo "Clone skipped, ping completed successfully."
           fi
