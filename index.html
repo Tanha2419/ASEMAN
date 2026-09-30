@@ -3203,21 +3203,34 @@
           <div style="background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
               <div style="font-weight: 800; font-size: 0.95rem;" id="macroShieldStatusTitle">🟢 وضعیت کلان باثبات (SAFE MACRO WINDOW)</div>
-              <div style="font-size: 0.8rem; color: var(--text-dim);" id="macroNextEventName">رویداد بعدی: FOMC Interest Rate</div>
+              <div style="font-size: 0.85rem; color: #ffd700; font-weight: 700;" id="macroNextEventName">رویداد بعدی: در حال بررسی...</div>
             </div>
             <div style="font-size: 0.82rem; color: #ccc; margin-top: 6px;" id="macroShieldActionText">
               شرایط معاملاتی نرمال است؛ می‌توانید طبق استراتژی‌های اسمارت‌مانی معامله کنید.
+            </div>
+            <div id="macroNextEventCryptoBias" style="margin-top: 8px; padding: 8px 12px; background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.25); border-radius: 6px; font-size: 0.8rem; color: #4ade80;">
+              🪙 <strong>پیش‌بینی مستقیم جهت ارزهای دیجیتال:</strong> صعودی در صورت انطباق با پیش‌بینی
             </div>
           </div>
 
           <!-- Macro Directional Impact Quick Guide -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px;">
+            <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 8px; padding: 10px 12px;">
+              <div style="font-size: 0.82rem; font-weight: 800; color: #4ade80; display: flex; align-items: center; gap: 6px;">
+                <span>🪙</span> رمزارزها (Crypto / Bitcoin)
+              </div>
+              <div style="font-size: 0.74rem; color: #cbd5e1; margin-top: 5px; line-height: 1.5;">
+                • در صورت کاهش بهره/تورم: <strong style="color: #4ade80;">⬆️ بالا می‌رود (پامپ و صعود قوی)</strong><br>
+                • در صورت ارقام داغ‌تر: <strong style="color: #f87171;">⬇️ پایین می‌آید (ریزش و اصلاح قیمتی)</strong>
+              </div>
+            </div>
+
             <div style="background: rgba(234, 179, 8, 0.06); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 8px; padding: 10px 12px;">
               <div style="font-size: 0.82rem; font-weight: 800; color: #facc15; display: flex; align-items: center; gap: 6px;">
                 <span>🥇</span> بازار طلا (Gold / XAUUSD)
               </div>
               <div style="font-size: 0.74rem; color: #cbd5e1; margin-top: 5px; line-height: 1.5;">
-                • در صورت کاهش بهره/تورم: <strong style="color: #4ade80;">⬆️ صعودی قوی</strong><br>
+                • در صورت کاهش بهره/تورم: <strong style="color: #4ade80;">⬆️ صعودی قوی (رشد شمش طلا)</strong><br>
                 • در صورت ارقام داغ‌تر: <strong style="color: #f87171;">⬇️ نزولی و اصلاح</strong>
               </div>
             </div>
@@ -3227,38 +3240,29 @@
                 <span>💵</span> فارکس و دلار (Forex / DXY)
               </div>
               <div style="font-size: 0.74rem; color: #cbd5e1; margin-top: 5px; line-height: 1.5;">
-                • در صورت کاهش بهره/تورم: <strong style="color: #f87171;">⬇️ تضعیف شاخص دلار</strong><br>
+                • در صورت کاهش بهره/تورم: <strong style="color: #f87171;">⬇️ افت شاخص دلار DXY</strong><br>
                 • در صورت ارقام داغ‌تر: <strong style="color: #4ade80;">⬆️ جهش و تقویت دلار</strong>
-              </div>
-            </div>
-
-            <div style="background: rgba(34, 197, 94, 0.06); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; padding: 10px 12px;">
-              <div style="font-size: 0.82rem; font-weight: 800; color: #4ade80; display: flex; align-items: center; gap: 6px;">
-                <span>🪙</span> رمزارزها (Crypto / Bitcoin)
-              </div>
-              <div style="font-size: 0.74rem; color: #cbd5e1; margin-top: 5px; line-height: 1.5;">
-                • در صورت کاهش بهره/تورم: <strong style="color: #4ade80;">⬆️ پامپ و جذب نقدینگی</strong><br>
-                • در صورت ارقام داغ‌تر: <strong style="color: #f87171;">⬇️ ریزش و فشار فروش</strong>
               </div>
             </div>
           </div>
 
           <!-- Schedule Table -->
           <div style="overflow-x: auto;">
-            <table class="crypto-table" style="min-width: 960px;">
+            <table class="crypto-table" style="min-width: 1050px;">
               <thead>
                 <tr>
                   <th style="min-width: 200px;">نام رویداد اقتصادی کلان</th>
                   <th>کد</th>
-                  <th style="min-width: 130px;">درجه اهمیت و نوسان</th>
-                  <th>تاریخ و ساعت (UTC)</th>
+                  <th style="min-width: 120px;">درجه اهمیت</th>
+                  <th style="min-width: 190px; color: #ffd700;">زمان دقیق (به وقت تهران 🇮🇷)</th>
                   <th>پیش‌بینی (Forecast)</th>
                   <th>دوره قبل (Prev)</th>
-                  <th style="min-width: 330px; background: rgba(0, 210, 255, 0.08); text-align: center;">اثر در صورت تحقق پیش‌بینی (طلا | فارکس | کریپتو)</th>
+                  <th style="min-width: 330px; background: rgba(0, 230, 118, 0.08); text-align: center; color: #00e676;">پیش‌بینی ارز دیجیتال (بالا ⬆️ یا پایین ⬇️)</th>
+                  <th style="min-width: 200px; background: rgba(0, 210, 255, 0.06); text-align: center;">اثر طلا و دلار</th>
                 </tr>
               </thead>
               <tbody id="macroEventsTbody">
-                <tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-dim);">در حال دریافت تقویم رویدادهای فدرال‌رزرو...</td></tr>
+                <tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--text-dim);">در حال دریافت تقویم رویدادهای فدرال‌رزرو...</td></tr>
               </tbody>
             </table>
           </div>
@@ -4312,8 +4316,21 @@
         const cal = suite.calendar;
         document.getElementById('macroCountdownText').innerText = cal.countdown_fmt || '--';
         document.getElementById('macroShieldStatusTitle').innerText = cal.shield_state || 'وضعیت نرمال';
-        document.getElementById('macroNextEventName').innerText = `رویداد بعدی: ${cal.next_event || '--'}`;
+        
+        const nextEvEl = document.getElementById('macroNextEventName');
+        if (nextEvEl) {
+          const tehranStr = cal.date_tehran ? ` (${cal.date_tehran})` : '';
+          nextEvEl.innerHTML = `رویداد بعدی: <span style="color: #fff;">${cal.next_event || '--'}</span> <span style="color: #ffd700; font-size: 0.78rem;">${tehranStr}</span>`;
+        }
+        
         document.getElementById('macroShieldActionText').innerText = cal.shield_action || '--';
+
+        const nextBiasEl = document.getElementById('macroNextEventCryptoBias');
+        if (nextBiasEl && cal.crypto_prediction) {
+          const cp = cal.crypto_prediction;
+          nextBiasEl.style.display = 'block';
+          nextBiasEl.innerHTML = `🪙 <strong>پیش‌بینی مستقیم کریپتو:</strong> ${cp.summary || ''} <span style="margin-right: 8px; background: rgba(0,230,118,0.2); border: 1px solid rgba(0,230,118,0.4); padding: 2px 8px; border-radius: 4px; color: ${cp.expected_color || '#00e676'}; font-weight: 800;">${cp.expected_dir || ''}</span>`;
+        }
 
         const tbody = document.getElementById('macroEventsTbody');
         tbody.innerHTML = '';
@@ -4343,45 +4360,59 @@
           }
 
           const volTextFa = ev.volatility_fa || (ev.impact === 'CRITICAL_MAX' ? 'نوسان شدید' : 'نوسان بالا');
-          
+          const cp = ev.crypto_prediction || {};
           const rx = ev.reaction_inline || {};
           const gold = rx.gold || { arrow: '⬆️', dir: 'صعودی' };
           const forex = rx.forex || { arrow: '⬇️', dir: 'تضعیف دلار' };
-          const crypto = rx.crypto || { arrow: '⬆️', dir: 'پامپ و رشد' };
+
+          const expectedDir = cp.expected_dir || 'صعودی (Bullish)';
+          const expectedCol = cp.expected_color || '#00e676';
+          const upScen = cp.up_scenario || '';
+          const downScen = cp.down_scenario || '';
 
           tr.innerHTML = `
             <td>
-              <strong style="color: #fff; font-size: 0.9rem;">${ev.name}</strong>
+              <strong style="color: #fff; font-size: 0.88rem;">${ev.name}</strong>
               ${ev.forecast_context ? `<div style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px;">📌 ${ev.forecast_context}</div>` : ''}
             </td>
             <td><span class="mono" style="font-size: 0.8rem; font-weight: 700; color: #38bdf8;">${ev.code}</span></td>
             <td>
-              <span class="indicator-badge" style="background: ${impBg}; color: ${impCol}; font-weight: 800; font-size: 0.75rem; display: inline-block;">
+              <span class="indicator-badge" style="background: ${impBg}; color: ${impCol}; font-weight: 800; font-size: 0.74rem; display: inline-block;">
                 ● ${impTextFa}
               </span>
-              <div style="font-size: 0.69rem; color: #94a3b8; margin-top: 3px; font-weight: 500;">
+              <div style="font-size: 0.68rem; color: #94a3b8; margin-top: 3px; font-weight: 500;">
                 ${volTextFa}
               </div>
             </td>
-            <td><span class="mono" style="font-size: 0.78rem; color: #cbd5e1;">${ev.date_utc}</span></td>
-            <td><strong style="color: #00d2ff; font-family: monospace;">${ev.forecast}</strong></td>
+            <td>
+              <div style="font-size: 0.82rem; font-weight: 800; color: #ffd700; line-height: 1.4;">
+                ${ev.date_tehran || ev.date_utc}
+              </div>
+              <div class="mono" style="font-size: 0.7rem; color: #64748b; margin-top: 3px;">
+                UTC: ${ev.date_utc}
+              </div>
+            </td>
+            <td><strong style="color: #00d2ff; font-family: monospace; font-size: 0.9rem;">${ev.forecast}</strong></td>
             <td><span style="color: var(--text-dim); font-family: monospace;">${ev.previous}</span></td>
+            <td style="background: rgba(0, 230, 118, 0.03); border-right: 2px solid rgba(0, 230, 118, 0.2);">
+              <div style="display: flex; flex-direction: column; gap: 5px;">
+                <div>
+                  <span style="background: rgba(0, 230, 118, 0.15); border: 1px solid rgba(0, 230, 118, 0.4); color: ${expectedCol}; padding: 3px 8px; border-radius: 6px; font-size: 0.76rem; font-weight: 800; display: inline-block;">
+                    جهت سناریوی پایه: ${expectedDir}
+                  </span>
+                </div>
+                ${upScen ? `<div style="font-size: 0.72rem; color: #4ade80; line-height: 1.4; background: rgba(34,197,94,0.06); padding: 4px 6px; border-radius: 4px;">${upScen}</div>` : ''}
+                ${downScen ? `<div style="font-size: 0.72rem; color: #f87171; line-height: 1.4; background: rgba(239,68,68,0.06); padding: 4px 6px; border-radius: 4px;">${downScen}</div>` : ''}
+              </div>
+            </td>
             <td>
               <div style="display: flex; flex-direction: column; gap: 4px;">
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                  <span style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); color: #4ade80; padding: 3px 8px; border-radius: 6px; font-size: 0.76rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                    🥇 طلا: ${gold.arrow} ${gold.dir}
-                  </span>
-                  <span style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 3px 8px; border-radius: 6px; font-size: 0.76rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                    💵 فارکس: ${forex.arrow} ${forex.dir}
-                  </span>
-                  <span style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); color: #4ade80; padding: 3px 8px; border-radius: 6px; font-size: 0.76rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                    🪙 رمز ارز: ${crypto.arrow} ${crypto.dir}
-                  </span>
-                </div>
-                <div style="font-size: 0.69rem; color: #64748b; margin-top: 2px;">
-                  <span style="color: #f59e0b;">انحراف بالاتر:</span> طلا ⬇️ | دلار ⬆️ | کریپتو ⬇️ &nbsp;|&nbsp; <span style="color: #38bdf8;">انحراف پایین‌تر:</span> طلا ⬆️ | دلار ⬇️ | کریپتو ⬆️
-                </div>
+                <span style="background: rgba(234, 179, 8, 0.12); border: 1px solid rgba(234, 179, 8, 0.3); color: #facc15; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem;">
+                  🥇 طلا: ${gold.arrow} ${gold.dir}
+                </span>
+                <span style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem;">
+                  💵 دلار: ${forex.arrow} ${forex.dir}
+                </span>
               </div>
             </td>
           `;

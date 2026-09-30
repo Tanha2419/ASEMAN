@@ -966,10 +966,11 @@ class TelegramDispatcher:
         grade_emoji = "👑" if grade == "A+" else ("⭐" if grade == "A" else "⚠️")
         action_emoji = "🚀" if "LONG" in scalp.get("action", "") or "BUY" in scalp.get("action", "") else "🔻"
 
+        src = analysis_data.get('ticker', {}).get('source', 'Binance')
         msg = f"""
 {grade_emoji} <b>سیگنال نهادی هوشمند CryptoAgent AI</b> [{sym}]
 ━━━━━━━━━━━━━━━━━━━━
-💰 <b>قیمت لحظه‌ای:</b> ${price:,.4f}
+💰 <b>قیمت لحظه‌ای:</b> ${price:,.4f} ({src})
 🧭 <b>سیگنال سیستم:</b> {action_emoji} <b>{scalp.get('action', 'WAIT')}</b>
 ⭐ <b>درجه سیگنال:</b> <code>Grade {grade}</code> ({s3d.get('composite_confidence', 0)}%)
 
@@ -1790,45 +1791,133 @@ class EconomicCalendarEngine:
     
     MACRO_EVENTS = [
         {
-            "name": "FOMC Interest Rate Decision (نرخ بهره فدرال‌رزرو آمریکا)",
-            "code": "FOMC",
+            "name": "US Non-Farm Payrolls & Unemployment (گزارش اشتغال NFP و نرخ بیکاری آمریکا)",
+            "code": "NFP",
             "impact": "CRITICAL_MAX",
             "impact_fa": "بسیار بالا / بحرانی",
-            "volatility_fa": "نوسان بسیار شدید (۲۰۰+ پیپ طلا / ۵٪ کریپتو)",
+            "volatility_fa": "نوسان شدید (۱۵۰+ پیپ طلا / ۳.۵٪ کریپتو)",
             "impact_color": "#ff3366",
-            "date_utc": "2026-09-23 18:00:00",
-            "epoch": 1790186400,
-            "forecast": "4.75%",
-            "previous": "5.00%",
-            "forecast_context": "کاهش ۰.۲۵٪ نرخ بهره سیاستی آمریکا توسط فدرال‌رزرو",
+            "date_utc": "2026-10-02 12:30:00",
+            "date_tehran": "جمعه ۱۰ مهر ۱۴۰۵ — ساعت ۱۶:۰۰ به وقت تهران 🇮🇷",
+            "epoch": 1790944200,
+            "forecast": "165K",
+            "previous": "142K",
+            "forecast_context": "تعادل در اشتغال‌زایی و تحقق سناریوی فرود نرم اقتصادی بدون شوک تورمی",
+            "crypto_prediction": {
+                "summary": "کاهش عدد اشتغال = صعود رمزارزها 🟢 | افزایش غیرمنتظره = افت قیمت 🔴",
+                "up_scenario": "اگر اشتغال زیر 150K بیاید یا بیکاری بالا برود 🟢 ⬅️ ارز دیجیتال بالا می‌رود (پامپ و جهش شارپ بیت‌کوین)",
+                "down_scenario": "اگر اشتغال بالای 180K بیاید 🔴 ⬅️ ارز دیجیتال پایین می‌آید (ریزش و فشار فروش ناشی از تاخیر کاهش نرخ بهره)",
+                "expected_dir": "صعودی (Bullish)",
+                "expected_color": "#00e676"
+            },
             "reaction_inline": {
-                "gold": {"arrow": "⬆️", "dir": "صعودی", "color": "#00e676", "desc": "کاهش بازدهی اوراق خزانه و جهش طلا"},
-                "forex": {"arrow": "⬇️", "dir": "تضعیف دلار (DXY)", "color": "#ff3366", "desc": "افت شاخص دلار در برابر سبد ارزهای جهانی"},
-                "crypto": {"arrow": "⬆️", "dir": "پامپ و رشد (BTC)", "color": "#00e676", "desc": "تزریق نقدینگی ارزان و شکست مقاومت‌های کریپتو"}
+                "gold": {"arrow": "⬆️", "dir": "صعودی", "color": "#00e676", "desc": "حفظ تمایل صعودی طلا با تثبیت سناریوی فرود نرم"},
+                "forex": {"arrow": "⬇️", "dir": "تضعیف دلار (DXY)", "color": "#ff3366", "desc": "تعدیل قدرت دلار در برابر سایر ارزها"},
+                "crypto": {"arrow": "⬆️", "dir": "رشد و صعود (BTC)", "color": "#00e676", "desc": "رفع ابهام ریسک بازار کار و ورود پول به بیت‌کوین"}
             },
             "reaction_higher": {
-                "gold": {"arrow": "⬇️", "dir": "نزولی و افت", "color": "#ff3366"},
-                "forex": {"arrow": "⬆️", "dir": "جهش شارپ دلار", "color": "#00e676"},
-                "crypto": {"arrow": "⬇️", "dir": "ریزش سنگین", "color": "#ff3366"}
+                "gold": {"arrow": "⬇️", "dir": "افت طلا", "color": "#ff3366"},
+                "forex": {"arrow": "⬆️", "dir": "جهش دلار", "color": "#00e676"},
+                "crypto": {"arrow": "⬇️", "dir": "ریزش قیمت ارز دیجیتال", "color": "#ff3366"}
             },
             "reaction_lower": {
-                "gold": {"arrow": "⬆️", "dir": "جهش تاریخی", "color": "#00e676"},
-                "forex": {"arrow": "⬇️", "dir": "سقوط آزاد دلار", "color": "#ff3366"},
-                "crypto": {"arrow": "⬆️", "dir": "سوپر رالی گاوی", "color": "#00e676"}
+                "gold": {"arrow": "⬆️", "dir": "پرواز طلا", "color": "#00e676"},
+                "forex": {"arrow": "⬇️", "dir": "سقوط دلار", "color": "#ff3366"},
+                "crypto": {"arrow": "⬆️", "dir": "جهش تاریخی و پامپ کریپتو", "color": "#00e676"}
             }
         },
         {
-            "name": "US Core PCE Price Index (شاخص تورم هسته مصرف شخصی آمریکا)",
+            "name": "US CPI Inflation MoM/YoY (شاخص تورم کل مصرف‌کننده آمریکا)",
+            "code": "CPI",
+            "impact": "CRITICAL_MAX",
+            "impact_fa": "بسیار بالا / بحرانی",
+            "volatility_fa": "نوسان شدید (۱۸۰+ پیپ طلا / ۴.۵٪ کریپتو)",
+            "impact_color": "#ff3366",
+            "date_utc": "2026-10-14 12:30:00",
+            "date_tehran": "چهارشنبه ۲۲ مهر ۱۴۰۵ — ساعت ۱۶:۰۰ به وقت تهران 🇮🇷",
+            "epoch": 1791981000,
+            "forecast": "2.4%",
+            "previous": "2.5%",
+            "forecast_context": "تایید مهار قطعی تورم سالانه و تثبیت چرخه کاهش نرخ بهره فدرال‌رزرو",
+            "crypto_prediction": {
+                "summary": "تورم کمتر از ۲.۴٪ = سوپر رالی صعودی 🟢 | تورم بالای ۲.۵٪ = ریزش سنگین 🔴",
+                "up_scenario": "اگر تورم کمتر از 2.4% بیاید 🟢 ⬅️ ارز دیجیتال بالا می‌رود (سوپر پامپ تاریخی بیت‌کوین و فتح سقف‌ها)",
+                "down_scenario": "اگر تورم بالاتر از 2.5% بیاید 🔴 ⬅️ ارز دیجیتال پایین می‌آید (دامپ و اصلاح عمیق قیمت به دلیل وحشت تورمی)",
+                "expected_dir": "صعود پرقدرت (Strong Pump)",
+                "expected_color": "#00e676"
+            },
+            "reaction_inline": {
+                "gold": {"arrow": "⬆️", "dir": "صعودی", "color": "#00e676", "desc": "سقوط انتظارات تورمی دلار و هجوم سرمایه به طلا"},
+                "forex": {"arrow": "⬇️", "dir": "تضعیف شاخص دلار", "color": "#ff3366", "desc": "عقب‌نشینی DXY با افزایش اطمینان از افت نرخ بهره"},
+                "crypto": {"arrow": "⬆️", "dir": "پامپ قدرتمند (BTC)", "color": "#00e676", "desc": "انفجار حجم معاملات و حمله بیت‌کوین به سقف‌ها"}
+            },
+            "reaction_higher": {
+                "gold": {"arrow": "⬇️", "dir": "ریزش شدید طلا", "color": "#ff3366"},
+                "forex": {"arrow": "⬆️", "dir": "جهش دلار", "color": "#00e676"},
+                "crypto": {"arrow": "⬇️", "dir": "دامپ و اصلاح عمیق", "color": "#ff3366"}
+            },
+            "reaction_lower": {
+                "gold": {"arrow": "⬆️", "dir": "صعود تاریخی طلا", "color": "#00e676"},
+                "forex": {"arrow": "⬇️", "dir": "ریزش سنگین دلار", "color": "#ff3366"},
+                "crypto": {"arrow": "⬆️", "dir": "سوپر رالی گاوی بیت‌کوین", "color": "#00e676"}
+            }
+        },
+        {
+            "name": "US GDP Annualized QoQ (تولید ناخالص داخلی سالانه آمریکا)",
+            "code": "GDP",
+            "impact": "HIGH",
+            "impact_fa": "بالا",
+            "volatility_fa": "نوسان بالا (۹۰+ پیپ طلا / ۲٪ کریپتو)",
+            "impact_color": "#ff9800",
+            "date_utc": "2026-10-29 12:30:00",
+            "date_tehran": "پنجشنبه ۷ آبان ۱۴۰۵ — ساعت ۱۶:۰۰ به وقت تهران 🇮🇷",
+            "epoch": 1793277000,
+            "forecast": "2.8%",
+            "previous": "3.0%",
+            "forecast_context": "رشد ارگانیک و پایدار بزرگ‌ترین اقتصاد جهان بدون شوک منفی",
+            "crypto_prediction": {
+                "summary": "رشد متعادل = ثبات و رشد ارگانیک 🟢 | افت شدید زیر ۲٪ = ترس از رکود جهانی 🔴",
+                "up_scenario": "رشد نرمال (2.6% الی 2.9%) 🟢 ⬅️ ارز دیجیتال بالا می‌رود (فضای امن برای ورود سرمایه‌گذاران نهادی)",
+                "down_scenario": "سقوط شدید رشد به زیر 2.0% 🔴 ⬅️ ارز دیجیتال پایین می‌آید (ترس موقت از رکود و خروج پول هوشمند)",
+                "expected_dir": "صعود ارگانیک (Healthy Growth)",
+                "expected_color": "#00e676"
+            },
+            "reaction_inline": {
+                "gold": {"arrow": "⬆️", "dir": "صعودی ملایم", "color": "#00e676", "desc": "ثبات اقتصاد کلان و تقاضای پایدار شمش طلا"},
+                "forex": {"arrow": "⬇️", "dir": "تعدیل ملایم دلار", "color": "#ff3366", "desc": "تعادل در تراز تجاری و کاهش تب دلار"},
+                "crypto": {"arrow": "⬆️", "dir": "رشد ارگانیک (BTC)", "color": "#00e676", "desc": "فضای مساعد برای جذب نقدینگی در دارایی‌های دیجیتال"}
+            },
+            "reaction_higher": {
+                "gold": {"arrow": "⬇️", "dir": "نزول ملایم", "color": "#ff3366"},
+                "forex": {"arrow": "⬆️", "dir": "تقویت دلار", "color": "#00e676"},
+                "crypto": {"arrow": "⬇️", "dir": "رنج منفی", "color": "#ff3366"}
+            },
+            "reaction_lower": {
+                "gold": {"arrow": "⬆️", "dir": "جهش تقاضای امن", "color": "#00e676"},
+                "forex": {"arrow": "⬇️", "dir": "افت شاخص دلار", "color": "#ff3366"},
+                "crypto": {"arrow": "⬆️", "dir": "رشد ناشی از تسریع کاهش بهره", "color": "#00e676"}
+            }
+        },
+        {
+            "name": "US Core PCE Price Index (شاخص تورم هسته هزینه‌های مصرفی آمریکا)",
             "code": "PCE",
             "impact": "HIGH",
             "impact_fa": "بالا",
             "volatility_fa": "نوسان بالا (۱۰۰+ پیپ طلا / ۲.۵٪ کریپتو)",
             "impact_color": "#ff9800",
-            "date_utc": "2026-09-26 12:30:00",
-            "epoch": 1790425800,
-            "forecast": "2.6%",
-            "previous": "2.7%",
-            "forecast_context": "تداوم مهار تورم و تسهیل شرایط پولی برای بازارهای مالی",
+            "date_utc": "2026-10-30 12:30:00",
+            "date_tehran": "جمعه ۸ آبان ۱۴۰۵ — ساعت ۱۶:۰۰ به وقت تهران 🇮🇷",
+            "epoch": 1793363400,
+            "forecast": "2.5%",
+            "previous": "2.6%",
+            "forecast_context": "تداوم مهار تورم در سنجه اختصاصی و محبوب فدرال‌رزرو آمریکا",
+            "crypto_prediction": {
+                "summary": "مهار تورم هسته = صعود پایدار 🟢 | افزایش تورم = فشار فروش مقطعی 🔴",
+                "up_scenario": "اگر PCE کمتر از 2.5% بیاید 🟢 ⬅️ ارز دیجیتال بالا می‌رود (افزایش اطمینان بانک مرکزی به کاهش بهره)",
+                "down_scenario": "اگر PCE بالای 2.7% بیاید 🔴 ⬅️ ارز دیجیتال پایین می‌آید (اصلاح قیمتی کوتاه‌مدت)",
+                "expected_dir": "صعودی (Bullish)",
+                "expected_color": "#00e676"
+            },
             "reaction_inline": {
                 "gold": {"arrow": "⬆️", "dir": "صعودی", "color": "#00e676", "desc": "آرامش تورمی و تداوم تقاضای شمش طلا"},
                 "forex": {"arrow": "⬇️", "dir": "تضعیف ملایم دلار", "color": "#ff3366", "desc": "افت ملایم شاخص دلار DXY"},
@@ -1846,87 +1935,39 @@ class EconomicCalendarEngine:
             }
         },
         {
-            "name": "US Non-Farm Payrolls & Unemployment (گزارش اشتغال NFP و بیکاری آمریکا)",
-            "code": "NFP",
+            "name": "FOMC Interest Rate Decision (تصمیم نرخ بهره فدرال‌رزرو آمریکا)",
+            "code": "FOMC",
             "impact": "CRITICAL_MAX",
-            "impact_fa": "بسیار بالا / بحرانی",
-            "volatility_fa": "نوسان شدید (۱۵۰+ پیپ طلا / ۳.۵٪ کریپتو)",
+            "impact_fa": "فوق بحرانی / بالاترین اهمیت",
+            "volatility_fa": "نوسان طوفانی (۲۵۰+ پیپ طلا / ۵٪ الی ۸٪ کریپتو)",
             "impact_color": "#ff3366",
-            "date_utc": "2026-10-02 12:30:00",
-            "epoch": 1790944200,
-            "forecast": "165K",
-            "previous": "142K",
-            "forecast_context": "تعادل در اشتغال‌زایی و تحقق سناریوی فرود نرم بدون رکود",
+            "date_utc": "2026-11-04 19:00:00",
+            "date_tehran": "چهارشنبه ۱۴ آبان ۱۴۰۵ — ساعت ۲۲:۳۰ (شب) به وقت تهران 🇮🇷",
+            "epoch": 1793818800,
+            "forecast": "4.50%",
+            "previous": "4.75%",
+            "forecast_context": "کاهش مجدد ۰.۲۵٪ نرخ بهره و آغاز چرخه تسهیل کلان پولی جهانی",
+            "crypto_prediction": {
+                "summary": "کاهش نرخ بهره = انفجار صعودی کریپتو 🟢 | عدم کاهش یا لحن خشن پاول = ریزش شارپ 🔴",
+                "up_scenario": "کاهش 0.25% یا 0.50% نرخ بهره 🟢 ⬅️ ارز دیجیتال به شدت بالا می‌رود (سوپر پامپ تاریخی و رالی آلت‌سیزن)",
+                "down_scenario": "توقف کاهش بهره یا سخنان هاوکیش پاول 🔴 ⬅️ ارز دیجیتال پایین می‌آید (اسکوئیز خریداران و اصلاح سریع)",
+                "expected_dir": "انفجار صعودی (Mega Bullish Rally)",
+                "expected_color": "#00e676"
+            },
             "reaction_inline": {
-                "gold": {"arrow": "⬆️", "dir": "صعودی", "color": "#00e676", "desc": "حفظ تمایل صعودی طلا با تثبیت سناریوی فرود نرم"},
-                "forex": {"arrow": "⬇️", "dir": "تضعیف دلار (DXY)", "color": "#ff3366", "desc": "تعدیل قدرت دلار در برابر سایر ارزها"},
-                "crypto": {"arrow": "⬆️", "dir": "رشد و صعود (BTC)", "color": "#00e676", "desc": "رفع ابهام ریسک بازار کار و خرید دارایی دیجیتال"}
+                "gold": {"arrow": "⬆️", "dir": "صعودی تاریخی", "color": "#00e676", "desc": "کاهش بازدهی اوراق قرضه و پرواز قیمت طلا"},
+                "forex": {"arrow": "⬇️", "dir": "سقوط شاخص دلار", "color": "#ff3366", "desc": "افت شدید DXY در برابر ارزهای جهانی"},
+                "crypto": {"arrow": "⬆️", "dir": "سوپر پامپ تاریخی (BTC)", "color": "#00e676", "desc": "تزریق نقدینگی ارزان، آغاز بول‌ران کریپتو"}
             },
             "reaction_higher": {
-                "gold": {"arrow": "⬇️", "dir": "افت طلا", "color": "#ff3366"},
-                "forex": {"arrow": "⬆️", "dir": "جهش دلار", "color": "#00e676"},
-                "crypto": {"arrow": "⬇️", "dir": "فشار فروش سنگین", "color": "#ff3366"}
+                "gold": {"arrow": "⬇️", "dir": "نزولی و شوک", "color": "#ff3366"},
+                "forex": {"arrow": "⬆️", "dir": "جهش شارپ دلار", "color": "#00e676"},
+                "crypto": {"arrow": "⬇️", "dir": "ریزش سنگین", "color": "#ff3366"}
             },
             "reaction_lower": {
-                "gold": {"arrow": "⬆️", "dir": "پرواز طلا", "color": "#00e676"},
-                "forex": {"arrow": "⬇️", "dir": "سقوط دلار", "color": "#ff3366"},
-                "crypto": {"arrow": "⬆️", "dir": "جهش سریع کریپتو", "color": "#00e676"}
-            }
-        },
-        {
-            "name": "US CPI Inflation MoM/YoY (شاخص تورم کل مصرف‌کننده آمریکا)",
-            "code": "CPI",
-            "impact": "CRITICAL_MAX",
-            "impact_fa": "بسیار بالا / بحرانی",
-            "volatility_fa": "نوسان شدید (۱۸۰+ پیپ طلا / ۴٪ کریپتو)",
-            "impact_color": "#ff3366",
-            "date_utc": "2026-10-14 12:30:00",
-            "epoch": 1791981000,
-            "forecast": "2.4%",
-            "previous": "2.5%",
-            "forecast_context": "تایید مهار قطعی تورم سالانه و تثبیت چرخه انبساط پولی",
-            "reaction_inline": {
-                "gold": {"arrow": "⬆️", "dir": "صعودی", "color": "#00e676", "desc": "سقوط انتظارات تورمی دلار و هجوم سرمایه به طلا"},
-                "forex": {"arrow": "⬇️", "dir": "تضعیف شاخص دلار", "color": "#ff3366", "desc": "عقب‌نشینی DXY با افزایش اطمینان از افت نرخ بهره"},
-                "crypto": {"arrow": "⬆️", "dir": "پامپ قدرتمند (BTC)", "color": "#00e676", "desc": "انفجار حجم معاملات و حمله بیت‌کوین به سقف‌ها"}
-            },
-            "reaction_higher": {
-                "gold": {"arrow": "⬇️", "dir": "ریزش شدید طلا", "color": "#ff3366"},
-                "forex": {"arrow": "⬆️", "dir": "جهش دلار", "color": "#00e676"},
-                "crypto": {"arrow": "⬇️", "dir": "دامپ و اصلاح عمیق", "color": "#ff3366"}
-            },
-            "reaction_lower": {
-                "gold": {"arrow": "⬆️", "dir": "صعود تاریخی طلا", "color": "#00e676"},
-                "forex": {"arrow": "⬇️", "dir": "ریزش سنگین دلار", "color": "#ff3366"},
-                "crypto": {"arrow": "⬆️", "dir": "رالی رکوردشکن", "color": "#00e676"}
-            }
-        },
-        {
-            "name": "US GDP Annualized QoQ (تولید ناخالص داخلی سالانه آمریکا)",
-            "code": "GDP",
-            "impact": "HIGH",
-            "impact_fa": "بالا",
-            "volatility_fa": "نوسان بالا (۹۰+ پیپ طلا / ۲٪ کریپتو)",
-            "impact_color": "#ff9800",
-            "date_utc": "2026-10-29 12:30:00",
-            "epoch": 1793277000,
-            "forecast": "2.8%",
-            "previous": "3.0%",
-            "forecast_context": "رشد ارگانیک و پایدار بزرگ‌ترین اقتصاد جهان بدون شوک منفی",
-            "reaction_inline": {
-                "gold": {"arrow": "⬆️", "dir": "صعودی ملایم", "color": "#00e676", "desc": "ثبات اقتصاد کلان و تقاضای پایدار شمش طلا"},
-                "forex": {"arrow": "⬇️", "dir": "تعدیل ملایم دلار", "color": "#ff3366", "desc": "تعادل در تراز تجاری و کاهش تب دلار"},
-                "crypto": {"arrow": "⬆️", "dir": "رشد ارگانیک (BTC)", "color": "#00e676", "desc": "فضای مساعد برای جذب نقدینگی در دارایی‌های پرریسک"}
-            },
-            "reaction_higher": {
-                "gold": {"arrow": "⬇️", "dir": "نزول ملایم", "color": "#ff3366"},
-                "forex": {"arrow": "⬆️", "dir": "تقویت دلار", "color": "#00e676"},
-                "crypto": {"arrow": "⬇️", "dir": "رنج منفی", "color": "#ff3366"}
-            },
-            "reaction_lower": {
-                "gold": {"arrow": "⬆️", "dir": "جهش تقاضای امن", "color": "#00e676"},
-                "forex": {"arrow": "⬇️", "dir": "افت شاخص دلار", "color": "#ff3366"},
-                "crypto": {"arrow": "⬆️", "dir": "رشد ناشی از کاهش بهره", "color": "#00e676"}
+                "gold": {"arrow": "⬆️", "dir": "جهش تاریخی", "color": "#00e676"},
+                "forex": {"arrow": "⬇️", "dir": "سقوط آزاد دلار", "color": "#ff3366"},
+                "crypto": {"arrow": "⬆️", "dir": "آغاز بول‌ران رویایی", "color": "#00e676"}
             }
         }
     ]
@@ -1970,6 +2011,8 @@ class EconomicCalendarEngine:
             "impact_fa": next_ev.get("impact_fa", "بسیار بالا"),
             "volatility_fa": next_ev.get("volatility_fa", "نوسان شدید"),
             "date_utc": next_ev["date_utc"],
+            "date_tehran": next_ev.get("date_tehran", next_ev["date_utc"]),
+            "crypto_prediction": next_ev.get("crypto_prediction", {}),
             "countdown_seconds": int(time_diff),
             "countdown_fmt": f"{hours} ساعت و {minutes} دقیقه و {seconds} ثانیه",
             "forecast": next_ev["forecast"],
