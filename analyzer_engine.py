@@ -1357,7 +1357,7 @@ class CryptoTradingAgent:
             "fundamentals": fundamentals,
             "verdict": verdict,
             "chart_candles": chart_candles,
-            "analyzed_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+            "analyzed_at": (datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)).strftime("%Y-%m-%d %H:%M:%S (ایران 🇮🇷)")
         }
 
     def _evaluate_3d_scores(self, price: float, ta_15m: Dict[str, Any], ta_4h: Dict[str, Any], smc_15m: Dict[str, Any], ob: Dict[str, Any], derivatives: Dict[str, Any], scalp: Dict[str, Any], news_circuit: Optional[Dict[str, Any]] = None, backtest_summary: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

@@ -15,6 +15,7 @@ import json
 import re
 import urllib.request
 import xml.etree.ElementTree as ET
+from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
@@ -949,6 +950,118 @@ class BacktestEngine:
         }
 
 
+class WhaleOrderFlowEngine:
+    """Connects to live aggregate whale order flow and detects unusual whale transactions (CoinLobster & DEX)"""
+    _cache = {}
+    _last_fetch = 0
+
+    @classmethod
+    def get_whale_radar(cls) -> Dict[str, Any]:
+        now = time.time()
+        if now - cls._last_fetch < 180 and cls._cache:
+            return cls._cache
+
+        url = "https://coinlobster.com/mcp"
+        payload = json.dumps({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": "whale_radar", "arguments": {}}
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream"
+            }
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                raw = resp.read().decode("utf-8", errors="ignore")
+                for line in raw.split("\n"):
+                    if line.startswith("data:"):
+                        d = json.loads(line[5:].strip())
+                        content_txt = d.get("result", {}).get("content", [{}])[0].get("text", "{}")
+                        parsed = json.loads(content_txt)
+                        cls._cache = {
+                            "success": True,
+                            "summary": parsed.get("summary", "نهنگ‌ها در حال گردش نقدینگی هستند"),
+                            "windows": parsed.get("windows", {}),
+                            "timestamp": time.time()
+                        }
+                        cls._last_fetch = now
+                        return cls._cache
+        except Exception as e:
+            pass
+
+        # Fallback empty structure
+        return {
+            "success": False,
+            "summary": "رصد معاملات نهنگ‌ها در جریان است",
+            "windows": {"1h": [], "24h": []},
+            "timestamp": now
+        }
+
+    @classmethod
+    def check_symbol_whale_flow(cls, symbol: str) -> Dict[str, Any]:
+        """Checks if symbol has unusual whale buying or selling in 1h or 24h"""
+        base_sym = symbol.upper().replace("USDT", "").replace("USD", "").replace("PERP", "").strip()
+        radar = cls.get_whale_radar()
+        windows = radar.get("windows", {})
+        
+        flow_1h = None
+        flow_24h = None
+
+        for item in windows.get("1h", []):
+            if item.get("coin", "").upper() == base_sym:
+                flow_1h = item
+                break
+
+        for item in windows.get("24h", []):
+            if item.get("coin", "").upper() == base_sym:
+                flow_24h = item
+                break
+
+        whale_confirmed = False
+        whale_direction = "NEUTRAL"
+        whale_badge = "⚪ رفتار نرمال نهنگ‌ها"
+
+        if flow_1h:
+            direction = flow_1h.get("direction", "")
+            if direction == "buy":
+                whale_confirmed = True
+                whale_direction = "BUYING"
+                whale_badge = "🐋 خرید غیرعادی نهنگ‌ها (Unusual Whale Buy)"
+            elif direction == "sell":
+                whale_confirmed = True
+                whale_direction = "SELLING"
+                whale_badge = "🚨 فروش سنگین و غیرعادی نهنگ‌ها (Whale Dump Alert)"
+        elif flow_24h:
+            direction = flow_24h.get("direction", "")
+            if direction == "buy":
+                whale_confirmed = True
+                whale_direction = "ACCUMULATING"
+                whale_badge = "🐋 انباشت ۲۴ ساعته توسط نهنگ‌ها (Accumulation)"
+            elif direction == "sell":
+                whale_confirmed = True
+                whale_direction = "DISTRIBUTING"
+                whale_badge = "🚨 توزیع و خروج سرمایه ۲۴ ساعته نهنگ‌ها"
+
+        return {
+            "symbol": symbol,
+            "base_coin": base_sym,
+            "whale_confirmed": whale_confirmed,
+            "whale_direction": whale_direction,
+            "whale_badge": whale_badge,
+            "flow_1h": flow_1h,
+            "flow_24h": flow_24h,
+            "radar_summary": radar.get("summary", "")
+        }
+
+
 class TelegramDispatcher:
     """Dispatches formatted institutional signals directly to Telegram bots & Webhooks"""
 
@@ -963,7 +1076,31 @@ class TelegramDispatcher:
         matrix = analysis_data.get("derivatives_matrix", {})
         grade = s3d.get("grade", "A")
 
-        grade_emoji = "👑" if grade == "A+" else ("⭐" if grade == "A" else "⚠️")
+        # Time formatting to Iran Time (UTC+3:30)
+        now_utc = datetime.now(timezone.utc)
+        iran_tz = timezone(timedelta(hours=3, minutes=30))
+        now_iran = now_utc.astimezone(iran_tz)
+        tehran_time_str = now_iran.strftime("%H:%M:%S")
+        tehran_date_str = now_iran.strftime("%Y/%m/%d")
+
+        # Scalp validity in Iran Time
+        valid_until_tehran = scalp.get('valid_until_tehran') or (now_iran + timedelta(minutes=45)).strftime("%H:%M:%S")
+
+        # Whale radar check
+        whale_info = WhaleOrderFlowEngine.check_symbol_whale_flow(sym)
+        whale_badge = whale_info.get("whale_badge", "⚪ رفتار نرمال نهنگ‌ها")
+
+        # Hyperliquid DEX whale metrics
+        hl_info = HyperliquidWhaleEngine.get_asset_metrics(sym)
+        hl_line = ""
+        if hl_info.get("has_hyperliquid"):
+            hl_line = f"\n⚡ <b>هایپرلیکویید (DEX Whales):</b> <code>{hl_info.get('whale_sentiment')} (OI: {hl_info.get('oi_formatted')})</code>"
+
+        # Confluence check
+        conf = InstitutionalConfluenceEngine.evaluate_confluence(sym, s3d.get('composite_confidence', 80), scalp.get('action', ''), price)
+        conf_badge = f"\n💎 <b>سطح همگرایی نهایی:</b> <code>{conf.get('grade_title')}</code>" if conf.get('is_diamond_platinum') else ""
+
+        grade_emoji = "💎" if conf.get("is_diamond_platinum") else ("👑" if grade == "A+" else ("⭐" if grade == "A" else "⚠️"))
         action_emoji = "🚀" if "LONG" in scalp.get("action", "") or "BUY" in scalp.get("action", "") else "🔻"
 
         src = analysis_data.get('ticker', {}).get('source', 'Binance')
@@ -972,7 +1109,8 @@ class TelegramDispatcher:
 ━━━━━━━━━━━━━━━━━━━━
 💰 <b>قیمت لحظه‌ای:</b> ${price:,.4f} ({src})
 🧭 <b>سیگنال سیستم:</b> {action_emoji} <b>{scalp.get('action', 'WAIT')}</b>
-⭐ <b>درجه سیگنال:</b> <code>Grade {grade}</code> ({s3d.get('composite_confidence', 0)}%)
+⭐ <b>درجه سیگنال:</b> <code>Grade {grade}</code> ({s3d.get('composite_confidence', 0)}%){conf_badge}
+🐋 <b>رادار نهنگ‌ها:</b> <code>{whale_badge}</code>{hl_line}
 
 🎯 <b>تفکیک سه‌گانه امتیازات سازمانی:</b>
 • امتیاز جهت (Direction): <code>{s3d.get('direction_score', 0)}/100</code>
@@ -985,8 +1123,8 @@ class TelegramDispatcher:
 • رژیم مشتقه: <code>{matrix.get('regime', 'Neutral')}</code>
 
 ⚡ <b>سطوح معاملاتی دقیق (Execution Levels):</b>
-⏰ <b>زمان صدور سیگنال (UTC):</b> <code>{scalp.get('generated_at_utc', 'N/A')}</code>
-⏳ <b>افق اعتبار ستاپ:</b> <code>{scalp.get('validity_window_text', '۳ ساعت')} (تا {scalp.get('valid_until_utc', 'N/A')})</code>
+⏰ <b>زمان صدور به وقت ایران 🇮🇷:</b> <code>ساعت {tehran_time_str} ({tehran_date_str})</code>
+⏳ <b>افق اعتبار ستاپ:</b> <code>۳۰ الی ۴۵ دقیقه (تا ساعت {valid_until_tehran} به وقت ایران)</code>
 🔹 <b>محدوده ورود:</b> <code>{scalp.get('entry_zone', '-')}</code>
 🛑 <b>حد ضرر (SL):</b> <code>${scalp.get('stop_loss', 0):,.4f} (-{scalp.get('stop_loss_pct', 0)}%)</code>
 🎯 <b>تارگت اول (TP1):</b> <code>${scalp.get('tp1', 0):,.4f} (+{scalp.get('tp1_pct', 0)}%)</code>
@@ -997,13 +1135,15 @@ class TelegramDispatcher:
 🛡️ <b>دستورالعمل مدیریت ریسک:</b>
 {s3d.get('action_advice', '')}
 ━━━━━━━━━━━━━━━━━━━━
-⏰ <i>زمان تحلیل: {analysis_data.get('analyzed_at', '')}</i>
+📊 <b>مشاهده آنلاین چارت:</b> <a href="https://www.tradingview.com/chart/?symbol=BINANCE:{sym}">TradingView Chart ↗️</a>
+⏰ <i>زمان تحلیل (ایران 🇮🇷): {tehran_time_str}</i>
 """
         return msg.strip()
 
     @classmethod
     def send_to_telegram(cls, bot_token: str, chat_id: str, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Dispatches signal to specified Telegram chat or channel"""
+        """Dispatches signal to specified Telegram chat or channel with inline TradingView button"""
+        sym = analysis_data.get("symbol", "BTCUSDT")
         if not bot_token or not chat_id:
             # Simulated preview
             formatted = cls.format_signal_message(analysis_data)
@@ -1016,11 +1156,22 @@ class TelegramDispatcher:
 
         text = cls.format_signal_message(analysis_data)
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        
+        tv_link = f"https://www.tradingview.com/chart/?symbol=BINANCE:{sym}"
+        reply_markup = {
+            "inline_keyboard": [
+                [
+                    {"text": f"📈 مشاهده چارت {sym} در TradingView ↗️", "url": tv_link}
+                ]
+            ]
+        }
+
         payload = json.dumps({
             "chat_id": chat_id,
             "text": text,
             "parse_mode": "HTML",
-            "disable_web_page_preview": True
+            "disable_web_page_preview": True,
+            "reply_markup": reply_markup
         }).encode("utf-8")
 
         try:
@@ -3053,4 +3204,177 @@ class ExchangeDataEngine:
                     'note': 'در کنسول سایت Finage، بسته Free Crypto باید روی اکانت اکتیو شود.'
                 }
             }
+        }
+
+
+class HyperliquidWhaleEngine:
+    """Connects to Hyperliquid DEX API for decentralized whale positions, OI, and live funding rates"""
+    _cache = {}
+    _last_fetch = 0
+
+    @classmethod
+    def get_all_market_data(cls) -> Dict[str, Any]:
+        now = time.time()
+        if now - cls._last_fetch < 60 and cls._cache:
+            return cls._cache
+
+        url = "https://api.hyperliquid.xyz/info"
+        payload = json.dumps({"type": "metaAndAssetCtxs"}).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"}
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                universe = data[0].get("universe", [])
+                ctxs = data[1] if len(data) > 1 else []
+                res = {}
+                for i, u in enumerate(universe):
+                    name = u.get("name", "")
+                    if i < len(ctxs):
+                        ctx = ctxs[i]
+                        px = float(ctx.get("midPx") or ctx.get("markPx") or 0)
+                        oi = float(ctx.get("openInterest") or 0)
+                        funding = float(ctx.get("funding") or 0)
+                        res[name] = {
+                            "symbol": f"{name}USDT",
+                            "coin": name,
+                            "price": px,
+                            "open_interest": oi,
+                            "open_interest_usd": round(oi * px, 2),
+                            "funding_rate": funding,
+                            "funding_rate_annualized_pct": round(funding * 24 * 365 * 100, 2)
+                        }
+                cls._cache = {"success": True, "markets": res, "timestamp": now}
+                cls._last_fetch = now
+                return cls._cache
+        except Exception as e:
+            return {"success": False, "markets": {}, "error": str(e), "timestamp": now}
+
+    @classmethod
+    def get_asset_metrics(cls, symbol: str) -> Dict[str, Any]:
+        base_coin = symbol.upper().replace("USDT", "").replace("USD", "").replace("PERP", "").strip()
+        all_data = cls.get_all_market_data()
+        markets = all_data.get("markets", {})
+        info = markets.get(base_coin)
+        if not info:
+            return {
+                "coin": base_coin,
+                "has_hyperliquid": False,
+                "oi_usd": 0,
+                "funding_rate": 0,
+                "whale_sentiment": "نامشخص (فاقد بازار در هایپرلیکویید)",
+                "sentiment_code": "NEUTRAL"
+            }
+
+        oi_usd = info.get("open_interest_usd", 0)
+        fr = info.get("funding_rate", 0)
+
+        # Funding rate interpretation:
+        # High positive funding (> 0.0001) = overcrowded longs, danger of long squeeze
+        # Negative funding (< -0.00005) = heavily shorted, high probability of short squeeze / pump
+        # Normal funding = balanced
+        if fr > 0.0001:
+            sentiment = "⚠️ انباشت شدید پوزیشن‌های لانگ در هایپرلیکویید (خطر فلاش نزولی)"
+            sentiment_code = "OVERBOUGHT_LONGS"
+            bias_weight = -10
+        elif fr < -0.00003:
+            sentiment = "🚀 سنگینی پوزیشن‌های شورت (پتانسیل انفجار قیمت و Short Squeeze)"
+            sentiment_code = "SQUEEZE_POTENTIAL"
+            bias_weight = +15
+        else:
+            sentiment = "🟢 جریان نرمال و متوازن معاملات نهنگ‌ها در هایپرلیکویید"
+            sentiment_code = "BALANCED"
+            bias_weight = 0
+
+        return {
+            "coin": base_coin,
+            "has_hyperliquid": True,
+            "price": info.get("price", 0),
+            "oi_usd": oi_usd,
+            "oi_formatted": f"${oi_usd:,.0f}",
+            "funding_rate": fr,
+            "funding_annual_pct": info.get("funding_rate_annualized_pct", 0),
+            "whale_sentiment": sentiment,
+            "sentiment_code": sentiment_code,
+            "bias_weight": bias_weight
+        }
+
+
+class InstitutionalConfluenceEngine:
+    """Combines Rule #13 Confluence: Technical SMC + CoinLobster Whale Radar + Hyperliquid DEX OI + Macro News Shield"""
+
+    @classmethod
+    def evaluate_confluence(cls, symbol: str, ta_score: int, action: str, price: float) -> Dict[str, Any]:
+        base_coin = symbol.upper().replace("USDT", "").replace("USD", "").replace("PERP", "").strip()
+        
+        # 1. CoinLobster Whale Flow
+        whale_flow = WhaleOrderFlowEngine.check_symbol_whale_flow(symbol)
+        whale_dir = whale_flow.get("whale_direction", "NEUTRAL")
+        
+        # 2. Hyperliquid DEX Metrics
+        hl_metrics = HyperliquidWhaleEngine.get_asset_metrics(symbol)
+        hl_code = hl_metrics.get("sentiment_code", "BALANCED")
+        
+        # 3. Macro News Shield
+        shield = EconomicCalendarEngine.get_macro_shield_status()
+        is_frozen = shield.get("is_frozen", False)
+        
+        confluence_score = ta_score
+        badges = []
+        is_diamond_platinum = False
+
+        if is_frozen:
+            return {
+                "confluence_grade": "FROZEN 🛑",
+                "confluence_score": 0,
+                "is_approved": False,
+                "message": "سیستم به دلیل رویداد کلان اقتصادی در حالت فیوز اضطراری قرار دارد.",
+                "badges": ["🛑 فیوز اخبار کلان فعال"]
+            }
+
+        is_buy = "LONG" in action or "BUY" in action
+        is_sell = "SHORT" in action or "SELL" in action
+
+        # Confluence check: Whale Alignment
+        if is_buy and whale_dir in ["BUYING", "ACCUMULATING"]:
+            confluence_score += 8
+            badges.append("🐋 همسویی خرید نهنگ‌ها (CoinLobster)")
+        elif is_sell and whale_dir in ["SELLING", "DISTRIBUTING"]:
+            confluence_score += 8
+            badges.append("🚨 همسویی توزیع نهنگ‌ها (CoinLobster)")
+        elif is_buy and whale_dir in ["SELLING", "DISTRIBUTING"]:
+            confluence_score -= 15
+            badges.append("⚠️ واگرایی منفی با فروش نهنگ‌ها")
+
+        # Confluence check: Hyperliquid Funding & OI
+        if is_buy and hl_code == "SQUEEZE_POTENTIAL":
+            confluence_score += 7
+            badges.append("⚡ فاندینگ منفی در هایپرلیکویید (آماده Short Squeeze)")
+        elif is_buy and hl_code == "OVERBOUGHT_LONGS":
+            confluence_score -= 8
+            badges.append("⚠️ تراکم سنگین لانگ‌ها در هایپرلیکویید")
+
+        confluence_score = max(0, min(100, confluence_score))
+
+        if confluence_score >= 90 and len(badges) >= 1 and ta_score >= 85:
+            is_diamond_platinum = True
+            grade_title = "💎 الماس پلاتینیوم نهادی (Platinum Confluence)"
+        elif confluence_score >= 80:
+            grade_title = "⭐ سیگنال با همگرایی مطلوب (High Confluence)"
+        else:
+            grade_title = "⚪ ستاپ معمولی (Standard Setup)"
+
+        return {
+            "symbol": symbol,
+            "base_coin": base_coin,
+            "confluence_score": confluence_score,
+            "grade_title": grade_title,
+            "is_diamond_platinum": is_diamond_platinum,
+            "badges": badges,
+            "whale_flow": whale_flow,
+            "hyperliquid": hl_metrics,
+            "macro_shield_frozen": is_frozen
         }

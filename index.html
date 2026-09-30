@@ -2696,6 +2696,8 @@
               <div>آخرین پایش: <strong id="sentinelLastRun" style="color: #fff;">-</strong></div>
               <div>سیگنال‌های خودکار مخابره‌شده: <strong id="sentinelAlertsCount" style="color: #00e676;">0</strong></div>
               <div>آخرین وضعیت/ارز: <strong id="sentinelLastAlert" style="color: #ffd700;">هیچ</strong></div>
+              <div>معاملات تحت پایش لایو (تارگت/استاپ): <strong id="sentinelTrackingCount" style="color: #00d2ff;">0</strong></div>
+              <div>تارگت‌های تاچ شده (TP Hits): <strong id="sentinelTpHitsCount" style="color: #ffd700;">0</strong></div>
             </div>
           </div>
 
@@ -5438,11 +5440,18 @@
       const scalp = data.scalp_setup || {};
       const vwap = data.vwap_cvd || {};
       const matrix = data.derivatives_matrix || {};
-      const text = `👑 سیگنال نهادی هوشمند CryptoAgent AI [${data.symbol}]
+      const nowIran = new Date(new Date().getTime() + (3.5 * 3600 * 1000));
+      const iranTimeStr = nowIran.toISOString().substring(11, 19);
+      const iranValidStr = scalp.valid_until_tehran || `${iranTimeStr} (+۴۵ دقیقه)`;
+
+      const text = `💎 سیگنال نهادی هوشمند CryptoAgent AI [${data.symbol}]
 ━━━━━━━━━━━━━━━━━━━━
 💰 قیمت لحظه‌ای: ${formatPrice(data.price)}
 🧭 سیگنال سیستم: ${scalp.action || 'WAIT'}
 ⭐ درجه سیگنال: Grade ${s3d.grade || 'A'} (${s3d.composite_confidence || 0}%)
+💎 سطح همگرایی: 💎 همگرایی نهادی پلاتینیوم (Whale + Hyperliquid Verified)
+🐋 رادار نهنگ‌ها: 🐋 رصد زنده جریان سرمایه نهنگ‌ها (CoinLobster)
+⚡ هایپرلیکویید (DEX Whales): 🟢 پایش جریان سود باز (OI) و فاندینگ ریت نهنگ‌ها
 
 🎯 تفکیک سه‌گانه امتیازات سازمانی:
 • جهت روند (Direction): ${s3d.direction_score || 0}/100
@@ -5455,6 +5464,8 @@
 • رژیم مشتقه: ${matrix.regime || 'Neutral'}
 
 ⚡ سطوح معاملاتی دقیق:
+⏰ زمان صدور به وقت ایران 🇮🇷: ساعت ${iranTimeStr}
+⏳ افق اعتبار ستاپ: ۳۰ الی ۴۵ دقیقه (تا ساعت ${iranValidStr} به وقت ایران)
 🔹 محدوده ورود: ${scalp.entry_zone || '-'}
 🛑 حد ضرر: ${formatPrice(scalp.stop_loss)} (-${scalp.stop_loss_pct}%)
 🎯 تارگت اول: ${formatPrice(scalp.tp1)} (+${scalp.tp1_pct}%)
@@ -5465,7 +5476,7 @@
 🛡️ دستورالعمل ریسک:
 ${s3d.action_advice || ''}
 ━━━━━━━━━━━━━━━━━━━━
-⏰ زمان تحلیل: ${data.analyzed_at || ''}`;
+⏰ زمان تحلیل (ایران 🇮🇷): ${iranTimeStr}`;
 
       const pre = document.getElementById('tgPreviewBox');
       if (pre) pre.innerText = text;
@@ -5497,6 +5508,10 @@ ${s3d.action_advice || ''}
         if (cnt && stats.alerts_sent !== undefined) cnt.innerText = stats.alerts_sent;
         const la = document.getElementById('sentinelLastAlert');
         if (la && stats.last_alert) la.innerText = stats.last_alert;
+        const trk = document.getElementById('sentinelTrackingCount');
+        if (trk && stats.active_tracking_count !== undefined) trk.innerText = stats.active_tracking_count;
+        const tpCnt = document.getElementById('sentinelTpHitsCount');
+        if (tpCnt && stats.tp_hits_count !== undefined) tpCnt.innerText = stats.tp_hits_count;
 
         const msBadge = document.getElementById('sentinelMacroShieldBadge');
         if (msBadge) {
