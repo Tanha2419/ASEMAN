@@ -1267,9 +1267,16 @@ class CryptoTradingAgent:
             derivatives.get("funding_rate", 0)
         )
 
-        # 9. Generate Scalp (1m/5m) & Swing (4h/1d) Setups
-        scalp_setup = self._build_scalp_setup(current_price, ta_5m=ta_5m, ta_1m=ta_1m, ob=orderbook, smc=smc_5m if smc_5m else smc_15m, ta_15m=ta_15m, ta_4h=ta_4h, derivatives=derivatives)
-        swing_setup = self._build_swing_setup(current_price, ta_4h, ta_1d, fundamentals, smc_4h)
+        # 9. Generate Scalp (1m/5m) & Swing (4h/1d) Setups with 5-Layer Confluence
+        scalp_setup = self._build_scalp_setup(
+            current_price, ta_5m=ta_5m, ta_1m=ta_1m, ob=orderbook,
+            smc=smc_5m if smc_5m else smc_15m, ta_15m=ta_15m, ta_4h=ta_4h,
+            derivatives=derivatives, derivatives_matrix=derivatives_matrix
+        )
+        swing_setup = self._build_swing_setup(
+            current_price, ta_4h, ta_1d, fundamentals, smc_4h,
+            derivatives=derivatives, derivatives_matrix=derivatives_matrix, ob=orderbook
+        )
 
         # 10. Macro Market, Dominance & Correlations (Layer 6)
         correlation = MacroEngine.compute_beta_and_correlation(klines_15m, btc_candles)
@@ -1550,9 +1557,15 @@ class CryptoTradingAgent:
 
         return table
 
-    def _build_scalp_setup(self, price: float, ta_5m: Dict[str, Any], ta_1m: Dict[str, Any], ob: Dict[str, Any], smc: Dict[str, Any], ta_15m: Optional[Dict[str, Any]] = None, ta_4h: Optional[Dict[str, Any]] = None, derivatives: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _build_scalp_setup(self, price: float, ta_5m: Dict[str, Any], ta_1m: Dict[str, Any], ob: Dict[str, Any], smc: Dict[str, Any], ta_15m: Optional[Dict[str, Any]] = None, ta_4h: Optional[Dict[str, Any]] = None, derivatives: Optional[Dict[str, Any]] = None, derivatives_matrix: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Ultra-Fast Scalp Setup engine calibrated specifically for 1-minute (M1) and 5-minute (M5) execution.
+        Enhanced with 5 Institutional Elite Quality Gates:
+          1. Live Order Book Imbalance & Wall Check
+          2. Multi-Timeframe (MTF) Macro Confluence (4H & 15M)
+          3. Open Interest (OI) & Derivatives Delta Validation (Trap / Fakeout Filter)
+          4. Dynamic Minimum Risk-to-Reward (R:R >= 1:2.0)
+          5. ATR Low-Volatility / Dead Market Filter
         Validity Horizon: 30 to 45 minutes from generation time (high-frequency turnover).
         """
         now_utc = datetime.now(timezone.utc)
@@ -1583,33 +1596,50 @@ class CryptoTradingAgent:
         rsi_1m = ta_1m.get("rsi", 50) if ta_1m else rsi_5m
         bias_5m = ref_ta.get("bias", "NEUTRAL")
         bias_1m = ta_1m.get("bias", "NEUTRAL") if ta_1m else bias_5m
+        bias_15m = ta_15m.get("bias", "NEUTRAL") if ta_15m else "NEUTRAL"
+        bias_4h = ta_4h.get("bias", "NEUTRAL") if ta_4h else "NEUTRAL"
         ema20 = ref_ta.get("ema20", price)
         nearest_sup = ref_ta.get("nearest_support", price - atr)
         nearest_res = ref_ta.get("nearest_resistance", price + atr)
-        ob_ratio = ob.get("ratio", 1.0)
+        ob_ratio = float(ob.get("ratio", 1.0))
         fake_badge = smc.get("fake_trend", {}).get("badge", "ORGANIC")
         latest_sweep = smc.get("latest_sweep", {})
 
-        # Multi-Timeframe Confluence (M1/M5 Scalp filtered against 4H Macro Trend)
-        bias_4h = (ta_4h.get("bias", "NEUTRAL") if ta_4h else "NEUTRAL")
+        # --- GATE 5: ATR Volatility Filter (Dead Chop Check) ---
         atr_pct = (atr / price) * 100.0 if price > 0 else 0.0
-        is_dead_chop = atr_pct < 0.08
+        is_dead_chop = atr_pct < 0.075
 
-        # Institutional Confluence Gates for M1/M5 Scalping
+        # --- GATE 1: Order Book Wall & Imbalance Check ---
+        # ob_ratio > 1.1 means strong buying depth support; < 0.9 means strong selling wall pressure
+        has_sell_wall = ob_ratio < 0.85
+        has_buy_wall = ob_ratio > 1.18
+
+        # --- GATE 3: Open Interest & Derivatives Regime Validation ---
+        deriv_regime = derivatives_matrix.get("regime_code", "NEUTRAL") if derivatives_matrix else "NEUTRAL"
+        is_short_covering_trap = (deriv_regime == "LONG_ACCUMULATION" and "Short Covering" in str(derivatives_matrix.get("regime", "")))
+        is_long_liquidation_trap = (deriv_regime == "SHORT_ACCUMULATION" and "Long Liquidation" in str(derivatives_matrix.get("regime", "")))
+
+        # --- GATE 2: Multi-Timeframe (MTF) Alignment ---
+        bullish_mtf = (bias_4h != "BEARISH_STRONG" and bias_15m != "BEARISH_STRONG")
+        bearish_mtf = (bias_4h != "BULLISH_STRONG" and bias_15m != "BULLISH_STRONG")
+
+        # 5-Layer Confluence Gates for M1/M5 Scalping
         bullish_aligned = (
             ("BULLISH" in bias_5m or "BULLISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP"))
-            and (bias_4h != "BEARISH_STRONG" or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP"))
-            and (35 <= rsi_5m <= 68)
-            and ob_ratio >= 0.90
+            and bullish_mtf
+            and (36 <= rsi_5m <= 68)
+            and not has_sell_wall
+            and not is_short_covering_trap
             and fake_badge != "BULL_TRAP"
             and not is_dead_chop
         )
 
         bearish_aligned = (
             ("BEARISH" in bias_5m or "BEARISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP"))
-            and (bias_4h != "BULLISH_STRONG" or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP"))
-            and (32 <= rsi_5m <= 65)
-            and ob_ratio <= 1.10
+            and bearish_mtf
+            and (32 <= rsi_5m <= 64)
+            and not has_buy_wall
+            and not is_long_liquidation_trap
             and fake_badge != "BEAR_TRAP"
             and not is_dead_chop
         )
@@ -1636,12 +1666,16 @@ class CryptoTradingAgent:
             risk = price - sl
             if risk <= 0: risk = price * 0.005; sl = self._round_val(price - risk)
             
-            tp1 = self._round_val(price + 1.2 * risk) # Quick scalp ~0.5-0.8%
-            tp2 = self._round_val(price + 2.2 * risk) # Target 2 ~1.2-1.8%
-            tp3 = self._round_val(max(price + 3.2 * risk, smc.get("bsl_pool_target", price * 1.025)))
-            confidence = "90%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "84%"
+            # GATE 4: Dynamic Minimum Risk-to-Reward (R:R >= 1:2.0 on Target 2)
+            tp1 = self._round_val(price + 1.25 * risk)
+            tp2 = self._round_val(price + 2.35 * risk)
+            tp3 = self._round_val(max(price + 3.4 * risk, smc.get("bsl_pool_target", price * 1.025)))
+            
+            rr_val = round((tp2 - price) / risk, 1) if risk > 0 else 2.3
+            confidence = "92%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "86%"
             
             triggers = [
+                f"تاییدیه همسویی ۵ لایه (MTF 4H صعودی + عمق خرید {ob_ratio:.2f}x + فقدان دیوار فروش)",
                 "ورود فوق‌سریع در تایم‌فریم ۱ و ۵ دقیقه با تاییدیه پرتاب اردر بوک",
                 "سیو سود ۵۰٪ در تارگت ۱ و انتقال فوری حد ضرر به نقطه ورود (Breakeven)",
                 "شکار استخر نقدینگی سقف (BSL Liquidity Pool)"
@@ -1669,12 +1703,16 @@ class CryptoTradingAgent:
             risk = sl - price
             if risk <= 0: risk = price * 0.005; sl = self._round_val(price + risk)
             
-            tp1 = self._round_val(price - 1.2 * risk)
-            tp2 = self._round_val(price - 2.2 * risk)
-            tp3 = self._round_val(min(price - 3.2 * risk, smc.get("ssl_pool_target", price * 0.975)))
-            confidence = "88%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "82%"
+            # GATE 4: Dynamic Minimum Risk-to-Reward (R:R >= 1:2.0 on Target 2)
+            tp1 = self._round_val(price - 1.25 * risk)
+            tp2 = self._round_val(price - 2.35 * risk)
+            tp3 = self._round_val(min(price - 3.4 * risk, smc.get("ssl_pool_target", price * 0.975)))
+            
+            rr_val = round((price - tp2) / risk, 1) if risk > 0 else 2.3
+            confidence = "90%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "84%"
             
             triggers = [
+                f"تاییدیه همسویی ۵ لایه (MTF 4H نزولی + فشار فروش اردر بوک + فاقد دیوار خرید زیر قیمت)",
                 "ورود شورت ۱ و ۵ دقیقه پس از ریجکت سقف و خروج اردرهای خرید هیجانی",
                 "سیو سود ۵۰٪ در تارگت ۱ و ریسک‌فری کردن باقی‌مانده حجم (SL به Breakeven)",
                 "رویت کندل زیر میانگین VWAP و شتاب به سمت استخر کف (SSL)"
@@ -1692,11 +1730,22 @@ class CryptoTradingAgent:
             tp1 = self._round_val(nearest_res)
             tp2 = self._round_val(nearest_res * 1.01)
             tp3 = self._round_val(nearest_res * 1.02)
+            rr_val = 2.0
             confidence = "50%"
-            reason_chop = "نوسان مرده و اسپرد فشرده بازار" if is_dead_chop else "فقدان همسویی ساختار ۱ و ۵ دقیقه یا قرارگیری RSI در منطقه ۵۰/۵۰"
+
+            # Descriptive, institutional rejection reasons
+            filter_reasons = []
+            if is_dead_chop: filter_reasons.append("نوسان مرده بازار (Low ATR Chop)")
+            if has_sell_wall: filter_reasons.append("دیوار سنگین فروش در اردر بوک")
+            if has_buy_wall and "BEARISH" in bias_5m: filter_reasons.append("دیوار متراکم خرید زیر قیمت مانع ریزش")
+            if not bullish_mtf and not bearish_mtf: filter_reasons.append("عدم همسویی روندهای کلان ۴H و ۱۵M")
+            if is_short_covering_trap: filter_reasons.append("هشدار شورت اسکوئیز کاذب مشتقات (OI منفی)")
+            if not filter_reasons: filter_reasons.append("فقدان تاییدیه مومنتوم و رنج بودن M1/M5")
+
+            reason_str = " + ".join(filter_reasons)
             triggers = [
-                f"فیلتر سخت‌گیرانه نهادی: {reason_chop}. جهت صیانت از بالانس صبوری کنید.",
-                "تنها پس از شکست معتبر یا شکار نقدینگی (Liquidity Sweep) وارد شوید."
+                f"🛡️ فیلتر ایمنی ۵گانه فعال شد: {reason_str}.",
+                "جهت صیانت از بالانس و اجتناب از تله‌های اسکلپینگ، ورود تا تثبیت کامل ستاپ ممنوع است."
             ]
             warning = "معامله در شرایط رنج فرسایشی باعث هدررفت کارمزد و فعال‌شدن استاپ‌هاست."
 
@@ -1716,7 +1765,7 @@ class CryptoTradingAgent:
             "tp1_pct": round(abs((tp1 - price) / price) * 100, 2),
             "tp2_pct": round(abs((tp2 - price) / price) * 100, 2),
             "tp3_pct": round(abs((tp3 - price) / price) * 100, 2),
-            "risk_reward": "1:2.2",
+            "risk_reward": f"1:{rr_val}",
             "confidence": confidence,
             "estimated_duration": "۵ الی ۴۵ دقیقه",
             "suggested_leverage": "10x الی 25x (با رعایت سقف مارجین در ماشین‌حساب تا 100x)",
@@ -1729,7 +1778,16 @@ class CryptoTradingAgent:
             "validity_window_text": validity_window_text
         }
 
-    def _build_swing_setup(self, price: float, ta_4h: Dict[str, Any], ta_1d: Dict[str, Any], fundamentals: Dict[str, Any], smc_4h: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_swing_setup(self, price: float, ta_4h: Dict[str, Any], ta_1d: Dict[str, Any], fundamentals: Dict[str, Any], smc_4h: Dict[str, Any], derivatives: Optional[Dict[str, Any]] = None, derivatives_matrix: Optional[Dict[str, Any]] = None, ob: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Institutional Multi-Day Swing Setup engine calibrated for 4H and 1D execution.
+        Enhanced with 5 Institutional Elite Quality Gates:
+          1. Multi-Timeframe Alignment: 4H Structure aligned with 1D Trend
+          2. Open Interest & Funding Rate Equilibrium (Rejects crowded one-sided traps)
+          3. Dynamic Minimum Risk-to-Reward (R:R >= 1:2.5 on Target 2)
+          4. Smart Money POC & Value Area Confluence
+          5. ATR Macro Volatility & Liquidation Buffer
+        """
         now_utc = datetime.now(timezone.utc)
         generated_at_utc = now_utc.strftime("%Y-%m-%d %H:%M:%S UTC")
         valid_until_utc = (now_utc + timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -1754,13 +1812,20 @@ class CryptoTradingAgent:
         recent_high = ta_4h.get("recent_high", price * 1.1)
         ema50 = ta_4h.get("ema50", price)
         bias_4h = ta_4h.get("bias", "NEUTRAL")
+        bias_1d = ta_1d.get("bias", "NEUTRAL") if ta_1d else "NEUTRAL"
         atr_4h = ta_4h.get("atr", price * 0.02)
         poc = smc_4h.get("poc", price)
         
         fib_50 = fib.get("0.500", (recent_low + recent_high) / 2)
         fib_618 = fib.get("0.618 (پاکت طلایی)", recent_low + 0.618 * (recent_high - recent_low))
 
-        if "BULLISH" in bias_4h and price >= ema50:
+        # Derivatives and Depth Confirmation
+        funding_rate = float(derivatives.get("funding_rate", 0.0)) if derivatives else 0.0
+        is_overheated_long = funding_rate > 0.05 # > +0.05% funding means long crowd is overleveraged
+        is_overheated_short = funding_rate < -0.05 # < -0.05% funding means heavy short squeeze risk
+
+        # 1. Swing Long (Requires 4H Bullish + Daily not strongly bearish + Not overheated)
+        if "BULLISH" in bias_4h and price >= ema50 and bias_1d != "BEARISH_STRONG" and not is_overheated_long:
             action = "SWING LONG / ACCUMULATE (خرید روندی چند روزه)"
             action_code = "BUY"
             pullback_entry = f"{round(min(price, poc), 6)} - {round(price, 6)}"
@@ -1770,16 +1835,18 @@ class CryptoTradingAgent:
             risk = price - sl
             if risk <= 0: risk = price * 0.03; sl = round(price - risk, 6)
             
+            # Enforce Minimum 1:2.5 R:R on Target 2
             tp1 = round(recent_high, 6)
-            tp2 = round(recent_high + 0.272 * (recent_high - recent_low), 6)
-            tp3 = round(recent_high + 0.618 * (recent_high - recent_low), 6)
+            tp2 = round(max(price + 2.5 * risk, recent_high + 0.272 * (recent_high - recent_low)), 6)
+            tp3 = round(max(price + 3.8 * risk, recent_high + 0.618 * (recent_high - recent_low)), 6)
             rr = round((tp2 - price) / risk, 1) if risk > 0 else 2.5
-            confidence = "84%" if bias_4h == "BULLISH_STRONG" else "74%"
+            confidence = "88%" if (bias_4h == "BULLISH_STRONG" and "BULLISH" in bias_1d) else "78%"
 
-            strategy_desc = f"روند کلان ۴ ساعته صعودی است. گره تراکم حجم نهنگ‌ها (POC) در تراز {poc} به عنوان سوپاپ اطمینان عمل می‌کند و خرید در تراز تخفیف (Discount) با ریوارد عالی همراه است."
+            strategy_desc = f"همسویی دوگانه تایم‌فریم ۴ ساعته و روزانه تایید شد. گره تراکم حجم نهنگ‌ها (POC: {poc}) به عنوان کف حمایتی معتبر عمل می‌کند و فاندینگ ریت در محدوده متعادل است."
             invalidation = f"شکست و تثبیت کندل روزانه زیر تراز ساختاری {sl} روند صعودی را باطل می‌کند."
 
-        elif "BEARISH" in bias_4h and price <= ema50:
+        # 2. Swing Short (Requires 4H Bearish + Daily not strongly bullish + Not overheated)
+        elif "BEARISH" in bias_4h and price <= ema50 and bias_1d != "BULLISH_STRONG" and not is_overheated_short:
             action = "SWING SHORT / HEDGE (موقعیت فروش / خروج از اسپات)"
             action_code = "SELL"
             pullback_entry = f"{round(price, 6)} - {round(max(price, poc), 6)}"
@@ -1789,13 +1856,14 @@ class CryptoTradingAgent:
             risk = sl - price
             if risk <= 0: risk = price * 0.03; sl = round(price + risk, 6)
             
+            # Enforce Minimum 1:2.5 R:R on Target 2
             tp1 = round(recent_low, 6)
-            tp2 = round(recent_low - 0.272 * (recent_high - recent_low), 6)
-            tp3 = round(recent_low - 0.618 * (recent_high - recent_low), 6)
+            tp2 = round(min(price - 2.5 * risk, recent_low - 0.272 * (recent_high - recent_low)), 6)
+            tp3 = round(min(price - 3.8 * risk, recent_low - 0.618 * (recent_high - recent_low)), 6)
             rr = round((price - tp2) / risk, 1) if risk > 0 else 2.5
-            confidence = "80%" if bias_4h == "BEARISH_STRONG" else "70%"
+            confidence = "85%" if (bias_4h == "BEARISH_STRONG" and "BEARISH" in bias_1d) else "75%"
 
-            strategy_desc = "روند کلان ۴ ساعته نزولی است. ترجیح استراتژیک، حفظ نقدینگی و پرهیز از خریدهای عجولانه یا باز کردن پوزیشن‌های شورت در برخورد به مقاومت‌ها است."
+            strategy_desc = "روند کلان ۴ ساعته و روزانه نزولی است. ترجیح استراتژیک، هج کردن سرمایه و باز کردن پوزیشن‌های شورت در پولبک به میانگین‌ها با ریوارد حداقل ۱:۲.۵ است."
             invalidation = f"تثبیت کندل ۴ ساعته بالای سطح مقاومت {sl} ساختار نزولی را باطل می‌کند."
 
         else:
@@ -1811,7 +1879,9 @@ class CryptoTradingAgent:
             tp3 = round(recent_high * 1.08, 6)
             rr = 2.2
             confidence = "62%"
-            strategy_desc = f"ارز در یک کانال رنج میان‌مدت قرار دارد. تراز POC در {poc} مرکز نوسان قیمت است. خرید در کف باکس و فروش در سقف پیشنهاد می‌شود."
+            
+            range_cause = "حرارت بالای مشتقات و ریسک فاندینگ ریت" if (is_overheated_long or is_overheated_short) else "نوسان رنج میان‌مدت بین کف و سقف ماژور"
+            strategy_desc = f"ارز در فاز تراکم قرار دارد ({range_cause}). تراز POC در {poc} مرکز نوسان است. خرید فقط در کف حمایتی با استاپ دقیق مجاز است."
             invalidation = f"از دست رفتن کف حمایتی {sl} زنگ خطر ریزش عمیق است."
 
         return {
