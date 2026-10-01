@@ -1665,6 +1665,30 @@ class CoinlegsScanner:
             growth_score = max(35, min(98, growth_score))
             pass_count = sum(1 for f in elite_filters if f["passed"])
 
+            # --- DYNAMIC TP / SL & RISK-TO-REWARD ENGINE ---
+            atr_est = p_curr * 0.02
+            sl_price = round(p_curr - (atr_est * 1.2), 4 if p_curr < 10 else 2)
+            tp1_price = round(p_curr + (atr_est * 1.8), 4 if p_curr < 10 else 2)
+            tp2_price = round(p_curr + (atr_est * 3.5), 4 if p_curr < 10 else 2)
+            tp_pot_pct = round(((tp2_price - p_curr) / p_curr) * 100.0, 1)
+
+            # Calculate precise Risk-to-Reward ratio
+            risk_dist = max(1e-8, p_curr - sl_price)
+            reward_dist = max(1e-8, tp2_price - p_curr)
+            rr_ratio = round(reward_dist / risk_dist, 2)
+            rr_text = f"1:{rr_ratio}"
+
+            # --- FILTER GATE 1: Multi-Timeframe (MTF) Macro Alignment ---
+            # If 4H Trend is Bearish (under 4H EMA) or BTC is dumping heavily, weed out false breakouts
+            if trend_4h == "BEARISH" and alpha_rs < 3.0:
+                # Disallow high-conviction tier if counter to 4H macro trend
+                return None
+
+            # --- FILTER GATE 2: Dynamic Minimum Risk-to-Reward (R:R >= 1:2.0) ---
+            # We reject any setup where reward does not justify the risk
+            if rr_ratio < 2.0:
+                return None
+
             # Strict Selectivity Gate: Require at least Score >= 70 or pass_count >= 2
             if growth_score < 70 and pass_count < 2:
                 return None
@@ -1673,28 +1697,21 @@ class CoinlegsScanner:
             if growth_score >= 88:
                 status_tier = "DIAMOND"
                 status_badge = "👑 الماس پرواز (Breakout Active)"
-                verdict_fa = "آماده پرتاب فوری؛ تمام تاییدیه‌های آلفا و حجم همسو هستند."
+                verdict_fa = f"آماده پرتاب فوری؛ روند کلان ۴H همسو و ریسک‌به‌ریوارد عالی ({rr_text})."
                 color = "GREEN"
                 action_advice = "ورود مطمئن در شکست یا پولبک اول با تارگت‌های صعودی."
             elif growth_score >= 78:
                 status_tier = "GOLD"
                 status_badge = "⭐ طلایی (Strong Momentum)"
-                verdict_fa = "مومنتوم صعودی پرقدرت؛ ورود پله‌ای با رعایت حد ضرر پیشنهاد می‌شود."
+                verdict_fa = f"مومنتوم صعودی پرقدرت؛ همسویی کلان تایید شده (R:R: {rr_text})."
                 color = "GREEN"
                 action_advice = "خرید پله‌ای با لوریج متوسط و استاپ زیر کف اخیر."
             else:
                 status_tier = "SILVER"
                 status_badge = "✨ نقره‌ای (Setup Building)"
-                verdict_fa = "ستاپ در حال تکمیل؛ منتظر تثبیت کندل بعدی باشید."
+                verdict_fa = f"ستاپ در حال تکمیل؛ منتظر تثبیت کندل بعدی باشید ({rr_text})."
                 color = "YELLOW"
                 action_advice = "نظارت فعال روی تایید شکست سقف."
-
-            # Dynamic TP / SL targets for quick trading execution
-            atr_est = p_curr * 0.02
-            sl_price = round(p_curr - (atr_est * 1.2), 4 if p_curr < 10 else 2)
-            tp1_price = round(p_curr + (atr_est * 1.8), 4 if p_curr < 10 else 2)
-            tp2_price = round(p_curr + (atr_est * 3.5), 4 if p_curr < 10 else 2)
-            tp_pot_pct = round(((tp2_price - p_curr) / p_curr) * 100.0, 1)
 
             return {
                 "symbol": sym.replace("USDT", ""),
@@ -1724,6 +1741,7 @@ class CoinlegsScanner:
                 "tp1_price": tp1_price,
                 "tp2_price": tp2_price,
                 "tp_potential_pct": tp_pot_pct,
+                "risk_reward": rr_text,
                 "signal_strength": growth_score,
                 "confluence_fa": f"{pass_count}/6 فیلتر الیت تایید شد",
                 "coinlegs_url": "https://www.coinlegs.com/detections"
