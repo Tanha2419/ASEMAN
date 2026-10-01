@@ -2582,6 +2582,15 @@
 
       <!-- Tab 1: Live Interactive Chart -->
       <div class="tab-content" id="chartTab">
+        <div style="background: rgba(0, 210, 255, 0.08); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 0.78rem;">
+          <div style="display: flex; align-items: center; gap: 8px; color: #e2e8f0;">
+            <span>📌</span>
+            <span><strong>نکته ذخیره‌سازی خطوط و تحلیل‌ها:</strong> برای این‌که تحلیل‌ها و خطوطی که رسم می‌کنید همیشه در مرورگر شما ذخیره بمانند و پاک نشوند، از منوی بالای چارت روی <strong>Save (آیکون ابر ☁️)</strong> کلیک کنید یا در حساب رایگان TradingView لاگین کنید.</span>
+          </div>
+          <span style="background: rgba(0,230,118,0.15); color: #00e676; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid rgba(0,230,118,0.3);">
+            🇮🇷 ساعت رسمی تهران
+          </span>
+        </div>
         <div class="tradingview-container" id="tvChartContainer"></div>
       </div>
 
@@ -5789,8 +5798,8 @@ ${s3d.action_advice || ''}
       container.innerHTML = '';
       
       let clean = symbol.replace('/', '').toUpperCase();
-      let tvSymbol = `BINANCE:${clean}`;
       if (!clean.endsWith('USDT')) clean += 'USDT';
+      let tvSymbol = `BINANCE:${clean}`;
 
       const script = document.createElement('script');
       script.src = 'https://s3.tradingview.com/tv.js';
@@ -5800,14 +5809,26 @@ ${s3d.action_advice || ''}
           "autosize": true,
           "symbol": tvSymbol,
           "interval": "15",
-          "timezone": "Etc/UTC",
+          "timezone": "Asia/Tehran",
           "theme": "dark",
           "style": "1",
-          "locale": "en",
+          "locale": "fa_IR",
           "toolbar_bg": "#121824",
           "enable_publishing": false,
           "hide_side_toolbar": false,
           "allow_symbol_change": true,
+          "save_image": true,
+          "details": true,
+          "hotlist": true,
+          "calendar": true,
+          "studies": [
+            "MASimple@tv-basicstudies",
+            "RSI@tv-basicstudies"
+          ],
+          "show_popup_button": true,
+          "popup_width": "1000",
+          "popup_height": "650",
+          "withdateranges": true,
           "container_id": "tvChartContainer"
         });
       };
