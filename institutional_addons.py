@@ -1283,11 +1283,8 @@ class TelegramDispatcher:
 
         # 1. Send with sendPhoto if chart is generated
         if chart_png:
-            import uuid
-            # Telegram constraint: sendPhoto caption must be <= 1024 chars!
-            photo_caption = text
-            if len(photo_caption) > 1000:
-                # Prepare a clean, compact caption that fits under 1000 chars
+            try:
+                # Prepare clean, readable caption strictly under Telegram 1024 char limit
                 now_tehran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
                 tehran_time = now_tehran.strftime("%H:%M:%S")
                 valid_tehran = scalp.get('valid_until_tehran') or (now_tehran + timedelta(minutes=45)).strftime("%H:%M:%S")
@@ -1304,7 +1301,7 @@ class TelegramDispatcher:
 💰 <b>قیمت لحظه‌ای:</b> ${price_val:,.4f}
 🐋 <b>رادار نهنگ‌ها:</b> <code>{whale_b}</code>
 
-⚡ <b>سطوح معاملاتی دقیق:</b>
+⚡ <b>سطوح معاملاتی دقیق (TradingView Tool):</b>
 ⏰ <b>زمان صدور (ایران 🇮🇷):</b> <code>ساعت {tehran_time}</code>
 ⏳ <b>افق اعتبار ستاپ:</b> <code>تا ساعت {valid_tehran} (ایران)</code>
 🔹 <b>محدوده ورود:</b> <code>{scalp.get('entry_zone', '-')}</code>
@@ -1315,41 +1312,29 @@ class TelegramDispatcher:
 
 🛡️ <b>مدیریت ریسک:</b> ۵۰٪ سیو سود در TP1 و انتقال فوری استاپ به نقطه ورود (Breakeven).
 """
-
-            url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
-            boundary = uuid.uuid4().hex
-            body = bytearray()
-            
-            fields = {
-                "chat_id": chat_id,
-                "caption": photo_caption.strip(),
-                "parse_mode": "HTML",
-                "reply_markup": json.dumps(reply_markup)
-            }
-            for k, v in fields.items():
-                body.extend(f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode('utf-8'))
-            
-            body.extend(f'--{boundary}\r\nContent-Disposition: form-data; name="photo"; filename="chart_{sym}.png"\r\nContent-Type: image/png\r\n\r\n'.encode('utf-8'))
-            body.extend(chart_png)
-            body.extend(b'\r\n')
-            body.extend(f'--{boundary}--\r\n'.encode('utf-8'))
-
-            headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
-            try:
-                req = urllib.request.Request(url, data=body, headers=headers)
-                with urllib.request.urlopen(req, timeout=12) as resp:
-                    res_data = json.loads(resp.read().decode())
-                    if res_data.get("ok"):
-                        return {
-                            "success": True,
-                            "simulated": False,
-                            "message": "سیگنال سازمانی همراه با چارت تصویری تحلیلی با موفقیت به تلگرام ارسال شد!",
-                            "telegram_message_id": res_data.get("result", {}).get("message_id")
-                        }
+                photo_url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+                files = {"photo": (f"chart_{sym}.png", chart_png, "image/png")}
+                data = {
+                    "chat_id": chat_id,
+                    "caption": photo_caption.strip(),
+                    "parse_mode": "HTML",
+                    "reply_markup": json.dumps(reply_markup)
+                }
+                resp = requests.post(photo_url, data=data, files=files, timeout=12)
+                res_data = resp.json()
+                if res_data.get("ok"):
+                    return {
+                        "success": True,
+                        "simulated": False,
+                        "message": "سیگنال سازمانی همراه با چارت تصویری تحلیلی با موفقیت به تلگرام ارسال شد!",
+                        "telegram_message_id": res_data.get("result", {}).get("message_id")
+                    }
+                else:
+                    print(f"[TG PHOTO RES ERR] {res_data}")
             except Exception as ex:
-                print(f"[TG PHOTO SEND FAIL, FALLBACK TO TEXT] {ex}")
+                print(f"[TG PHOTO SEND EXCEPTION] {ex}")
 
-        # 2. Fallback to standard sendMessage if photo generation failed or caption > 1024 chars
+        # 2. Fallback to standard sendMessage if photo generation failed or Telegram rejected photo
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
         payload = json.dumps({
             "chat_id": chat_id,
