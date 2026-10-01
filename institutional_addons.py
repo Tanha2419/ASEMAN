@@ -1269,6 +1269,7 @@ class TelegramDispatcher:
         }
 
         # Attempt to generate chart image
+        s3d = analysis_data.get("scores_3d", {})
         scalp = analysis_data.get("scalp_setup", {})
         candles = analysis_data.get("chart_candles", [])
         entry = float(scalp.get("entry_price") or analysis_data.get("price", 0))
@@ -1278,8 +1279,13 @@ class TelegramDispatcher:
         direction = scalp.get("action", "LONG")
 
         chart_png = None
+        photo_err = ""
         if candles and entry and sl and tp2:
             chart_png = cls.generate_signal_chart(sym, candles, entry, sl, tp1, tp2, direction)
+            if not chart_png:
+                photo_err = "تولید تصویر چارت انجام نشد (عدم بازگشت بایت‌های تصویر)"
+        else:
+            photo_err = f"داده‌های چارت ناقص است (candles:{len(candles)}, entry:{entry}, sl:{sl}, tp2:{tp2})"
 
         # 1. Send with sendPhoto if chart is generated
         if chart_png:
@@ -1320,7 +1326,7 @@ class TelegramDispatcher:
                     "parse_mode": "HTML",
                     "reply_markup": json.dumps(reply_markup)
                 }
-                resp = requests.post(photo_url, data=data, files=files, timeout=12)
+                resp = requests.post(photo_url, data=data, files=files, timeout=14)
                 res_data = resp.json()
                 if res_data.get("ok"):
                     return {
@@ -1330,9 +1336,11 @@ class TelegramDispatcher:
                         "telegram_message_id": res_data.get("result", {}).get("message_id")
                     }
                 else:
-                    print(f"[TG PHOTO RES ERR] {res_data}")
+                    photo_err = res_data.get("description", str(res_data))
+                    print(f"[TG PHOTO RES ERR] {photo_err}")
             except Exception as ex:
-                print(f"[TG PHOTO SEND EXCEPTION] {ex}")
+                photo_err = str(ex)
+                print(f"[TG PHOTO SEND EXCEPTION] {photo_err}")
 
         # 2. Fallback to standard sendMessage if photo generation failed or Telegram rejected photo
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
@@ -1356,7 +1364,8 @@ class TelegramDispatcher:
                     return {
                         "success": True,
                         "simulated": False,
-                        "message": "سیگنال سازمانی با موفقیت به تلگرام ارسال شد!",
+                        "message": f"سیگنال متنی ارسال شد (خطای عکس: {photo_err or 'تولید نشد'})",
+                        "photo_error": photo_err,
                         "telegram_message_id": res_data.get("result", {}).get("message_id")
                     }
                 else:
