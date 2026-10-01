@@ -2584,12 +2584,17 @@
       <div class="tab-content" id="chartTab">
         <div style="background: rgba(0, 210, 255, 0.08); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 0.78rem;">
           <div style="display: flex; align-items: center; gap: 8px; color: #e2e8f0;">
-            <span>📌</span>
-            <span><strong>نکته ذخیره‌سازی خطوط و تحلیل‌ها:</strong> برای این‌که تحلیل‌ها و خطوطی که رسم می‌کنید همیشه در مرورگر شما ذخیره بمانند و پاک نشوند، از منوی بالای چارت روی <strong>Save (آیکون ابر ☁️)</strong> کلیک کنید یا در حساب رایگان TradingView لاگین کنید.</span>
+            <span>📊</span>
+            <span><strong>چارت زنده و تعاملی بازار:</strong> تحلیل تکنیکال و رسم خطوط بر بستر دیتای لحظه‌ای بایننس</span>
           </div>
-          <span style="background: rgba(0,230,118,0.15); color: #00e676; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid rgba(0,230,118,0.3);">
-            🇮🇷 ساعت رسمی تهران
-          </span>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <a id="tvExternalLinkBtn" href="https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT" target="_blank" style="background: rgba(0, 210, 255, 0.15); color: #00d2ff; padding: 4px 12px; border-radius: 5px; font-weight: 700; text-decoration: none; border: 1px solid rgba(0, 210, 255, 0.35); font-size: 0.76rem; display: flex; align-items: center; gap: 4px;">
+              <span>📈 باز کردن چارت در TradingView ↗️</span>
+            </a>
+            <span style="background: rgba(0,230,118,0.15); color: #00e676; padding: 3px 8px; border-radius: 4px; font-weight: 700; border: 1px solid rgba(0,230,118,0.3);">
+              🇮🇷 ساعت رسمی تهران
+            </span>
+          </div>
         </div>
         <div class="tradingview-container" id="tvChartContainer"></div>
       </div>
@@ -5800,6 +5805,11 @@ ${s3d.action_advice || ''}
       let clean = symbol.replace('/', '').toUpperCase();
       if (!clean.endsWith('USDT')) clean += 'USDT';
       let tvSymbol = `BINANCE:${clean}`;
+
+      const extBtn = document.getElementById('tvExternalLinkBtn');
+      if (extBtn) {
+        extBtn.href = `https://www.tradingview.com/chart/?symbol=${tvSymbol}`;
+      }
 
       const script = document.createElement('script');
       script.src = 'https://s3.tradingview.com/tv.js';
