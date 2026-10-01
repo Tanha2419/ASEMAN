@@ -1210,13 +1210,42 @@ class CryptoTradingAgent:
 
         current_price = ticker["last_price"]
 
-        # 2. Fetch Multi-Timeframe Candles (M1, M5, M15, 1H, 4H, 1D)
-        klines_1m = self.fetcher.fetch_klines(symbol, "1m", 120)
-        klines_5m = self.fetcher.fetch_klines(symbol, "5m", 150)
-        klines_15m = self.fetcher.fetch_klines(symbol, "15m", 250)
-        klines_1h = self.fetcher.fetch_klines(symbol, "1h", 120)
-        klines_4h = self.fetcher.fetch_klines(symbol, "4h", 120)
-        klines_1d = self.fetcher.fetch_klines(symbol, "1d", 80)
+        # 2. Parallel Fast Fetch of Multi-Timeframe Candles, Orderbook, Derivatives, and Sentiment
+        import fastfetch as FF
+        parallel_jobs = {
+            "1m": lambda: self.fetcher.fetch_klines(symbol, "1m", 120),
+            "5m": lambda: self.fetcher.fetch_klines(symbol, "5m", 150),
+            "15m": lambda: self.fetcher.fetch_klines(symbol, "15m", 250),
+            "1h": lambda: self.fetcher.fetch_klines(symbol, "1h", 120),
+            "4h": lambda: self.fetcher.fetch_klines(symbol, "4h", 120),
+            "1d": lambda: self.fetcher.fetch_klines(symbol, "1d", 80),
+            "ob": lambda: self.fetcher.fetch_orderbook(symbol, 20),
+            "derivatives": lambda: self.fetcher.fetch_institutional_derivatives(symbol),
+            "fng": lambda: self.fetcher.fetch_fear_and_greed(),
+            "fundamentals": lambda: self.fetcher.fetch_coingecko_details(base_coin),
+            "macro": lambda: MacroEngine.fetch_global_macro(),
+            "onchain": lambda: OnChainEngine.fetch_onchain_metrics(),
+            "news_circuit": lambda: NewsCircuitBreaker.fetch_live_news()
+        }
+        if base_coin != "BTC":
+            parallel_jobs["btc_candles"] = lambda: self.fetcher.fetch_klines("BTCUSDT", "15m", 60)
+
+        fetched = FF.gather(parallel_jobs, max_workers=12, timeout=5.0)
+
+        klines_1m = fetched.get("1m") or []
+        klines_5m = fetched.get("5m") or []
+        klines_15m = fetched.get("15m") or []
+        klines_1h = fetched.get("1h") or []
+        klines_4h = fetched.get("4h") or []
+        klines_1d = fetched.get("1d") or []
+        orderbook = fetched.get("ob") or {"bids": [], "asks": []}
+        derivatives = fetched.get("derivatives") or {}
+        fng = fetched.get("fng") or {"value": 50, "classification": "Neutral"}
+        fundamentals = fetched.get("fundamentals") or {}
+        macro = fetched.get("macro") or {}
+        onchain = fetched.get("onchain") or {}
+        news_circuit = fetched.get("news_circuit") or {}
+        btc_candles = klines_15m if base_coin == "BTC" else (fetched.get("btc_candles") or [])
 
         # 3. Analyze Technicals
         ta_1m = self.analyzer.analyze_candles(klines_1m, "1m") if klines_1m else {}
@@ -1231,37 +1260,19 @@ class CryptoTradingAgent:
         smc_15m = self.smc.analyze_smc(klines_15m, current_price, "15m") if klines_15m else {}
         smc_4h = self.smc.analyze_smc(klines_4h, current_price, "4h") if klines_4h else {}
 
-        # 5. Orderbook & Microstructure
-        orderbook = self.fetcher.fetch_orderbook(symbol, 20)
-
         # 6. Institutional Derivatives (Open Interest & Funding Rate)
-        derivatives = self.fetcher.fetch_institutional_derivatives(symbol)
         derivatives_matrix = self.smc.evaluate_derivatives_matrix(
             ticker.get("price_change_pct", 0),
             derivatives.get("open_interest_usd", 0),
             derivatives.get("funding_rate", 0)
         )
 
-        # 7. Fear & Greed Index
-        fng = self.fetcher.fetch_fear_and_greed()
-
-        # 8. CoinGecko Fundamentals
-        fundamentals = self.fetcher.fetch_coingecko_details(base_coin)
-
         # 9. Generate Scalp (1m/5m) & Swing (4h/1d) Setups
         scalp_setup = self._build_scalp_setup(current_price, ta_5m=ta_5m, ta_1m=ta_1m, ob=orderbook, smc=smc_5m if smc_5m else smc_15m, ta_15m=ta_15m, ta_4h=ta_4h, derivatives=derivatives)
         swing_setup = self._build_swing_setup(current_price, ta_4h, ta_1d, fundamentals, smc_4h)
 
         # 10. Macro Market, Dominance & Correlations (Layer 6)
-        macro = MacroEngine.fetch_global_macro()
-        btc_candles = klines_15m if base_coin == "BTC" else self.fetcher.fetch_klines("BTCUSDT", "15m", 60)
         correlation = MacroEngine.compute_beta_and_correlation(klines_15m, btc_candles)
-
-        # 11. On-Chain Metrics (Layer 5)
-        onchain = OnChainEngine.fetch_onchain_metrics()
-
-        # 12. News & Sentiment Circuit Breaker (Layer 7)
-        news_circuit = NewsCircuitBreaker.fetch_live_news()
 
         # 13. Backtest Simulation & Empirical Calibration
         backtest_res = BacktestEngine.run_backtest(klines_15m, symbol, "15m", 300)
