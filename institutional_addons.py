@@ -1284,13 +1284,45 @@ class TelegramDispatcher:
         # 1. Send with sendPhoto if chart is generated
         if chart_png:
             import uuid
+            # Telegram constraint: sendPhoto caption must be <= 1024 chars!
+            photo_caption = text
+            if len(photo_caption) > 1000:
+                # Prepare a clean, compact caption that fits under 1000 chars
+                now_tehran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
+                tehran_time = now_tehran.strftime("%H:%M:%S")
+                valid_tehran = scalp.get('valid_until_tehran') or (now_tehran + timedelta(minutes=45)).strftime("%H:%M:%S")
+                price_val = analysis_data.get("price", 0)
+                whale_b = WhaleOrderFlowEngine.check_symbol_whale_flow(sym).get("whale_badge", "نرمال")
+                grade_val = s3d.get("grade", "A")
+                conf_val = s3d.get("composite_confidence", 85)
+                act_val = scalp.get("action", "BUY")
+
+                photo_caption = f"""💎 <b>سیگنال نهادی آسمان [{sym}]</b>
+━━━━━━━━━━━━━━━━━━━━
+🧭 <b>سیگنال سیستم:</b> 🚀 <b>{act_val}</b>
+⭐ <b>درجه کیفی:</b> <code>Grade {grade_val}</code> ({conf_val}%)
+💰 <b>قیمت لحظه‌ای:</b> ${price_val:,.4f}
+🐋 <b>رادار نهنگ‌ها:</b> <code>{whale_b}</code>
+
+⚡ <b>سطوح معاملاتی دقیق:</b>
+⏰ <b>زمان صدور (ایران 🇮🇷):</b> <code>ساعت {tehran_time}</code>
+⏳ <b>افق اعتبار ستاپ:</b> <code>تا ساعت {valid_tehran} (ایران)</code>
+🔹 <b>محدوده ورود:</b> <code>{scalp.get('entry_zone', '-')}</code>
+🛑 <b>حد ضرر (SL):</b> <code>${scalp.get('stop_loss', 0):,.4f} (-{scalp.get('stop_loss_pct', 0)}%)</code>
+🎯 <b>تارگت اول (TP1):</b> <code>${scalp.get('tp1', 0):,.4f} (+{scalp.get('tp1_pct', 0)}%)</code>
+🎯 <b>تارگت دوم (TP2):</b> <code>${scalp.get('tp2', 0):,.4f} (+{scalp.get('tp2_pct', 0)}%)</code>
+⚖️ <b>ریسک به ریوارد:</b> <code>{scalp.get('risk_reward', '1:2.0')}</code>
+
+🛡️ <b>مدیریت ریسک:</b> ۵۰٪ سیو سود در TP1 و انتقال فوری استاپ به نقطه ورود (Breakeven).
+"""
+
             url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
             boundary = uuid.uuid4().hex
             body = bytearray()
             
             fields = {
                 "chat_id": chat_id,
-                "caption": text,
+                "caption": photo_caption.strip(),
                 "parse_mode": "HTML",
                 "reply_markup": json.dumps(reply_markup)
             }
