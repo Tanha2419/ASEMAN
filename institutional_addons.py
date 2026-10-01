@@ -1246,7 +1246,7 @@ class TelegramDispatcher:
 
     @classmethod
     def send_to_telegram(cls, bot_token: str, chat_id: str, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Dispatches signal with attached TradingView chart image directly to specified Telegram chat or channel"""
+        """Dispatches rich institutional text signal with inline TradingView button directly to specified Telegram chat or channel"""
         sym = analysis_data.get("symbol", "BTCUSDT")
         if not bot_token or not chat_id:
             # Simulated preview
@@ -1263,86 +1263,11 @@ class TelegramDispatcher:
         reply_markup = {
             "inline_keyboard": [
                 [
-                    {"text": f"📈 مشاهده چارت {sym} در TradingView ↗️", "url": tv_link}
+                    {"text": f"📈 مشاهده چارت زنده {sym} در TradingView ↗️", "url": tv_link}
                 ]
             ]
         }
 
-        # Attempt to generate chart image
-        s3d = analysis_data.get("scores_3d", {})
-        scalp = analysis_data.get("scalp_setup", {})
-        candles = analysis_data.get("chart_candles", [])
-        entry = float(scalp.get("entry_price") or analysis_data.get("price", 0))
-        sl = float(scalp.get("stop_loss", 0))
-        tp1 = float(scalp.get("tp1", 0))
-        tp2 = float(scalp.get("tp2", 0))
-        direction = scalp.get("action", "LONG")
-
-        chart_png = None
-        photo_err = ""
-        if candles and entry and sl and tp2:
-            chart_png = cls.generate_signal_chart(sym, candles, entry, sl, tp1, tp2, direction)
-            if not chart_png:
-                photo_err = "تولید تصویر چارت انجام نشد (عدم بازگشت بایت‌های تصویر)"
-        else:
-            photo_err = f"داده‌های چارت ناقص است (candles:{len(candles)}, entry:{entry}, sl:{sl}, tp2:{tp2})"
-
-        # 1. Send with sendPhoto if chart is generated
-        if chart_png:
-            try:
-                # Prepare clean, readable caption strictly under Telegram 1024 char limit
-                now_tehran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
-                tehran_time = now_tehran.strftime("%H:%M:%S")
-                valid_tehran = scalp.get('valid_until_tehran') or (now_tehran + timedelta(minutes=45)).strftime("%H:%M:%S")
-                price_val = analysis_data.get("price", 0)
-                whale_b = WhaleOrderFlowEngine.check_symbol_whale_flow(sym).get("whale_badge", "نرمال")
-                grade_val = s3d.get("grade", "A")
-                conf_val = s3d.get("composite_confidence", 85)
-                act_val = scalp.get("action", "BUY")
-
-                photo_caption = f"""💎 <b>سیگنال نهادی آسمان [{sym}]</b>
-━━━━━━━━━━━━━━━━━━━━
-🧭 <b>سیگنال سیستم:</b> 🚀 <b>{act_val}</b>
-⭐ <b>درجه کیفی:</b> <code>Grade {grade_val}</code> ({conf_val}%)
-💰 <b>قیمت لحظه‌ای:</b> ${price_val:,.4f}
-🐋 <b>رادار نهنگ‌ها:</b> <code>{whale_b}</code>
-
-⚡ <b>سطوح معاملاتی دقیق (TradingView Tool):</b>
-⏰ <b>زمان صدور (ایران 🇮🇷):</b> <code>ساعت {tehran_time}</code>
-⏳ <b>افق اعتبار ستاپ:</b> <code>تا ساعت {valid_tehran} (ایران)</code>
-🔹 <b>محدوده ورود:</b> <code>{scalp.get('entry_zone', '-')}</code>
-🛑 <b>حد ضرر (SL):</b> <code>${scalp.get('stop_loss', 0):,.4f} (-{scalp.get('stop_loss_pct', 0)}%)</code>
-🎯 <b>تارگت اول (TP1):</b> <code>${scalp.get('tp1', 0):,.4f} (+{scalp.get('tp1_pct', 0)}%)</code>
-🎯 <b>تارگت دوم (TP2):</b> <code>${scalp.get('tp2', 0):,.4f} (+{scalp.get('tp2_pct', 0)}%)</code>
-⚖️ <b>ریسک به ریوارد:</b> <code>{scalp.get('risk_reward', '1:2.0')}</code>
-
-🛡️ <b>مدیریت ریسک:</b> ۵۰٪ سیو سود در TP1 و انتقال فوری استاپ به نقطه ورود (Breakeven).
-"""
-                photo_url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
-                files = {"photo": (f"chart_{sym}.png", chart_png, "image/png")}
-                data = {
-                    "chat_id": chat_id,
-                    "caption": photo_caption.strip(),
-                    "parse_mode": "HTML",
-                    "reply_markup": json.dumps(reply_markup)
-                }
-                resp = requests.post(photo_url, data=data, files=files, timeout=14)
-                res_data = resp.json()
-                if res_data.get("ok"):
-                    return {
-                        "success": True,
-                        "simulated": False,
-                        "message": "سیگنال سازمانی همراه با چارت تصویری تحلیلی با موفقیت به تلگرام ارسال شد!",
-                        "telegram_message_id": res_data.get("result", {}).get("message_id")
-                    }
-                else:
-                    photo_err = res_data.get("description", str(res_data))
-                    print(f"[TG PHOTO RES ERR] {photo_err}")
-            except Exception as ex:
-                photo_err = str(ex)
-                print(f"[TG PHOTO SEND EXCEPTION] {photo_err}")
-
-        # 2. Fallback to standard sendMessage if photo generation failed or Telegram rejected photo
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
         payload = json.dumps({
             "chat_id": chat_id,
@@ -1358,14 +1283,13 @@ class TelegramDispatcher:
                 data=payload,
                 headers={"Content-Type": "application/json"}
             )
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:
                 res_data = json.loads(resp.read().decode())
                 if res_data.get("ok"):
                     return {
                         "success": True,
                         "simulated": False,
-                        "message": f"سیگنال متنی ارسال شد (خطای عکس: {photo_err or 'تولید نشد'})",
-                        "photo_error": photo_err,
+                        "message": "سیگنال متنی تحلیلی همراه با دکمه چارت تریدینگ‌ویو با موفقیت به تلگرام ارسال شد!",
                         "telegram_message_id": res_data.get("result", {}).get("message_id")
                     }
                 else:
