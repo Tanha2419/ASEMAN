@@ -1140,9 +1140,113 @@ class TelegramDispatcher:
 """
         return msg.strip()
 
+    @staticmethod
+    def generate_signal_chart(symbol: str, candles: List[List[float]], entry: float, sl: float, tp1: float, tp2: float, direction: str = "LONG") -> Optional[bytes]:
+        """
+        Generates a professional dark-themed TradingView style candlestick chart
+        with confirmation line, Buy/Sell marker, and Long/Short Position Tool overlay.
+        """
+        try:
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+            import matplotlib.patches as patches
+            import io
+
+            if not candles or len(candles) < 15:
+                return None
+
+            # Use last 35 candles for clean readable scalp visualization
+            recent_candles = candles[-35:]
+            n = len(recent_candles)
+
+            fig, ax = plt.subplots(figsize=(9.5, 5.0), facecolor='#0b0e14')
+            ax.set_facecolor('#0b0e14')
+
+            # Parse candles (supports both dict format {'open', 'high', 'low', 'close'} and list format [t, o, h, l, c])
+            opens, highs, lows, closes = [], [], [], []
+            for c in recent_candles:
+                if isinstance(c, dict):
+                    opens.append(float(c.get("open", 0)))
+                    highs.append(float(c.get("high", 0)))
+                    lows.append(float(c.get("low", 0)))
+                    closes.append(float(c.get("close", 0)))
+                elif isinstance(c, (list, tuple)) and len(c) >= 5:
+                    opens.append(float(c[1]))
+                    highs.append(float(c[2]))
+                    lows.append(float(c[3]))
+                    closes.append(float(c[4]))
+
+            for i in range(n):
+                o, h, l, c = opens[i], highs[i], lows[i], closes[i]
+                col = '#00e676' if c >= o else '#ff3366'
+                ax.plot([i, i], [l, h], color=col, linewidth=1.1, alpha=0.85)
+                body_bottom = min(o, c)
+                body_height = max(abs(c - o), (h - l) * 0.04)
+                rect = patches.Rectangle((i - 0.35, body_bottom), 0.7, body_height, facecolor=col, edgecolor=col, alpha=0.9)
+                ax.add_patch(rect)
+
+            last_idx = n - 1
+            # 1. Vertical confirmation line on execution trigger candle
+            ax.axvline(x=last_idx, color='#00d2ff', linestyle='--', linewidth=1.5, alpha=0.9)
+
+            # 2. Buy/Sell Execution Badge directly on confirmation candle
+            is_long = "LONG" in direction.upper() or "BUY" in direction.upper()
+            badge_text = "BUY ENTRY" if is_long else "SELL ENTRY"
+            badge_bg = "#00e676" if is_long else "#ff3366"
+            y_badge = lows[last_idx] * 0.9985 if is_long else highs[last_idx] * 1.0015
+            va = 'top' if is_long else 'bottom'
+            ax.text(last_idx, y_badge, badge_text, color='#000000',
+                    fontsize=8.5, fontweight='bold', ha='center', va=va,
+                    bbox=dict(boxstyle='square,pad=0.35', facecolor=badge_bg, edgecolor='#ffffff', linewidth=0.6))
+
+            # 3. TradingView Long/Short Position Box Tool overlay
+            box_width = 8
+            if is_long:
+                # Green Target Zone
+                tp_height = max(0.0001, tp2 - entry)
+                tp_rect = patches.Rectangle((last_idx, entry), box_width, tp_height, facecolor='#00e676', alpha=0.22, edgecolor='#00e676', linewidth=1.2)
+                ax.add_patch(tp_rect)
+                # Red Stop Loss Zone
+                sl_height = max(0.0001, entry - sl)
+                sl_rect = patches.Rectangle((last_idx, sl), box_width, sl_height, facecolor='#ff3366', alpha=0.22, edgecolor='#ff3366', linewidth=1.2)
+                ax.add_patch(sl_rect)
+            else:
+                # Green Target Zone for short
+                tp_height = max(0.0001, entry - tp2)
+                tp_rect = patches.Rectangle((last_idx, tp2), box_width, tp_height, facecolor='#00e676', alpha=0.22, edgecolor='#00e676', linewidth=1.2)
+                ax.add_patch(tp_rect)
+                # Red Stop Loss Zone for short
+                sl_height = max(0.0001, sl - entry)
+                sl_rect = patches.Rectangle((last_idx, entry), box_width, sl_height, facecolor='#ff3366', alpha=0.22, edgecolor='#ff3366', linewidth=1.2)
+                ax.add_patch(sl_rect)
+
+            # Price markers on right margin
+            rx = last_idx + box_width + 0.4
+            ax.text(rx, entry, f' Entry: {entry:,.4f}', color='#00d2ff', fontsize=8, va='center', fontweight='bold')
+            ax.text(rx, tp1, f' TP1: {tp1:,.4f}', color='#00e676', fontsize=8, va='center', fontweight='bold')
+            ax.text(rx, tp2, f' TP2: {tp2:,.4f}', color='#00e676', fontsize=8, va='center', fontweight='bold')
+            ax.text(rx, sl, f' SL: {sl:,.4f}', color='#ff3366', fontsize=8, va='center', fontweight='bold')
+
+            ax.set_title(f'CryptoAgent AI • {symbol} Live Execution Setup (TradingView Position Tool)', color='#ffffff', fontsize=10.5, fontweight='bold', pad=10)
+            ax.set_xlim(-1, n + box_width + 2.5)
+            ax.grid(True, color='#1e293b', linestyle=':', alpha=0.6)
+            ax.tick_params(colors='#94a3b8', labelsize=8)
+            for spine in ax.spines.values():
+                spine.set_color('#1e293b')
+
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png', dpi=120, facecolor=fig.get_facecolor(), edgecolor='none', bbox_inches='tight')
+            plt.close(fig)
+            buf.seek(0)
+            return buf.getvalue()
+        except Exception as e:
+            print(f"[CHART GEN ERR] {e}")
+            return None
+
     @classmethod
     def send_to_telegram(cls, bot_token: str, chat_id: str, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Dispatches signal to specified Telegram chat or channel with inline TradingView button"""
+        """Dispatches signal with attached TradingView chart image directly to specified Telegram chat or channel"""
         sym = analysis_data.get("symbol", "BTCUSDT")
         if not bot_token or not chat_id:
             # Simulated preview
@@ -1155,8 +1259,6 @@ class TelegramDispatcher:
             }
 
         text = cls.format_signal_message(analysis_data)
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        
         tv_link = f"https://www.tradingview.com/chart/?symbol=BINANCE:{sym}"
         reply_markup = {
             "inline_keyboard": [
@@ -1166,6 +1268,57 @@ class TelegramDispatcher:
             ]
         }
 
+        # Attempt to generate chart image
+        scalp = analysis_data.get("scalp_setup", {})
+        candles = analysis_data.get("chart_candles", [])
+        entry = float(scalp.get("entry_price") or analysis_data.get("price", 0))
+        sl = float(scalp.get("stop_loss", 0))
+        tp1 = float(scalp.get("tp1", 0))
+        tp2 = float(scalp.get("tp2", 0))
+        direction = scalp.get("action", "LONG")
+
+        chart_png = None
+        if candles and entry and sl and tp2:
+            chart_png = cls.generate_signal_chart(sym, candles, entry, sl, tp1, tp2, direction)
+
+        # 1. Send with sendPhoto if chart is generated
+        if chart_png:
+            import uuid
+            url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+            boundary = uuid.uuid4().hex
+            body = bytearray()
+            
+            fields = {
+                "chat_id": chat_id,
+                "caption": text,
+                "parse_mode": "HTML",
+                "reply_markup": json.dumps(reply_markup)
+            }
+            for k, v in fields.items():
+                body.extend(f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode('utf-8'))
+            
+            body.extend(f'--{boundary}\r\nContent-Disposition: form-data; name="photo"; filename="chart_{sym}.png"\r\nContent-Type: image/png\r\n\r\n'.encode('utf-8'))
+            body.extend(chart_png)
+            body.extend(b'\r\n')
+            body.extend(f'--{boundary}--\r\n'.encode('utf-8'))
+
+            headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+            try:
+                req = urllib.request.Request(url, data=body, headers=headers)
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    res_data = json.loads(resp.read().decode())
+                    if res_data.get("ok"):
+                        return {
+                            "success": True,
+                            "simulated": False,
+                            "message": "سیگنال سازمانی همراه با چارت تصویری تحلیلی با موفقیت به تلگرام ارسال شد!",
+                            "telegram_message_id": res_data.get("result", {}).get("message_id")
+                        }
+            except Exception as ex:
+                print(f"[TG PHOTO SEND FAIL, FALLBACK TO TEXT] {ex}")
+
+        # 2. Fallback to standard sendMessage if photo generation failed or caption > 1024 chars
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
         payload = json.dumps({
             "chat_id": chat_id,
             "text": text,
