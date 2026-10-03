@@ -567,10 +567,15 @@ def save_telegram_config(cfg: TelegramConfigRequest):
 
 @app.post("/api/telegram/send")
 def send_telegram_signal(req: TelegramSendRequest):
-    bot_token = req.bot_token
-    chat_id = req.chat_id
+    bot_token = (req.bot_token or "").strip()
+    chat_id = (req.chat_id or "").strip()
 
-    # If not provided in request, check saved config
+    # If not provided in request, check environment variables first, then saved config
+    if not bot_token:
+        bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    if not chat_id:
+        chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+
     if not bot_token or not chat_id:
         if os.path.exists(CONFIG_FILE):
             try:
