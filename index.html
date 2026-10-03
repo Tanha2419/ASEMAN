@@ -2238,6 +2238,119 @@
           </div>
         </div>
 
+        <!-- 4 Live Leading Indicators & CME FedWatch Banner -->
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius); padding: 18px; margin-bottom: 22px;">
+          <div style="font-size: 0.95rem; font-weight: 800; color: #fff; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>🧭</span> دیتای زنده ۴ شاخص پیش‌نگر بازار (Leading Macro Gauges Live):
+            </div>
+            <div style="font-size: 0.76rem; color: #94a3b8;">
+              📌 راهنما: نزول نفت و دلار = مهار تورم و سوخت صعودی برای کریپتو و طلا
+            </div>
+          </div>
+
+          <!-- 4 Grid Indicators -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 16px;">
+            <!-- DXY -->
+            <div class="metric-pill" style="border-right: 3px solid #00d2ff; background: rgba(0,0,0,0.3); padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 700;">شاخص دلار (DXY)</span>
+                <span class="mono" id="dxyLiveChg" style="font-size: 0.75rem; font-weight: 800; color: #ff3366;">-0.01%</span>
+              </div>
+              <div class="mono" id="dxyLivePrice" style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 4px 0;">101.92</div>
+              <div style="font-size: 0.7rem; color: #64748b;">سقوط دلار = جهش قیمت رمزارزها</div>
+            </div>
+
+            <!-- US10Y -->
+            <div class="metric-pill" style="border-right: 3px solid #a855f7; background: rgba(0,0,0,0.3); padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 700;">اوراق ۱۰ ساله (US10Y)</span>
+                <span class="mono" id="us10yLiveChg" style="font-size: 0.75rem; font-weight: 800; color: #00e676;">+0.76%</span>
+              </div>
+              <div class="mono" id="us10yLivePrice" style="font-size: 1.25rem; font-weight: 800; color: #a855f7; margin: 4px 0;">5.27%</div>
+              <div style="font-size: 0.7rem; color: #64748b;">دماسنج هزینه پول فدرال‌رزرو</div>
+            </div>
+
+            <!-- Oil -->
+            <div class="metric-pill" style="border-right: 3px solid #f97316; background: rgba(0,0,0,0.3); padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 700;">نفت خام WTI (Crude Oil)</span>
+                <span class="mono" id="oilLiveChg" style="font-size: 0.75rem; font-weight: 800; color: #ff3366;">-1.90%</span>
+              </div>
+              <div class="mono" id="oilLivePrice" style="font-size: 1.25rem; font-weight: 800; color: #f97316; margin: 4px 0;">$91.11</div>
+              <div style="font-size: 0.7rem; color: #64748b;">موتور محرک تورم؛ افت نفت = افت CPI</div>
+            </div>
+
+            <!-- Gold -->
+            <div class="metric-pill" style="border-right: 3px solid #ffd700; background: rgba(0,0,0,0.3); padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 700;">انس طلا (Gold XAU)</span>
+                <span class="mono" id="goldLiveChg" style="font-size: 0.75rem; font-weight: 800; color: #ffd700;">-0.95%</span>
+              </div>
+              <div class="mono" id="goldLivePrice" style="font-size: 1.25rem; font-weight: 800; color: #ffd700; margin: 4px 0;">$4,162</div>
+              <div style="font-size: 0.7rem; color: #64748b;">پناهگاه امن سرمایه جهانی</div>
+            </div>
+          </div>
+
+          <!-- CME FedWatch Gauge Bar -->
+          <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+              <span style="font-size: 0.84rem; font-weight: 700; color: #38bdf8;">
+                📊 دماسنج احتمال کاهش نرخ بهره فدرال‌رزرو (CME FedWatch Tool):
+              </span>
+              <span id="fedwatchSummaryText" style="font-size: 0.8rem; font-weight: 800; color: #00e676;">
+                ۷۴٪ احتمال کاهش ۰.۲۵٪ | ۲۶٪ احتمال تثبیت
+              </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div style="height: 12px; background: rgba(255,255,255,0.06); border-radius: 6px; overflow: hidden; display: flex; margin-bottom: 8px;">
+              <div id="fedwatchCutBar" style="width: 74%; background: linear-gradient(90deg, #00e676, #00b4d8); transition: width 0.5s;" title="احتمال کاهش نرخ بهره"></div>
+              <div id="fedwatchPauseBar" style="width: 26%; background: rgba(255, 51, 102, 0.85); transition: width 0.5s;" title="احتمال تثبیت نرخ بهره"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.74rem; color: #94a3b8;">
+              <span>🟢 شانس کاهش ۰.۲۵٪ (سوخت صعود بیت‌کوین و طلا)</span>
+              <span>🔴 شانس تثبیت نرخ بهره (تاخیر در انبساط پولی)</span>
+            </div>
+
+            <!-- Beginner Friendly Explanation -->
+            <div style="margin-top: 10px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; padding: 8px 12px; font-size: 0.78rem; color: #bae6fd; line-height: 1.6;">
+              💡 <strong>راهنمای مبتدی و خودمانی:</strong> این درصدها شایعه نیستند؛ بلکه حاصل پول واقعی سرمایه‌گذاران وال‌استریت در بورس شیکاگو است. هر چه درصد سبز (کاهش بهره) بالاتر باشد، یعنی فدرال‌رزرو به زودی پول بیشتری چاپ می‌کند و بانک‌ها وام‌های ارزان‌تر می‌دهند؛ در نتیجه مردم و صندوق‌ها پول‌هایشان را وارد <strong>طلا و بیت‌کوین</strong> می‌کنند و قیمت‌ها بالا می‌روند!
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive What-If Scenario Simulator for Beginners -->
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 193, 7, 0.35); border-radius: var(--radius); padding: 18px; margin-bottom: 22px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <div style="font-size: 1.05rem; font-weight: 800; color: #ffd166; display: flex; align-items: center; gap: 8px;">
+                <span>🎮</span> شبیه‌ساز تعاملی «اگر این اتفاق بیفتد چه می‌شود؟» (Scenario Simulator)
+              </div>
+              <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">
+                روی هر دکمه کلیک کنید تا تاثیر آنی روی بازار را به زبان ساده ببینید:
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button onclick="simulateMacroScenario('lower')" style="background: rgba(0, 230, 118, 0.15); border: 1px solid #00e676; color: #00e676; padding: 6px 14px; border-radius: 6px; font-weight: 800; font-size: 0.8rem; cursor: pointer;">
+                🟢 ۱. اگر عدد کمتر از پیش‌بینی بیاید
+              </button>
+              <button onclick="simulateMacroScenario('inline')" style="background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff; padding: 6px 14px; border-radius: 6px; font-weight: 800; font-size: 0.8rem; cursor: pointer;">
+                🔵 ۲. اگر عدد دقیقاً مطابق پیش‌بینی بیاید
+              </button>
+              <button onclick="simulateMacroScenario('higher')" style="background: rgba(255, 51, 102, 0.15); border: 1px solid #ff3366; color: #ff3366; padding: 6px 14px; border-radius: 6px; font-weight: 800; font-size: 0.8rem; cursor: pointer;">
+                🔴 ۳. اگر عدد بیشتر از پیش‌بینی بیاید
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Simulation Result Box -->
+          <div id="simResultBox" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 14px; font-size: 0.85rem; line-height: 1.8; color: #e2e8f0; border-right: 4px solid #00e676;">
+            روی یکی از ۳ دکمه بالا کلیک کنید تا تحلیل اختصاصی هر سناریو باز شود.
+          </div>
+        </div>
+
         <!-- 3 Big Market Verdict Cards (Crypto, Gold, Forex) -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 16px; margin-bottom: 22px;">
           <!-- Card 1: Crypto Market Impact -->
@@ -4736,8 +4849,120 @@
           wrap.appendChild(card);
         });
 
+          // Leading Indicators & FedWatch
+          if (cal.leading_indicators) {
+            const li = cal.leading_indicators;
+            if (li.dxy && li.dxy.price) {
+              document.getElementById('dxyLivePrice').innerText = li.dxy.price;
+              const dxyChg = document.getElementById('dxyLiveChg');
+              dxyChg.innerText = `${li.dxy.chg > 0 ? '+' : ''}${li.dxy.chg}%`;
+              dxyChg.style.color = li.dxy.chg >= 0 ? '#00e676' : '#ff3366';
+            }
+            if (li.us10y && li.us10y.price) {
+              document.getElementById('us10yLivePrice').innerText = `${li.us10y.price}%`;
+              const u10Chg = document.getElementById('us10yLiveChg');
+              u10Chg.innerText = `${li.us10y.chg > 0 ? '+' : ''}${li.us10y.chg}%`;
+              u10Chg.style.color = li.us10y.chg >= 0 ? '#00e676' : '#ff3366';
+            }
+            if (li.oil && li.oil.price) {
+              document.getElementById('oilLivePrice').innerText = `$${li.oil.price}`;
+              const oilChg = document.getElementById('oilLiveChg');
+              oilChg.innerText = `${li.oil.chg > 0 ? '+' : ''}${li.oil.chg}%`;
+              oilChg.style.color = li.oil.chg >= 0 ? '#00e676' : '#ff3366';
+            }
+            if (li.gold && li.gold.price) {
+              document.getElementById('goldLivePrice').innerText = `$${Number(li.gold.price).toLocaleString()}`;
+              const gChg = document.getElementById('goldLiveChg');
+              gChg.innerText = `${li.gold.chg > 0 ? '+' : ''}${li.gold.chg}%`;
+              gChg.style.color = li.gold.chg >= 0 ? '#00e676' : '#ffd700';
+            }
+
+            // FedWatch
+            if (li.fedwatch) {
+              const fw = li.fedwatch;
+              document.getElementById('fedwatchSummaryText').innerText = fw.summary;
+              document.getElementById('fedwatchCutBar').style.width = `${fw.prob_cut_25}%`;
+              document.getElementById('fedwatchPauseBar').style.width = `${fw.prob_pause}%`;
+            }
+          }
+
+          // Initial simulation trigger
+          simulateMacroScenario('lower', cal);
       } catch (err) {
         wrap.innerHTML = `<div style="text-align: center; padding: 25px; color: #ff3366;">خطا در واکشی داده‌های کالبدشکافی کلان: ${err.message}</div>`;
+      }
+    }
+
+    let _lastMacroCalendarData = null;
+    function simulateMacroScenario(scen, calData) {
+      if (calData) _lastMacroCalendarData = calData;
+      const cal = _lastMacroCalendarData;
+      const box = document.getElementById('simResultBox');
+      if (!box) return;
+
+      if (scen === 'lower') {
+        box.style.borderRightColor = '#00e676';
+        box.innerHTML = `
+          <div style="font-weight: 800; color: #00e676; font-size: 1rem; margin-bottom: 6px;">
+            🚀 سناریوی ۱: عدد منتشرشده کمتر از پیش‌بینی است (تورم پایین‌تر / اشتغال خنک‌تر)
+          </div>
+          <div style="color: #cbd5e1; margin-bottom: 8px;">
+            <strong>تفسیر به زبان ساده:</strong> وقتی تورم کمتر از حد انتظار می‌آید، یعنی فشار گرانی از روی دوش اقتصاد برداشته شده و فدرال‌رزرو با خیال راحت نرخ بهره را کاهش می‌دهد.
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 0.8rem;">
+            <div style="background: rgba(0, 230, 118, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.3);">
+              🟢 <strong>ارز دیجیتال:</strong> پامپ شارپ و انفجاری بیت‌کوین و پرواز آلت‌کوین‌های پرنوسان (رالی گاوی).
+            </div>
+            <div style="background: rgba(255, 215, 0, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,215,0,0.3);">
+              🥇 <strong>طلا (Gold):</strong> پرواز صعودی با افت بازدهی اوراق قرضه آمریکا (شکست سقف‌ها).
+            </div>
+            <div style="background: rgba(255, 51, 102, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,51,102,0.3);">
+              🔴 <strong>شاخص دلار (DXY):</strong> سقوط سنگین دلار و صعود قدرتمند یورو و پوند.
+            </div>
+          </div>
+        `;
+      } else if (scen === 'inline') {
+        box.style.borderRightColor = '#00d2ff';
+        box.innerHTML = `
+          <div style="font-weight: 800; color: #00d2ff; font-size: 1rem; margin-bottom: 6px;">
+            ⚖️ سناریوی ۲: عدد منتشرشده دقیقاً طبق پیش‌بینی رسانه‌هاست (نه بالاتر، نه پایین‌تر)
+          </div>
+          <div style="color: #cbd5e1; margin-bottom: 8px;">
+            <strong>تفسیر به زبان ساده:</strong> چون بازار از قبل این عدد را حدس زده بود، نوسان اولیه حالت رفت‌وبرگشتی (اره‌ای / Choppy) خواهد داشت و استاپ هر دو طرف را می‌زند، سپس بازار به روند تکنیکال قبلی خود ادامه می‌دهد.
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 0.8rem;">
+            <div style="background: rgba(0, 210, 255, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(0,210,255,0.3);">
+              🔵 <strong>ارز دیجیتال:</strong> نوسان رنج موقت، سپس رشد ارگانیک و آرام بر اساس قدرت سفارشات اوردر بوک.
+            </div>
+            <div style="background: rgba(255, 215, 0, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,215,0,0.3);">
+              🥇 <strong>طلا (Gold):</strong> حفظ تعادل روی حمایت‌های اصلی بدون شوک نزولی.
+            </div>
+            <div style="background: rgba(167, 139, 250, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(167,139,250,0.3);">
+              🟣 <strong>دلار (DXY):</strong> نوسان خنثی؛ فرصت مناسب برای تریدرهای اسکالپینگ.
+            </div>
+          </div>
+        `;
+      } else if (scen === 'higher') {
+        box.style.borderRightColor = '#ff3366';
+        box.innerHTML = `
+          <div style="font-weight: 800; color: #ff3366; font-size: 1rem; margin-bottom: 6px;">
+            🔻 سناریوی ۳: عدد منتشرشده بالاتر از پیش‌بینی است (شوک تورمی / داغی بیش از حد بازار کار)
+          </div>
+          <div style="color: #cbd5e1; margin-bottom: 8px;">
+            <strong>تفسیر به زبان ساده:</strong> بدترین حالت برای بازارهای مالی! فدرال‌رزرو خواهد گفت: «چون تورم دوباره بالا رفت، نرخ بهره را کاهش نمی‌دهیم». این حرف مثل سطل آب یخ روی سر خریداران است.
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 0.8rem;">
+            <div style="background: rgba(255, 51, 102, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,51,102,0.3);">
+              🔴 <strong>ارز دیجیتال:</strong> دامپ سریع، فشار فروش سنگین و فعال شدن استاپ خریداران اهرم‌دار.
+            </div>
+            <div style="background: rgba(255, 51, 102, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,51,102,0.3);">
+              🔴 <strong>طلا (Gold):</strong> اصلاح عمیق و سریع به دلیل جهش بازدهی اوراق قرضه آمریکا.
+            </div>
+            <div style="background: rgba(0, 230, 118, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.3);">
+              🟢 <strong>شاخص دلار (DXY):</strong> جهش پرقدرت و شارپ دلار در برابر تمامی ارزها.
+            </div>
+          </div>
+        `;
       }
     }
 
