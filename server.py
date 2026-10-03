@@ -370,6 +370,87 @@ def signal_outcome_tracker_loop():
 _outcome_thread = threading.Thread(target=signal_outcome_tracker_loop, daemon=True)
 _outcome_thread.start()
 
+# Live Whale Execution Sentinel (Monitors large institutional taker trades >= $200k)
+_notified_whale_trades = set()
+_last_whale_alert_time = {}
+
+def live_whale_execution_monitor_loop():
+    """Continuously monitors large whale transactions across top liquidity pairs and dispatches instant Telegram alerts"""
+    time.sleep(45) # Allow server boot
+    symbols_to_monitor = ["BTC", "ETH", "SOL"]
+    
+    while True:
+        try:
+            cfg = {}
+            if os.path.exists(CONFIG_FILE):
+                try:
+                    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                        cfg = json.load(f)
+                except Exception:
+                    pass
+
+            bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip() or cfg.get("bot_token", "").strip()
+            chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip() or cfg.get("chat_id", "").strip()
+            auto_pilot = cfg.get("auto_pilot", True)
+
+            if bot_token and chat_id and auto_pilot:
+                now = time.time()
+                for base in symbols_to_monitor:
+                    try:
+                        url = f"https://www.okx.com/api/v5/market/trades?instId={base}-USDT-SWAP&limit=50"
+                        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                        with urllib.request.urlopen(req, timeout=3.5) as resp:
+                            trades = json.loads(resp.read().decode()).get("data", [])
+
+                        for t in trades:
+                            sz = float(t.get("sz", 0))
+                            px = float(t.get("px", 0))
+                            usd_val = sz * px
+                            trade_id = str(t.get("tradeId", ""))
+
+                            # Threshold: $200,000+ USD single transaction
+                            if usd_val >= 200000 and trade_id and trade_id not in _notified_whale_trades:
+                                _notified_whale_trades.add(trade_id)
+                                
+                                # Rate-limit: at most 1 whale execution alert per symbol every 4 minutes to avoid spamming
+                                if (now - _last_whale_alert_time.get(base, 0)) > 240:
+                                    _last_whale_alert_time[base] = now
+                                    side = t.get("side", "buy").upper()
+                                    sym_full = f"{base}USDT"
+                                    
+                                    # Fetch cost basis for context
+                                    m = WhaleFlowEngine.get_whale_metrics(base)
+                                    cost_basis = float(m.get("whale_avg_cost_basis", 0))
+                                    dist_pct = float(m.get("distance_from_whale_entry_pct", 0))
+                                    
+                                    msg = TelegramDispatcher.format_whale_execution_alert(
+                                        symbol=sym_full,
+                                        side=side,
+                                        price=px,
+                                        qty=sz,
+                                        usd_val=usd_val,
+                                        whale_cost_basis=cost_basis,
+                                        dist_pct=dist_pct
+                                    )
+                                    TelegramDispatcher.send_raw_text(bot_token, chat_id, msg)
+                                    print(f"[WHALE MONITOR] Dispatched alert for {base}: {side} ${usd_val:,.0f} at ${px:,.2f}")
+                                    break
+                    except Exception as ex_coin:
+                        pass
+
+                # Clean cache if it gets too large
+                if len(_notified_whale_trades) > 500:
+                    _notified_whale_trades.clear()
+
+            time.sleep(20) # Check every 20 seconds
+        except Exception as e:
+            print(f"[WHALE MONITOR ERR] {e}")
+            time.sleep(30)
+
+_whale_thread = threading.Thread(target=live_whale_execution_monitor_loop, daemon=True)
+_whale_thread.start()
+
+
 def auto_sentinel_loop():
     time.sleep(25) # wait for server boot
     while True:

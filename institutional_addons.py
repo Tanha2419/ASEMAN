@@ -1088,6 +1088,44 @@ class TelegramDispatcher:
     """Dispatches formatted institutional signals directly to Telegram bots & Webhooks"""
 
     @staticmethod
+    def format_whale_execution_alert(symbol: str, side: str, price: float, qty: float, usd_val: float, whale_cost_basis: float = 0.0, dist_pct: float = 0.0) -> str:
+        now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
+        time_str = now_iran.strftime("%H:%M:%S")
+        date_str = now_iran.strftime("%Y/%m/%d")
+
+        is_buy = "BUY" in side.upper()
+        side_emoji = "🟢 خرید تهاجمی نهنگ (Aggressive Buy)" if is_buy else "🔴 فروش و تخلیه سنگین (Aggressive Sell)"
+        action_tip = "احتمال جهش سریع و مومنتوم صعودی؛ به همراه نهنگ ورود پله‌ای را بررسی کنید." if is_buy else "احتمال افت سریع قیمت و فشار فروش؛ از خرید پرهیز کرده یا حد ضررها را تریل کنید."
+
+        cost_basis_line = ""
+        if whale_cost_basis > 0:
+            cost_basis_line = f"\n🏛️ <b>میانگین انباشت تجمیعی نهنگ‌ها:</b> <code>${whale_cost_basis:,.2f}</code> ({dist_pct:+.2f}% نسبت به قیمت فعلی)"
+
+        sl_suggested = round(price * (0.988 if is_buy else 1.012), 4 if price < 10 else 2)
+        tp1_suggested = round(price * (1.015 if is_buy else 0.985), 4 if price < 10 else 2)
+        tp2_suggested = round(price * (1.030 if is_buy else 0.970), 4 if price < 10 else 2)
+
+        msg = f"""
+🐋 <b>هشدار شکار ردپای نهنگ‌ها (Whale Execution Alert)</b>
+━━━━━━━━━━━━━━━━━━━━
+💎 <b>نماد:</b> #{symbol}
+⚡ <b>نوع تراکنش نهنگ:</b> <code>{side_emoji}</code>
+💰 <b>قیمت دقیق ورود نهنگ:</b> <code>${price:,.4f}</code>
+📊 <b>حجم معامله:</b> <code>{qty:,.2f} واحد (${usd_val:,.0f} USD)</code>{cost_basis_line}
+⏰ <b>زمان دقیق رویداد (ایران 🇮🇷):</b> <code>ساعت {time_str} ({date_str})</code>
+
+🧭 <b>استراتژی پیشنهادی همراهی با نهنگ:</b>
+• {action_tip}
+• <b>محدوده ورود همگام:</b> <code>${price:,.4f} (در کندل تثبیت)</code>
+• <b>حد ضرر پیشنهادی:</b> <code>${sl_suggested:,.4f}</code>
+• <b>تارگت اول (TP1):</b> <code>${tp1_suggested:,.4f}</code>
+• <b>تارگت دوم (TP2):</b> <code>${tp2_suggested:,.4f}</code>
+━━━━━━━━━━━━━━━━━━━━
+⚠️ <i>نکته: برای کاهش ریسک اسلیپیج، با سفارش Limit و رعایت دقیق حد ضرر وارد شوید.</i>
+"""
+        return msg.strip()
+
+    @staticmethod
     def format_signal_message(analysis_data: Dict[str, Any]) -> str:
         sym = analysis_data.get("symbol", "BTCUSDT")
         price = analysis_data.get("price", 0)
@@ -1111,6 +1149,10 @@ class TelegramDispatcher:
         # Whale radar check
         whale_info = WhaleOrderFlowEngine.check_symbol_whale_flow(sym)
         whale_badge = whale_info.get("whale_badge", "⚪ رفتار نرمال نهنگ‌ها")
+        whale_metrics = WhaleFlowEngine.get_whale_metrics(sym)
+        whale_cost_fmt = whale_metrics.get("whale_avg_cost_basis_fmt", "-")
+        whale_dist_pct = whale_metrics.get("distance_from_whale_entry_pct", 0)
+        whale_dist_fmt = f"{whale_dist_pct:+.2f}% نسبت به ورود نهنگ" if whale_dist_pct != 0 else "برابر با نقطه ورود نهنگ" 
 
         # Hyperliquid DEX whale metrics
         hl_info = HyperliquidWhaleEngine.get_asset_metrics(sym)
@@ -1133,6 +1175,7 @@ class TelegramDispatcher:
 🧭 <b>سیگنال سیستم:</b> {action_emoji} <b>{scalp.get('action', 'WAIT')}</b>
 ⭐ <b>درجه سیگنال:</b> <code>Grade {grade}</code> ({s3d.get('composite_confidence', 0)}%){conf_badge}
 🐋 <b>رادار نهنگ‌ها:</b> <code>{whale_badge}</code>{hl_line}
+🏛️ <b>موقعیت نهنگ‌ها (Cost Basis):</b> <code>میانگین ورود: {whale_cost_fmt} ({whale_dist_fmt})</code>
 
 🎯 <b>تفکیک سه‌گانه امتیازات سازمانی:</b>
 • امتیاز جهت (Direction): <code>{s3d.get('direction_score', 0)}/100</code>
