@@ -283,10 +283,23 @@ class CryptoPanicEngine:
     _cached_feed = {}
     _last_feed_time = 0
 
+    # Systemic Tier-1 events that directly trigger market-wide circuit alerts
+    SYSTEMIC_PANIC_KEYWORDS = [
+        "sec lawsuit", "crypto ban", "exchange bankrupt", "insolvency", "liquidation cascade",
+        "binance charged", "usdt depeg", "tether depeg", "flash crash", "fraud charges", "arrested",
+        "market crash", "black swan", "sanctions", "hack drain", "stablecoin depeg", "emergency rate hike"
+    ]
+    # Crypto market entities to avoid false alarms on unrelated topics (e.g. general tech, pop culture)
+    CRYPTO_MARKET_ENTITIES = [
+        "bitcoin", "btc", "ethereum", "eth", "solana", "sol", "crypto", "cryptocurrency",
+        "defi", "binance", "coinbase", "sec", "fed", "tether", "usdt", "altcoin", "altcoins",
+        "stablecoin", "bybit", "okx", "kraken", "token", "tokens", "protocol", "dex", "etf",
+        "memecoin", "layer2", "web3", "blockchain"
+    ]
     PANIC_KEYWORDS = [
-        "sec lawsuit", "crypto ban", "banned", "hack", "hacked", "exploit", "exploited", 
-        "subpoena", "insolvent", "insolvency", "bankruptcy", "liquidation cascade", "flash crash", "fraud investigation",
-        "drop", "drops", "crash", "crashes", "tumbles", "fall", "falls", "plunge", "plunges", "loss", "losses", "bearish", "panic", "dump", "investigation"
+        "hack", "hacked", "exploit", "exploited", "subpoena", "insolvent", "insolvency",
+        "bankruptcy", "liquidation cascade", "flash crash", "rug pull", "stolen",
+        "drop", "drops", "crash", "crashes", "tumbles", "plunge", "plunges", "bearish", "dump"
     ]
     BULLISH_KEYWORDS = [
         "etf approval", "all-time high", "institutional adoption", "blackrock", 
@@ -491,21 +504,30 @@ class CryptoPanicEngine:
                                 clean_desc = re.sub(r'<[^>]+>', '', desc).strip()[:180]
 
                                 t_lower = (title + " " + clean_desc).lower()
-                                p_matches = [k for k in cls.PANIC_KEYWORDS if re.search(r'\b' + re.escape(k) + r'\b', t_lower)]
-                                b_matches = [k for k in cls.BULLISH_KEYWORDS if re.search(r'\b' + re.escape(k) + r'\b', t_lower)]
+                                
+                                # Irrelevant noise filter (HR/careers, pop culture, art)
+                                is_irrelevant = bool(re.search(r"\b(?:job|jobs|posting|postings|hiring|career|recruitment|internship|art|pope|movie|film|streamer|pewdiepie)\b", t_lower))
+                                
+                                has_sys_panic = any(re.search(r"\b" + re.escape(k) + r"\b", t_lower) for k in cls.SYSTEMIC_PANIC_KEYWORDS)
+                                has_crypto_entity = any(re.search(r"\b" + re.escape(e) + r"\b", t_lower) for e in cls.CRYPTO_MARKET_ENTITIES)
+                                
+                                p_matches = [k for k in cls.PANIC_KEYWORDS if re.search(r"\b" + re.escape(k) + r"\b", t_lower)]
+                                b_matches = [k for k in cls.BULLISH_KEYWORDS if re.search(r"\b" + re.escape(k) + r"\b", t_lower)]
 
-                                # Contextual filter: neutralize false panic phrases like "erasing losses", "recovery from drop", "surges after dip"
-                                if re.search(r'erasing.*(loss|losses)|recover.*from|bounce.*after|surge.*after|ath.*record|winning.*streak', t_lower):
-                                    p_matches = [k for k in p_matches if k not in ["losses", "loss", "drop", "fall", "crash"]]
+                                # Neutralize false panic expressions (recovery, bouncing back, claims, payback)
+                                if re.search(r"erasing.*(loss|losses)|recover.*from|recovers.*from|bounce.*after|surge.*after|ath.*record|winning.*streak|recovery\s+claim", t_lower):
+                                    p_matches = [k for k in p_matches if k not in ["losses", "loss", "drop", "fall", "crash", "exploit"]]
 
-                                if len(p_matches) > len(b_matches) and len(p_matches) >= 1:
+                                is_genuine_panic = (has_sys_panic or (has_crypto_entity and len(p_matches) >= 1)) and not is_irrelevant
+
+                                if is_genuine_panic and len(p_matches) > len(b_matches):
                                     sent = "BEARISH_PANIC"
                                     sent_fa = "⚠️ خبر پرریسک / پنیک"
                                     col = "RED"
-                                    p_score = 78
+                                    p_score = 82 if has_sys_panic else 74
                                     pos_v = 6
                                     neg_v = 38
-                                elif len(b_matches) > 0 and len(b_matches) >= len(p_matches):
+                                elif len(b_matches) > 0 and len(b_matches) >= len(p_matches) and not is_irrelevant:
                                     sent = "BULLISH_CATALYST"
                                     sent_fa = "🟢 خبر محرک صعودی"
                                     col = "GREEN"
@@ -519,7 +541,6 @@ class CryptoPanicEngine:
                                     p_score = 45
                                     pos_v = 15
                                     neg_v = 9
-
                                 feed_items.append({
                                     "title": title,
                                     "title_fa": "", # Populated via parallel neural translation
@@ -640,20 +661,21 @@ class NewsCircuitBreaker:
         items = panic_feed.get("news_items", [])
 
         # Evaluate Circuit Breaker Status
-        panic_count = sum(1 for it in items[:6] if it["sentiment"] == "BEARISH_PANIC")
-        bull_count = sum(1 for it in items[:6] if it["sentiment"] == "BULLISH_CATALYST")
+        panic_count = sum(1 for it in items[:8] if it["sentiment"] == "BEARISH_PANIC")
+        bull_count = sum(1 for it in items[:8] if it["sentiment"] == "BULLISH_CATALYST")
         avg_panic = panic_feed.get("avg_panic_score", 45)
 
-        if panic_count >= 2 or avg_panic >= 70:
+        # Trigger emergency halt ONLY on confirmed systemic panic (>= 3 bearish panic items in top headlines OR avg_panic >= 78)
+        if panic_count >= 3 or avg_panic >= 78:
             circuit_status = "EMERGENCY_CIRCUIT_BREAKER"
             circuit_title = "🛑 فیوز اضطراری اخبار فعال است (Circuit Breaker Triggered)"
-            circuit_advice = "انتشار چندین خبر فوری پرریسک یا شاخص وحشت بحرانی CryptoPanic؛ باز کردن پوزیشن‌های جدید ممنوع است و استاپ‌ها به نقطه سربه‌سر منتقل شوند."
+            circuit_advice = "انتشار چندین خبر فوری بحرانی سیستمی در بازار رمزارز؛ باز کردن پوزیشن‌های جدید موقتاً متوقف شد و استاپ‌ها به نقطه سربه‌سر منتقل شوند."
             badge = "RED"
             safe_to_trade = False
-        elif panic_count == 1 or avg_panic >= 60:
+        elif panic_count >= 1 or avg_panic >= 65:
             circuit_status = "CAUTION_HIGH_VOLATILITY"
             circuit_title = "⚠️ هشدار نوسانات خبری (Caution Active)"
-            circuit_advice = "یک خبر حساس اخیر یا افزایش شاخص وحشت CryptoPanic شناسایی شده است؛ حجم معاملات را ۵۰٪ کاهش داده و از استاپ‌لاس‌های فشرده استفاده کنید."
+            circuit_advice = "شناسایی سیگنال نوسان خبری در رسانه‌ها؛ معاملات با رعایت مدیریت سرمایه و استاپ‌لاس دقیق مجاز است."
             badge = "YELLOW"
             safe_to_trade = True
         else:
