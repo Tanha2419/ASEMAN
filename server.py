@@ -374,10 +374,24 @@ _outcome_thread.start()
 _notified_whale_trades = set()
 _last_whale_alert_time = {}
 
+# Multi-tier dynamic whale threshold configuration:
+# Tier 1 (Mega Cap / Global Leaders): $200k+
+# Tier 2 (Major Altcoins): $100k+
+# Tier 3 (High-Beta Momentum / Memes): $50k+
+WHALE_MONITOR_TARGETS = {
+    "BTC": 200000,
+    "ETH": 100000,
+    "SOL": 100000,
+    "BNB": 100000,
+    "XRP": 50000,
+    "DOGE": 50000,
+    "SUI": 50000,
+    "PEPE": 50000
+}
+
 def live_whale_execution_monitor_loop():
-    """Continuously monitors large whale transactions across top liquidity pairs and dispatches instant Telegram alerts"""
+    """Continuously monitors large whale transactions across the 8 top liquidity pairs with adaptive thresholds"""
     time.sleep(45) # Allow server boot
-    symbols_to_monitor = ["BTC", "ETH", "SOL"]
     
     while True:
         try:
@@ -395,7 +409,7 @@ def live_whale_execution_monitor_loop():
 
             if bot_token and chat_id and auto_pilot:
                 now = time.time()
-                for base in symbols_to_monitor:
+                for base, min_usd_threshold in WHALE_MONITOR_TARGETS.items():
                     try:
                         url = f"https://www.okx.com/api/v5/market/trades?instId={base}-USDT-SWAP&limit=50"
                         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -408,8 +422,8 @@ def live_whale_execution_monitor_loop():
                             usd_val = sz * px
                             trade_id = str(t.get("tradeId", ""))
 
-                            # Threshold: $200,000+ USD single transaction
-                            if usd_val >= 200000 and trade_id and trade_id not in _notified_whale_trades:
+                            # Adaptive threshold per coin tier
+                            if usd_val >= min_usd_threshold and trade_id and trade_id not in _notified_whale_trades:
                                 _notified_whale_trades.add(trade_id)
                                 
                                 # Rate-limit: at most 1 whale execution alert per symbol every 4 minutes to avoid spamming
