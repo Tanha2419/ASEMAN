@@ -2078,6 +2078,7 @@
       <div class="tabs-header">
         <button class="tab-btn active" onclick="switchTab('instTab', this)">🏛️ جدول سیگنال نهادی (Institutional Matrix)</button>
         <button class="tab-btn" id="tabBtnMacroDeep" onclick="switchTab('macroDeepTab', this)" style="border: 1px solid rgba(255, 61, 113, 0.5); color: #ff3d71; font-weight: 800; background: rgba(255, 61, 113, 0.1);">🏛️ کالبدشکافی اخبار کلان (CPI, NFP, FOMC)</button>
+        <button class="tab-btn" id="tabBtnLiquidityTerminal" onclick="switchTab('liquidityTerminalTab', this)" style="border: 1px solid rgba(255, 145, 0, 0.55); color: #ff9100; font-weight: 800; background: rgba(255, 145, 0, 0.12);">🔥 ترمینال نهادی و هیت‌مپ نقدینگی (Liquidity & Arkham Suite)</button>
         <button class="tab-btn" id="tabBtnPrecision" onclick="switchTab('precisionTab', this)" style="border: 1px solid rgba(0, 210, 255, 0.4); color: #00d2ff; font-weight: 800;">💎 بسته ۵ گانه دقت نهادی (Precision Suite)</button>
         <button class="tab-btn" id="tabBtnAlpha" onclick="switchTab('alphaTab', this)" style="border: 1px solid rgba(255, 193, 7, 0.4); color: #ffc107; font-weight: 800;">🗺️ ماتریس لیدرهای بازار (Alpha Matrix)</button>
         <button class="tab-btn" id="tabBtnKelly" onclick="switchTab('kellyTab', this)" style="border: 1px solid rgba(0, 230, 118, 0.4); color: #00e676; font-weight: 800;">🧮 ماشین‌حساب مدیریت سرمایه و کِلی (Kelly Calculator)</button>
@@ -2213,6 +2214,176 @@
           </div>
         </div>
       </div>
+
+
+      <!-- Tab Liquidity & Arkham Terminal -->
+      <div class="tab-content" id="liquidityTerminalTab">
+        <!-- Top Institutional Header -->
+        <div style="background: linear-gradient(135deg, rgba(255, 145, 0, 0.15), rgba(218, 54, 51, 0.2)); border: 1px solid rgba(255, 145, 0, 0.4); border-radius: var(--radius); padding: 20px; margin-bottom: 22px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div>
+              <div style="font-size: 1.25rem; font-weight: 800; color: #ff9100; display: flex; align-items: center; gap: 10px;">
+                <span>🔥</span> ترمینال نهادی ۳گانه: هیت‌مپ نقدینگی، شناسنامه نهنگ‌ها (Arkham) و فوت‌پرینت جذب سفارشات
+              </div>
+              <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 6px; line-height: 1.6;">
+                پایش لحظه‌ای استخرهای استاپ‌هانت صرافی‌ها • شفافیت کامل هویت کیف‌پول وال‌ها و صندوق‌ها • رصد سفارشات بلعیده‌شده (Absorption)
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <select id="liqTerminalSymbolSelect" onchange="fetchLiquidityTerminalSuite(this.value)" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255, 145, 0, 0.5); padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                <option value="BTC" selected>₿ Bitcoin (BTCUSDT)</option>
+                <option value="ETH">Ξ Ethereum (ETHUSDT)</option>
+                <option value="SOL">◎ Solana (SOLUSDT)</option>
+                <option value="BNB">🔶 BNB (BNBUSDT)</option>
+                <option value="XRP">✕ Ripple (XRPUSDT)</option>
+                <option value="DOGE">🐶 Dogecoin (DOGEUSDT)</option>
+                <option value="SUI">💧 Sui (SUIUSDT)</option>
+                <option value="PEPE">🐸 Pepe (PEPEUSDT)</option>
+              </select>
+              <button onclick="fetchLiquidityTerminalSuite()" class="copy-btn" style="padding: 7px 16px; font-size: 0.82rem; background: rgba(255, 145, 0, 0.2); border-color: rgba(255, 145, 0, 0.6); color: #ffb74d;">
+                🔄 بازخوانی زنده ترمینال
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-Column Institutional Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; margin-bottom: 24px;">
+          
+          <!-- Column 1: Liquidation Heatmap & Stop-Hunt Magnets -->
+          <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 18px; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 12px; margin-bottom: 14px;">
+              <div style="font-weight: 800; color: #38bdf8; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                <span>🧲</span> نقشه حرارتی استخرهای نقدینگی
+              </div>
+              <span id="liqCascadeBadge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
+                Coinglass Style
+              </span>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: #94a3b8; font-size: 0.82rem;">آهنربای جذب قیمت (Magnet Price):</span>
+                <span id="liqMagnetPrice" style="color: #ffd700; font-weight: 800; font-size: 0.95rem;">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: #94a3b8; font-size: 0.82rem;">جهت مغناطیسی استخر:</span>
+                <span id="liqMagnetDir" style="font-weight: 700; font-size: 0.82rem;">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #94a3b8; font-size: 0.82rem;">نقدینگی در معرض خطر:</span>
+                <span id="liqTotalRisk" style="color: #ff5252; font-weight: 700; font-size: 0.82rem;">-</span>
+              </div>
+            </div>
+
+            <div style="font-weight: 700; font-size: 0.82rem; color: #cbd5e1; margin-bottom: 8px;">سطوح کلیدی لیکوئیدیشن اهرم‌داران (Long vs Short):</div>
+            <div id="liqClustersList" style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1;">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+          <!-- Column 2: Arkham Intelligence Whale Identifier -->
+          <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 18px; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 12px; margin-bottom: 14px;">
+              <div style="font-weight: 800; color: #a855f7; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                <span>🏷️</span> شناسنامه و کیف‌پول نهنگ‌ها (Arkham Intel)
+              </div>
+              <span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
+                On-Chain Labels
+              </span>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: #94a3b8; font-size: 0.82rem;">میانگین خرید کل نهنگ‌ها:</span>
+                <span id="arkhamCostBasis" style="color: #00e676; font-weight: 800; font-size: 0.95rem;">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: #94a3b8; font-size: 0.82rem;">فاصله قیمت از میانگین نهنگ:</span>
+                <span id="arkhamDistancePct" style="font-weight: 700; font-size: 0.82rem;">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #94a3b8; font-size: 0.82rem;">خالص جریان ۲۴ ساعته:</span>
+                <span id="arkhamNetflow" style="font-weight: 700; font-size: 0.82rem;">-</span>
+              </div>
+            </div>
+
+            <div style="font-weight: 700; font-size: 0.82rem; color: #cbd5e1; margin-bottom: 8px;">کیف‌پول‌های سازمانی رصدشده با استراتژی ورود:</div>
+            <div id="arkhamWalletsList" style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1; max-height: 280px; overflow-y: auto;">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+          <!-- Column 3: Footprint Delta & Order Absorption -->
+          <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 18px; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 12px; margin-bottom: 14px;">
+              <div style="font-weight: 800; color: #00e676; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                <span>📊</span> فوت‌پرینت دلتا و جذب سفارشات (Absorption)
+              </div>
+              <span id="absRegimeBadge" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
+                Bookmap Style
+              </span>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: #94a3b8; font-size: 0.82rem;">دلتای خالص معاملات تهاجمی:</span>
+                <span id="absNetDelta" style="font-weight: 800; font-size: 0.95rem;">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: #94a3b8; font-size: 0.82rem;">حجم کل پنجره معاملات:</span>
+                <span id="absTotalVolume" style="color: #cbd5e1; font-weight: 700; font-size: 0.82rem;">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #94a3b8; font-size: 0.82rem;">سوگیری نهایی اردر فلو:</span>
+                <span id="absDirectionalBias" style="font-weight: 700; font-size: 0.82rem;">-</span>
+              </div>
+            </div>
+
+            <!-- Visual Delta Meter -->
+            <div style="margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 4px;">
+                <span style="color: #00e676; font-weight: 700;">خرید تهاجمی (Taker Buy)</span>
+                <span style="color: #ff3366; font-weight: 700;">فروش تهاجمی (Taker Sell)</span>
+              </div>
+              <div style="height: 10px; background: rgba(255, 255, 255, 0.08); border-radius: 5px; overflow: hidden; display: flex;">
+                <div id="absBuyBar" style="width: 50%; background: #00e676; transition: width 0.3s ease;"></div>
+                <div id="absSellBar" style="width: 50%; background: #ff3366; transition: width 0.3s ease;"></div>
+              </div>
+            </div>
+
+            <!-- Absorption Diagnosis Text -->
+            <div style="background: rgba(0, 0, 0, 0.3); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 12px; flex-grow: 1;">
+              <div style="color: #ffd700; font-weight: 700; font-size: 0.85rem; margin-bottom: 4px;" id="absDiagnosisTitle">
+                تشخیص جریان نقدینگی و جذب نهادی:
+              </div>
+              <div style="color: #cbd5e1; font-size: 0.8rem; line-height: 1.6;" id="absDiagnosisDesc">
+                در حال پایش و پردازش تیک‌های صرافی...
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Practical 3-Step Execution Guidance -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 18px;">
+          <div style="font-weight: 800; color: #ffd700; font-size: 0.95rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+            <span>💡</span> راهنمای کاربردی استفاده همزمان از ۳ ابزار برای باز کردن پوزیشن طلایی:
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; font-size: 0.82rem; color: #cbd5e1; line-height: 1.6;">
+            <div style="background: rgba(56, 189, 248, 0.04); border-right: 3px solid #38bdf8; padding: 10px 14px; border-radius: 4px;">
+              <strong style="color: #38bdf8;">قدم ۱ (تشخیص استخر نقدینگی):</strong> ببینید آهنربای نقدینگی به کدام سمت است؛ اگر قیمت در حال حرکت به سمت یک خوشه لیکوئیدیشن سنگین است، تا زمان پاکسازی استاپ‌ها صبر کنید.
+            </div>
+            <div style="background: rgba(168, 85, 247, 0.04); border-right: 3px solid #a855f7; padding: 10px 14px; border-radius: 4px;">
+              <strong style="color: #a855f7;">قدم ۲ (همسویی با میانگین نهنگ):</strong> بررسی کنید آیا قیمت فعلی به میانگین خرید نهنگ‌ها (Cost Basis) نزدیک است یا خیر؛ خرید نزدیک به میانگین وال‌ها کمترین ریسک ممکن را دارد.
+            </div>
+            <div style="background: rgba(0, 230, 118, 0.04); border-right: 3px solid #00e676; padding: 10px 14px; border-radius: 4px;">
+              <strong style="color: #00e676;">قدم ۳ (تأییدیه جذب فوت‌پرینت):</strong> به محض اینکه دیدید فروشندگان مارکت‌سل زدند اما قیمت به خاطر دیواره خرید نهنگ نریخت (Bullish Absorption)، بلافاصله در کندل بعدی پوزیشن لانگ را باز کنید.
+            </div>
+          </div>
+        </div>
+      </div>
+
 
       <!-- Tab Macro Deep Dive: CPI, NFP, FOMC Dissection & Predictions -->
       <div class="tab-content" id="macroDeepTab">
@@ -3995,6 +4166,8 @@
         embedTradingViewWidget(currentAnalysis.symbol);
       } else if (tabId === 'macroDeepTab') {
         fetchMacroDeepDissection();
+      } else if (tabId === 'liquidityTerminalTab') {
+        fetchLiquidityTerminalSuite();
       } else if (tabId === 'c360Tab') {
         fetchHeatmap();
       } else if (tabId === 'coinlegsTab') {
@@ -4769,6 +4942,158 @@
         }
       }
     }
+
+
+    // --- Institutional Liquidity & Arkham Suite Engine ---
+    async function fetchLiquidityTerminalSuite(symbol) {
+      const sym = symbol || (document.getElementById("liqTerminalSymbolSelect") ? document.getElementById("liqTerminalSymbolSelect").value : "BTC") || "BTC";
+      showToast(`در حال تحلیل و بازخوانی ترمینال نقدینگی و شناسنامه نهنگ‌ها (${sym})...`);
+      
+      try {
+        const res = await fetch(`/api/terminal/liquidity-suite?symbol=${encodeURIComponent(sym)}`);
+        const data = await res.json();
+        if (!data || !data.success) throw new Error("عدم دریافت داده‌های ترمینال");
+
+        const liq = data.liquidations || {};
+        const whales = data.whales || {};
+        const abs = data.absorption || {};
+
+        // 1. Render Column 1: Liquidation Heatmap
+        const magEl = document.getElementById("liqMagnetPrice");
+        if (magEl) magEl.innerText = liq.magnet_price ? `$${Number(liq.magnet_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "-";
+
+        const dirEl = document.getElementById("liqMagnetDir");
+        if (dirEl) {
+          const isBull = liq.magnet_direction === "BULLISH_MAGNET";
+          dirEl.innerText = isBull ? "🟢 مگنت صعودی (جذب به سمت استخر شورت‌ها)" : "🔴 مگنت نزولی (جذب به سمت استخر لانگ‌ها)";
+          dirEl.style.color = isBull ? "#00e676" : "#ff3366";
+        }
+
+        const riskEl = document.getElementById("liqTotalRisk");
+        if (riskEl) {
+          riskEl.innerText = `لانگ: ${liq.total_long_liq_fmt || "-"} | شورت: ${liq.total_short_liq_fmt || "-"}`;
+        }
+
+        const cascadeEl = document.getElementById("liqCascadeBadge");
+        if (cascadeEl) {
+          if (liq.cascade_warning) {
+            cascadeEl.innerText = "⚠️ خطر شکست آبشاری لیکوئیدیشن!";
+            cascadeEl.style.color = "#ff3366";
+            cascadeEl.style.borderColor = "#ff3366";
+            cascadeEl.style.background = "rgba(255, 51, 102, 0.15)";
+          } else {
+            cascadeEl.innerText = "🟢 محدوده پایدار و خارج از آبشار";
+            cascadeEl.style.color = "#38bdf8";
+            cascadeEl.style.borderColor = "rgba(56, 189, 248, 0.3)";
+            cascadeEl.style.background = "rgba(56, 189, 248, 0.15)";
+          }
+        }
+
+        const clustersWrap = document.getElementById("liqClustersList");
+        if (clustersWrap) {
+          const longs = (liq.long_clusters || []).slice(0, 3);
+          const shorts = (liq.short_clusters || []).slice(0, 3);
+          let html = "";
+          
+          shorts.forEach(c => {
+            html += `
+              <div style="background: rgba(255, 51, 102, 0.08); border-right: 3px solid #ff3366; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 0.78rem;">
+                <span style="color: #ff3366; font-weight: 700;">استخر شورت ${c.leverage}:</span>
+                <span style="color: #cbd5e1;">$${Number(c.price).toLocaleString()} (${c.distance_pct}%)</span>
+                <span style="color: #fca5a5; font-weight: 700;">${c.vol_fmt}</span>
+              </div>`;
+          });
+          
+          longs.forEach(c => {
+            html += `
+              <div style="background: rgba(0, 230, 118, 0.08); border-right: 3px solid #00e676; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 0.78rem;">
+                <span style="color: #00e676; font-weight: 700;">استخر لانگ ${c.leverage}:</span>
+                <span style="color: #cbd5e1;">$${Number(c.price).toLocaleString()} (${c.distance_pct}%)</span>
+                <span style="color: #86efac; font-weight: 700;">${c.vol_fmt}</span>
+              </div>`;
+          });
+          clustersWrap.innerHTML = html;
+        }
+
+        // 2. Render Column 2: Arkham Whale Intel
+        const costBasisEl = document.getElementById("arkhamCostBasis");
+        if (costBasisEl) costBasisEl.innerText = whales.whale_avg_cost_basis_fmt || "-";
+
+        const distEl = document.getElementById("arkhamDistancePct");
+        if (distEl) {
+          const d = whales.distance_from_whale_entry_pct || 0;
+          distEl.innerText = `${d >= 0 ? "+" : ""}${d}% (${d >= 0 ? "بالای نقطه ورود نهنگ" : "زیر نقطه ورود نهنگ"})`;
+          distEl.style.color = d >= 0 ? "#00e676" : "#ff9100";
+        }
+
+        const netflowEl = document.getElementById("arkhamNetflow");
+        if (netflowEl) {
+          netflowEl.innerText = whales.netflow_fmt || "-";
+          netflowEl.style.color = (whales.netflow_24h_coins || 0) < 0 ? "#00e676" : "#ff3366";
+        }
+
+        const walletsWrap = document.getElementById("arkhamWalletsList");
+        if (walletsWrap) {
+          const wList = whales.whale_wallets || [];
+          let wHtml = "";
+          wList.forEach(w => {
+            wHtml += `
+              <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); padding: 8px 10px; border-radius: 6px; font-size: 0.77rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                  <strong style="color: #c084fc;">${w.entity || w.wallet}</strong>
+                  <span style="color: ${w.pnl_color || "#00e676"}; font-weight: 700;">${w.pnl_status || ""}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: #94a3b8; font-size: 0.72rem;">
+                  <span>حجم: ${w.amount_fmt || ""}</span>
+                  <span>میانگین ورود: ${w.avg_buy_price_fmt || ""}</span>
+                </div>
+              </div>`;
+          });
+          walletsWrap.innerHTML = wHtml || "<div style='color: #94a3b8;'>در حال بارگذاری شناسنامه والت‌ها...</div>";
+        }
+
+        // 3. Render Column 3: Footprint Absorption
+        const deltaEl = document.getElementById("absNetDelta");
+        if (deltaEl) {
+          deltaEl.innerText = abs.net_delta_fmt || "-";
+          const dVal = abs.net_delta_usd || 0;
+          deltaEl.style.color = dVal >= 0 ? "#00e676" : "#ff3366";
+        }
+
+        const volEl = document.getElementById("absTotalVolume");
+        if (volEl) volEl.innerText = abs.total_volume_fmt || "-";
+
+        const biasEl = document.getElementById("absDirectionalBias");
+        if (biasEl) {
+          biasEl.innerText = abs.directional_bias === "LONG" ? "🟢 سیگنال صعودی (Bullish Flow)" : "🔴 سیگنال نزولی (Bearish Flow)";
+          biasEl.style.color = abs.directional_bias === "LONG" ? "#00e676" : "#ff3366";
+        }
+
+        const bBar = document.getElementById("absBuyBar");
+        const sBar = document.getElementById("absSellBar");
+        if (bBar && sBar) {
+          const buyV = abs.buy_volume_usd || 1;
+          const sellV = abs.sell_volume_usd || 1;
+          const totalV = buyV + sellV;
+          const buyPct = Math.round((buyV / totalV) * 100);
+          const sellPct = 100 - buyPct;
+          bBar.style.width = `${buyPct}%`;
+          sBar.style.width = `${sellPct}%`;
+        }
+
+        const diagTitle = document.getElementById("absDiagnosisTitle");
+        if (diagTitle) diagTitle.innerText = abs.absorption_title || "وضعیت اردر فلو";
+
+        const diagDesc = document.getElementById("absDiagnosisDesc");
+        if (diagDesc) diagDesc.innerText = abs.description || "";
+
+        showToast(`ترمینال نقدینگی و شناسنامه نهنگ‌ها برای ${sym} به‌روزرسانی شد.`, 2500);
+      } catch (err) {
+        console.error("fetchLiquidityTerminalSuite err:", err);
+        showToast("خطا در همگام‌سازی ترمینال نقدینگی", 3000);
+      }
+    }
+
 
     // --- Macro Deep Dissection Engine (CPI, NFP, FOMC Dissection & Predictions) ---
     async function fetchMacroDeepDissection() {
