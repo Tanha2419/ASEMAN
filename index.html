@@ -4774,6 +4774,7 @@
     async function fetchMacroDeepDissection() {
       const wrap = document.getElementById('macroEventsDissectionWrap');
       if (!wrap) return;
+      showToast('در حال بازخوانی و به‌روزرسانی تحلیل زنده کلان...');
       try {
         const res = await fetch('/api/calendar');
         const cal = await res.json();
@@ -4924,8 +4925,10 @@
 
           // Initial simulation trigger
           simulateMacroScenario('lower', cal);
+          showToast('تحلیل زنده و دیتای شاخص‌های کلان با موفقیت به‌روزرسانی شد! 🟢');
       } catch (err) {
         wrap.innerHTML = `<div style="text-align: center; padding: 25px; color: #ff3366;">خطا در واکشی داده‌های کالبدشکافی کلان: ${err.message}</div>`;
+        showToast('خطا در به‌روزرسانی تحلیل کلان: ' + err.message);
       }
     }
 
