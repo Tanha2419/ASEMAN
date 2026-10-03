@@ -467,6 +467,15 @@ def auto_sentinel_loop():
 
                         analysis = agent.analyze_symbol(sym)
                         if analysis.get("success"):
+                            # Quality Gate: Reject Grade C signals from automated Telegram broadcast
+                            s3d = analysis.get("scores_3d", {})
+                            grade = s3d.get("grade", "C")
+                            scalp_act = analysis.get("scalp_setup", {}).get("action_code", "WAIT")
+
+                            if grade in ["C", "D", "F"] or scalp_act == "WAIT":
+                                print(f"[SENTINEL] Skipping {sym} because grade is {grade} or action is WAIT (Grade A/A+ only).")
+                                continue
+
                             res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis)
                             if res.get("success") and not res.get("simulated"):
                                 _sent_cooldown[sym] = now
