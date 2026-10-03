@@ -2408,16 +2408,52 @@
           </div>
         </div>
 
-        <!-- Strategy Rules on News Day -->
-        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius); padding: 18px;">
-          <div style="font-size: 0.95rem; font-weight: 700; color: #ffd166; margin-bottom: 8px;">
-            ⚠️ مرام‌نامه و پروتکل معامله‌گری در روزهای انتشار اخبار سنگین:
+        <!-- Strategy Rules & Step-by-Step Execution Guide on News Day -->
+        <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: var(--radius); padding: 22px; margin-top: 10px;">
+          <div style="font-size: 1.1rem; font-weight: 800; color: #ffd700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+            <span>🧭</span> راهنمای عملیاتی و ۳ مرحله‌ای معامله‌گری با اخبار کلان (Institutional Execution Playbook):
           </div>
-          <ul style="font-size: 0.85rem; color: #94a3b8; line-height: 1.8; margin-right: 20px;">
-            <li><strong>قانون اول (عدم قمار قبل از خبر):</strong> ۴۵ دقیقه قبل از ساعت ۱۶:۰۰ (زمان خبر)، هیچ پوزیشن اهرم‌داری نباید باز باشد؛ حرکات ثانیه‌ای اول خبر ناشی از الگوریتم‌های تهاجمی HFT برای سوزاندن استاپ‌هاست.</li>
-            <li><strong>قانون دوم (صبر برای بسته شدن کندل ۱۵ دقیقه‌ای):</strong> جهت واقعی بازار همیشه بعد از ۱۵ الی ۲۰ دقیقه اول مشخص می‌شود، زمانی که سرمایه‌گذاران نهادی گزارش کامل را می‌خوانند نه فقط تیتر خبر را.</li>
-            <li><strong>قانون سوم (فیوز اضطراری سایت):</strong> در صورتی که نتیجه خبر در خلاف جهت تکنیکال باشد، ربات سنتینل به طور خودکار سیگنال‌های خلاف جهت را متوقف می‌کند تا سرمایه شما در امان بماند.</li>
-          </ul>
+
+          <!-- 3 Steps Visual Timeline Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 18px;">
+            <!-- Step 1 -->
+            <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 14px;">
+              <div style="font-weight: 800; color: #f87171; font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>🛑 مرحله ۱:</span> قبل از خبر (ساعت ۱۵:۱۵ تا ۱۵:۵۹)
+              </div>
+              <div style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.7;">
+                <strong>قانون دست به بالانس نزن:</strong> هرگز قبل از انتشار خبر معامله باز نکنید (پیش‌بینی خبر قمار است). اگر از قبل پوزیشنی در سود دارید، استاپ آن را روی نقطه ورود بگذارید (ریسک‌فری). ۳ سناریوی صعود، نزول و رنج را در این تب مرور کنید.
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div style="background: rgba(255, 209, 102, 0.08); border: 1px solid rgba(255, 209, 102, 0.25); border-radius: 8px; padding: 14px;">
+              <div style="font-weight: 800; color: #ffd166; font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>🌪️ مرحله ۲:</span> لحظه انتشار (ساعت ۱۶:۰۰ تا ۱۶:۱۵)
+              </div>
+              <div style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.7;">
+                <strong>تماشای تله‌گذاری نهنگ‌ها:</strong> در ۱۵ دقیقه اول، الگوریتم‌های پرسرعت (HFT) با شدوهای بلند بالا و پایین، استاپ خریداران و فروشندگان هیجانی را می‌زنند. دست به ماشه نبرید و فقط منتظر بسته شدن کندل ۱۵ دقیقه‌ای (M15) بمانید.
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; padding: 14px;">
+              <div style="font-weight: 800; color: #4ade80; font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>🎯 مرحله ۳:</span> ورود مطمئن (ساعت ۱۶:۱۵ به بعد)
+              </div>
+              <div style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.7;">
+                <strong>شکار پولبک (Retest):</strong> با فروکش هیجان اولیه، در جهت سناریوی پیروز وارد شوید. هرگز در نوک کندل نخرید؛ صبر کنید قیمت یک پولبک (اصلاح تا ۵۰٪ کندل خبر) بزند، سپس با استاپ پشت شدوی خبر و ریسک‌به‌ریوارد ۱:۲ وارد شوید.
+              </div>
+            </div>
+          </div>
+
+          <!-- Important Rules Box -->
+          <div style="background: rgba(0,0,0,0.35); border-radius: 8px; padding: 14px; font-size: 0.82rem; color: #94a3b8; line-height: 1.8;">
+            <div style="font-weight: 800; color: #fff; margin-bottom: 6px;">⚠️ ۳ قانون طلایی برای حفظ ۱۰۰٪ سرمایه:</div>
+            <div>۱. <strong>سقف اهرم ۳x الی ۵x:</strong> به دلیل نوسان سنگین (۱۸۰ پیپ طلا و ۴.۵٪ کریپتو)، استفاده از لوریج بالای ۵x یعنی خودکشی مالی.</div>
+            <div>۲. <strong>اسپرد کارگزاری‌ها:</strong> در ثانیه‌های اول انتشار خبر، کارمزد و اسپرد بروکرها و صرافی‌ها چند برابر می‌شود؛ صبر کردن تا ۱۶:۱۵ مانع هدررفت پول شماست.</div>
+            <div>۳. <strong>فیوز اضطراری سایت:</strong> اگر وضعیت فیوز در بالای این تب به رنگ قرمز (FREEZE) درآمد، ربات سنتینل ارسال سیگنال را قفل می‌کند تا بازار آرام شود.</div>
+          </div>
         </div>
       </div>
 
