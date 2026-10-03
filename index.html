@@ -2077,6 +2077,7 @@
     <div class="content-tabs-section">
       <div class="tabs-header">
         <button class="tab-btn active" onclick="switchTab('instTab', this)">🏛️ جدول سیگنال نهادی (Institutional Matrix)</button>
+        <button class="tab-btn" id="tabBtnMacroDeep" onclick="switchTab('macroDeepTab', this)" style="border: 1px solid rgba(255, 61, 113, 0.5); color: #ff3d71; font-weight: 800; background: rgba(255, 61, 113, 0.1);">🏛️ کالبدشکافی اخبار کلان (CPI, NFP, FOMC)</button>
         <button class="tab-btn" id="tabBtnPrecision" onclick="switchTab('precisionTab', this)" style="border: 1px solid rgba(0, 210, 255, 0.4); color: #00d2ff; font-weight: 800;">💎 بسته ۵ گانه دقت نهادی (Precision Suite)</button>
         <button class="tab-btn" id="tabBtnAlpha" onclick="switchTab('alphaTab', this)" style="border: 1px solid rgba(255, 193, 7, 0.4); color: #ffc107; font-weight: 800;">🗺️ ماتریس لیدرهای بازار (Alpha Matrix)</button>
         <button class="tab-btn" id="tabBtnKelly" onclick="switchTab('kellyTab', this)" style="border: 1px solid rgba(0, 230, 118, 0.4); color: #00e676; font-weight: 800;">🧮 ماشین‌حساب مدیریت سرمایه و کِلی (Kelly Calculator)</button>
@@ -2210,6 +2211,100 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- Tab Macro Deep Dive: CPI, NFP, FOMC Dissection & Predictions -->
+      <div class="tab-content" id="macroDeepTab">
+        <!-- Header Banner -->
+        <div style="background: linear-gradient(135deg, rgba(255, 61, 113, 0.15), rgba(123, 31, 162, 0.2)); border: 1px solid rgba(255, 61, 113, 0.4); border-radius: var(--radius); padding: 20px; margin-bottom: 22px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div>
+              <div style="font-size: 1.25rem; font-weight: 800; color: #ff3d71; display: flex; align-items: center; gap: 10px;">
+                <span>🏛️</span> اتاق کالبدشکافی اخبار کلان و پیش‌بینی اختصاصی ایجنت (CPI, NFP, FOMC)
+              </div>
+              <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 6px; line-height: 1.6;">
+                تحلیل داده‌های پشت‌پرده و شاخص‌های پیش‌نگر (Leading Indicators) • سناریوی صعود و نزول رک و پوست‌کنده برای <strong>فارکس (DXY)</strong>، <strong>طلا (XAU/USD)</strong> و <strong>ارز دیجیتال (بیت‌کوین)</strong>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span id="macroDeepCountdownBadge" style="background: rgba(255, 61, 113, 0.2); border: 1px solid rgba(255, 61, 113, 0.4); color: #ff3d71; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem;">
+                ⏳ در حال بررسی رویداد پیش‌رو...
+              </span>
+              <button onclick="fetchMacroDeepDissection()" class="copy-btn" style="padding: 6px 16px; font-size: 0.8rem; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2);">
+                🔄 بازخوانی تحلیل زنده
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Big Market Verdict Cards (Crypto, Gold, Forex) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 16px; margin-bottom: 22px;">
+          <!-- Card 1: Crypto Market Impact -->
+          <div class="smc-card" style="border-top: 4px solid #00e676; background: rgba(11, 14, 20, 0.85);">
+            <div class="smc-card-header">
+              <span class="smc-card-title" style="font-size: 1rem; color: #fff;">⚡ پیش‌بینی بازار ارز دیجیتال (بیت‌کوین & آلت‌کوین‌ها):</span>
+              <span class="indicator-badge" id="macroCryptoDirBadge" style="background: rgba(0, 230, 118, 0.2); color: #00e676; font-weight: 800;">صعود پرقدرت 🟢</span>
+            </div>
+            <div style="margin: 14px 0; font-size: 0.9rem; line-height: 1.7; color: #e2e8f0;" id="macroCryptoScenarioDesc">
+              تحلیل در حال دریافت...
+            </div>
+            <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: #86efac;" id="macroCryptoActionAdvice">
+              🛡️ <strong>تاکتیک معامله‌گری:</strong> حفظ پوزیشن‌های اسپات؛ ورود به پوزیشن لانگ پس از فروکش هیجان کندل ۵ دقیقه‌ای اول خبر.
+            </div>
+          </div>
+
+          <!-- Card 2: Gold (XAU/USD) Impact -->
+          <div class="smc-card" style="border-top: 4px solid #ffd700; background: rgba(11, 14, 20, 0.85);">
+            <div class="smc-card-header">
+              <span class="smc-card-title" style="font-size: 1rem; color: #fff;">🥇 پیش‌بینی انس جهانی طلا (XAU/USD):</span>
+              <span class="indicator-badge" id="macroGoldDirBadge" style="background: rgba(255, 215, 0, 0.2); color: #ffd700; font-weight: 800;">پرواز صعودی ⬆️</span>
+            </div>
+            <div style="margin: 14px 0; font-size: 0.9rem; line-height: 1.7; color: #e2e8f0;" id="macroGoldScenarioDesc">
+              تحلیل در حال دریافت...
+            </div>
+            <div style="background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: #fef08a;" id="macroGoldActionAdvice">
+              🛡️ <strong>تاکتیک معامله‌گری:</strong> طلا حساس‌ترین دارایی به بازدهی اوراق قرضه آمریکا است؛ در صورت تضعیف داده‌ها، خرید طلا با حد ضرر کف روزانه توصیه می‌شود.
+            </div>
+          </div>
+
+          <!-- Card 3: Forex (DXY & EUR/USD) Impact -->
+          <div class="smc-card" style="border-top: 4px solid #00d2ff; background: rgba(11, 14, 20, 0.85);">
+            <div class="smc-card-header">
+              <span class="smc-card-title" style="font-size: 1rem; color: #fff;">🌐 پیش‌بینی بازار فارکس و شاخص دلار (DXY):</span>
+              <span class="indicator-badge" id="macroForexDirBadge" style="background: rgba(0, 210, 255, 0.2); color: #00d2ff; font-weight: 800;">تضعیف دلار ⬇️</span>
+            </div>
+            <div style="margin: 14px 0; font-size: 0.9rem; line-height: 1.7; color: #e2e8f0;" id="macroForexScenarioDesc">
+              تحلیل در حال دریافت...
+            </div>
+            <div style="background: rgba(0, 210, 255, 0.08); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: #bae6fd;" id="macroForexActionAdvice">
+              🛡️ <strong>تاکتیک معامله‌گری:</strong> انتظار افت DXY و صعود جفت‌ارزهای EUR/USD و GBP/USD؛ پرهیز از ترید در ۲۰ دقیقه ابتدایی انتشار خبر به دلیل اسپرد واید کارگزاری‌ها.
+            </div>
+          </div>
+        </div>
+
+        <!-- Dissection of Big 3 Events: CPI, NFP, FOMC Accordion / Cards -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; margin-bottom: 22px;">
+          <div style="font-size: 1.1rem; font-weight: 800; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <span>🔬</span> کالبدشکافی داده‌های پشت‌پرده و سناریوهای صفر و یکی (The Naked Truth):
+          </div>
+
+          <div id="macroEventsDissectionWrap" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Rendered dynamically via JS -->
+            <div style="text-align: center; padding: 30px; color: var(--text-dim);">در حال بارگذاری کالبدشکافی داده‌های فدرال‌رزرو و تورم...</div>
+          </div>
+        </div>
+
+        <!-- Strategy Rules on News Day -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius); padding: 18px;">
+          <div style="font-size: 0.95rem; font-weight: 700; color: #ffd166; margin-bottom: 8px;">
+            ⚠️ مرام‌نامه و پروتکل معامله‌گری در روزهای انتشار اخبار سنگین:
+          </div>
+          <ul style="font-size: 0.85rem; color: #94a3b8; line-height: 1.8; margin-right: 20px;">
+            <li><strong>قانون اول (عدم قمار قبل از خبر):</strong> ۴۵ دقیقه قبل از ساعت ۱۶:۰۰ (زمان خبر)، هیچ پوزیشن اهرم‌داری نباید باز باشد؛ حرکات ثانیه‌ای اول خبر ناشی از الگوریتم‌های تهاجمی HFT برای سوزاندن استاپ‌هاست.</li>
+            <li><strong>قانون دوم (صبر برای بسته شدن کندل ۱۵ دقیقه‌ای):</strong> جهت واقعی بازار همیشه بعد از ۱۵ الی ۲۰ دقیقه اول مشخص می‌شود، زمانی که سرمایه‌گذاران نهادی گزارش کامل را می‌خوانند نه فقط تیتر خبر را.</li>
+            <li><strong>قانون سوم (فیوز اضطراری سایت):</strong> در صورتی که نتیجه خبر در خلاف جهت تکنیکال باشد، ربات سنتینل به طور خودکار سیگنال‌های خلاف جهت را متوقف می‌کند تا سرمایه شما در امان بماند.</li>
+          </ul>
         </div>
       </div>
 
@@ -3749,6 +3844,8 @@
 
       if (tabId === 'chartTab' && currentAnalysis) {
         embedTradingViewWidget(currentAnalysis.symbol);
+      } else if (tabId === 'macroDeepTab') {
+        fetchMacroDeepDissection();
       } else if (tabId === 'c360Tab') {
         fetchHeatmap();
       } else if (tabId === 'coinlegsTab') {
@@ -4521,6 +4618,126 @@
           document.getElementById('sellWallPrice').innerText = formatPrice(ds.sell_wall.price);
           document.getElementById('sellWallDetail').innerText = `حجم: $${Number(ds.sell_wall.val_usd || 0).toLocaleString()} | فاصله: +${ds.sell_wall.dist_pct}%`;
         }
+      }
+    }
+
+    // --- Macro Deep Dissection Engine (CPI, NFP, FOMC Dissection & Predictions) ---
+    async function fetchMacroDeepDissection() {
+      const wrap = document.getElementById('macroEventsDissectionWrap');
+      if (!wrap) return;
+      try {
+        const res = await fetch('/api/calendar');
+        const cal = await res.json();
+        if (!cal || !cal.success) throw new Error('عدم دریافت تقویم');
+
+        // Header Countdown
+        const countdownEl = document.getElementById('macroDeepCountdownBadge');
+        if (countdownEl) {
+          countdownEl.innerText = `⏳ رویداد بحرانی بعدی: ${cal.next_event || '--'} (${cal.countdown_fmt || ''} تا انتشار)`;
+        }
+
+        // Crypto prediction
+        const cp = cal.crypto_prediction || {};
+        const cryptoBadge = document.getElementById('macroCryptoDirBadge');
+        if (cryptoBadge) {
+          cryptoBadge.innerText = cp.expected_dir || 'صعود پرقدرت 🟢';
+          cryptoBadge.style.color = cp.expected_color || '#00e676';
+        }
+        const cryptoDesc = document.getElementById('macroCryptoScenarioDesc');
+        if (cryptoDesc) {
+          cryptoDesc.innerHTML = `
+            <div style="font-weight: 700; color: #fff; margin-bottom: 6px;">خلاصه پیش‌بینی ایجنت: ${cp.summary || ''}</div>
+            <div style="margin-bottom: 4px; color: #4ade80;">${cp.up_scenario || ''}</div>
+            <div style="color: #f87171;">${cp.down_scenario || ''}</div>
+          `;
+        }
+
+        // Gold & Forex from reaction_inline of next event
+        const rx = cal.reaction_inline || {};
+        const gold = rx.gold || { arrow: '⬆️', dir: 'صعودی', desc: 'کاهش انتظارات تورمی دلار و هجوم سرمایه به طلا' };
+        const forex = rx.forex || { arrow: '⬇️', dir: 'تضعیف دلار (DXY)', desc: 'عقب‌نشینی DXY با افزایش اطمینان از افت نرخ بهره' };
+
+        const goldBadge = document.getElementById('macroGoldDirBadge');
+        if (goldBadge) {
+          goldBadge.innerText = `${gold.dir} ${gold.arrow}`;
+          goldBadge.style.color = gold.color || '#ffd700';
+        }
+        const goldDesc = document.getElementById('macroGoldScenarioDesc');
+        if (goldDesc) {
+          goldDesc.innerHTML = `
+            <div style="font-weight: 700; color: #ffd700; margin-bottom: 6px;">تحلیل انس جهانی طلا (XAU/USD):</div>
+            <div>${gold.desc || ''}</div>
+          `;
+        }
+
+        const forexBadge = document.getElementById('macroForexDirBadge');
+        if (forexBadge) {
+          forexBadge.innerText = `${forex.dir} ${forex.arrow}`;
+          forexBadge.style.color = forex.color || '#00d2ff';
+        }
+        const forexDesc = document.getElementById('macroForexScenarioDesc');
+        if (forexDesc) {
+          forexDesc.innerHTML = `
+            <div style="font-weight: 700; color: #00d2ff; margin-bottom: 6px;">تحلیل شاخص دلار (DXY) و جفت‌ارزها:</div>
+            <div>${forex.desc || ''}</div>
+          `;
+        }
+
+        // Detailed Breakdown of Big Events
+        wrap.innerHTML = '';
+        (cal.all_events || []).forEach(ev => {
+          const evCp = ev.crypto_prediction || {};
+          const evRx = ev.reaction_inline || {};
+          const evGold = evRx.gold || { dir: 'صعودی' };
+          const evForex = evRx.forex || { dir: 'تضعیف دلار' };
+
+          const card = document.createElement('div');
+          card.style.cssText = 'background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 16px;';
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
+              <div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: #fff;">
+                  ${ev.name} <span class="mono" style="color: #38bdf8; font-size: 0.85rem;">[${ev.code}]</span>
+                </div>
+                <div style="font-size: 0.8rem; color: #ffd700; margin-top: 4px; font-weight: 600;">
+                  📅 موعد انتشار: ${ev.date_tehran || ev.date_utc}
+                </div>
+              </div>
+              <div style="text-align: left;">
+                <span class="indicator-badge" style="background: rgba(255, 61, 113, 0.15); color: #ff3d71; font-weight: 800;">
+                  ● نوسان: ${ev.volatility_fa || 'شدید'}
+                </span>
+                <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">
+                  پیش‌بینی بازار: <strong style="color: #00d2ff;">${ev.forecast}</strong> | قبلی: <strong style="color: #94a3b8;">${ev.previous}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 12px; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 6px;">
+              🔍 <strong>کالبدشکافی داده‌های پشت‌پرده ایجنت:</strong> ${ev.forecast_context || 'بررسی سنجه‌های کلان و نقدینگی نهادی فدرال‌رزرو'}
+            </div>
+
+            <!-- 3 Markets Reaction Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; font-size: 0.82rem;">
+              <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 6px; padding: 10px;">
+                <strong style="color: #00e676;">🪙 رمزارزها (بیت‌کوین):</strong>
+                <div style="margin-top: 4px; color: #e2e8f0;">${evCp.summary || ''}</div>
+              </div>
+              <div style="background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 6px; padding: 10px;">
+                <strong style="color: #ffd700;">🥇 انس جهانی طلا:</strong>
+                <div style="margin-top: 4px; color: #e2e8f0;">${evGold.dir} - ${evGold.desc || ''}</div>
+              </div>
+              <div style="background: rgba(0, 210, 255, 0.06); border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 6px; padding: 10px;">
+                <strong style="color: #00d2ff;">🌐 دلار و فارکس:</strong>
+                <div style="margin-top: 4px; color: #e2e8f0;">${evForex.dir} - ${evForex.desc || ''}</div>
+              </div>
+            </div>
+          `;
+          wrap.appendChild(card);
+        });
+
+      } catch (err) {
+        wrap.innerHTML = `<div style="text-align: center; padding: 25px; color: #ff3366;">خطا در واکشی داده‌های کالبدشکافی کلان: ${err.message}</div>`;
       }
     }
 
