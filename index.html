@@ -2507,18 +2507,18 @@
 
         <div style="margin-bottom: 14px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700;">اهرم انتخابی معامله (Leverage 1x - 100x):</label>
+            <label style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700;">اهرم انتخابی معامله (Leverage 1x - 200x):</label>
             <span style="font-size: 0.85rem; color: #00d2ff; font-weight: 800; font-family: var(--font-mono);" id="calcLeverageLabel">10x</span>
           </div>
           <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-            <input type="number" id="calcLeverage" min="1" max="100" value="10" step="1" style="width: 80px; background: var(--bg-input); border: 1px solid #00d2ff; border-radius: 6px; padding: 6px 10px; color: #00d2ff; font-weight: 800; font-family: var(--font-mono); font-size: 0.95rem; text-align: center;" oninput="updatePositionCalc()" />
+            <input type="number" id="calcLeverage" min="1" max="200" value="10" step="1" style="width: 80px; background: var(--bg-input); border: 1px solid #00d2ff; border-radius: 6px; padding: 6px 10px; color: #00d2ff; font-weight: 800; font-family: var(--font-mono); font-size: 0.95rem; text-align: center;" oninput="updatePositionCalc()" />
             <div style="display: flex; gap: 4px; flex-wrap: wrap;">
               <button type="button" onclick="setLeverage(1)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: #fff; cursor: pointer;">1x</button>
-              <button type="button" onclick="setLeverage(5)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: #fff; cursor: pointer;">5x</button>
               <button type="button" onclick="setLeverage(10)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(0,210,255,0.18); border: 1px solid #00d2ff; color: #00d2ff; font-weight: 700; cursor: pointer;">10x</button>
               <button type="button" onclick="setLeverage(20)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: #fff; cursor: pointer;">20x</button>
               <button type="button" onclick="setLeverage(50)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,193,7,0.18); border: 1px solid #ffc107; color: #ffc107; font-weight: 700; cursor: pointer;">50x</button>
               <button type="button" onclick="setLeverage(100)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,51,102,0.18); border: 1px solid #ff3366; color: #ff3366; font-weight: 700; cursor: pointer;">100x</button>
+              <button type="button" onclick="setLeverage(200)" style="padding: 4px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(255,23,68,0.25); border: 1px solid #ff1744; color: #ff1744; font-weight: 800; cursor: pointer;">200x 🔥</button>
             </div>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
@@ -5024,9 +5024,13 @@
                     <input type="number" id="calcTpInput" value="82500" step="any" style="width: 100%; background: var(--bg-input); border: 1px solid rgba(0, 230, 118, 0.4); border-radius: 6px; padding: 6px 10px; color: #00e676; font-family: var(--font-mono); font-size: 0.85rem;" oninput="recalculateKellyLive()" />
                   </div>
                   <div>
-                    <label style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 3px;">وین‌ریت تجربی بک‌تست (%):</label>
-                    <input type="number" id="calcWinRateInput" value="55" min="10" max="95" step="1" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; color: #00d2ff; font-family: var(--font-mono); font-size: 0.85rem;" oninput="recalculateKellyLive()" />
+                    <label style="font-size: 0.75rem; color: #ffd700; display: block; margin-bottom: 3px; font-weight: 700;">قیمت تخمینی لیکوئیدیشن (Liq Price):</label>
+                    <input type="text" id="calcLiqPriceDisplay" value="$0.00" readonly style="width: 100%; background: rgba(255, 51, 102, 0.1); border: 1px solid rgba(255, 51, 102, 0.4); border-radius: 6px; padding: 6px 10px; color: #ff3366; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 800; direction: ltr; text-align: left;" />
                   </div>
+                </div>
+                <div>
+                  <label style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 3px;">وین‌ریت تجربی بک‌تست (%):</label>
+                  <input type="number" id="calcWinRateInput" value="55" min="10" max="95" step="1" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; color: #00d2ff; font-family: var(--font-mono); font-size: 0.85rem;" oninput="recalculateKellyLive()" />
                 </div>
               </div>
             </div>
@@ -5896,37 +5900,46 @@
 
         tbody.innerHTML = '';
         pairs.forEach(p => {
-          const isUp = (p.priceChange24h || 0) >= 0;
+          const ch24 = p.price_change_24h ?? p.priceChange24h ?? 0;
+          const isUp = ch24 >= 0;
           const tr = document.createElement('tr');
-          const buys = p.txns24h ? p.txns24h.buys : 0;
-          const sells = p.txns24h ? p.txns24h.sells : 0;
-          const baseSym = p.baseToken ? p.baseToken.symbol : q;
+          const buys = p.buys_24h ?? (p.txns24h ? p.txns24h.buys : 0);
+          const sells = p.sells_24h ?? (p.txns24h ? p.txns24h.sells : 0);
+          const baseSym = p.base_symbol || p.baseToken?.symbol || q;
+          const quoteSym = p.quote_symbol || p.quoteToken?.symbol || 'USDT';
+          const chain = p.chain_id || p.chainId || 'DEX';
+          const dexName = p.dex_id || p.dexId || '';
+          const px = Number(p.price_usd ?? p.priceUsd ?? 0);
+          const liqUsd = Number(p.liquidity_usd ?? p.liquidityUsd ?? 0);
+          const fdvUsd = Number(p.fdv ?? 0);
+          const vol24 = Number(p.volume_24h ?? p.volume24h ?? 0);
+          const dexUrl = p.dex_url || p.url || `https://dexscreener.com/search?q=${encodeURIComponent(baseSym)}`;
 
           tr.innerHTML = `
             <td>
               <div style="display: flex; align-items: center; gap: 6px;">
-                <span class="indicator-badge" style="background: rgba(38, 166, 154, 0.15); color: #26a69a; text-transform: uppercase;">${p.chainId}</span>
-                <span style="font-size: 0.75rem; color: var(--text-dim);">${p.dexId}</span>
+                <span class="indicator-badge" style="background: rgba(38, 166, 154, 0.15); color: #26a69a; text-transform: uppercase;">${chain}</span>
+                <span style="font-size: 0.75rem; color: var(--text-dim);">${dexName}</span>
               </div>
             </td>
             <td>
-              <strong style="color: #fff; font-size: 0.9rem;">${p.baseToken?.symbol || ''} / ${p.quoteToken?.symbol || ''}</strong>
-              <div style="font-size: 0.72rem; color: var(--text-dim);">${(p.baseToken?.name || '').slice(0, 16)}</div>
+              <strong style="color: #fff; font-size: 0.9rem;">${baseSym} / ${quoteSym}</strong>
+              <div style="font-size: 0.72rem; color: var(--text-dim);">${(p.base_name || p.baseToken?.name || '').slice(0, 16)}</div>
             </td>
-            <td><span class="mono" style="font-weight: 700;">$${Number(p.priceUsd || 0) < 0.01 ? Number(p.priceUsd || 0).toFixed(8) : Number(p.priceUsd || 0).toLocaleString()}</span></td>
-            <td><strong style="color: ${isUp ? '#00e676' : '#ff3366'};">${isUp ? '+' : ''}${p.priceChange24h || 0}%</strong></td>
-            <td><span class="mono">$${Number(p.liquidityUsd || 0).toLocaleString()}</span></td>
-            <td><span class="mono" style="color: var(--text-dim);">${p.fdv ? '$' + Number(p.fdv).toLocaleString() : '--'}</span></td>
-            <td><span class="mono">$${Number(p.volume24h || 0).toLocaleString()}</span></td>
+            <td><span class="mono" style="font-weight: 700;">$${px < 0.01 ? px.toFixed(8) : px.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</span></td>
+            <td><strong style="color: ${isUp ? '#00e676' : '#ff3366'};">${isUp ? '+' : ''}${ch24.toFixed(2)}%</strong></td>
+            <td><span class="mono">$${liqUsd.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></td>
+            <td><span class="mono" style="color: var(--text-dim);">${fdvUsd ? '$' + fdvUsd.toLocaleString(undefined, {maximumFractionDigits: 0}) : '--'}</span></td>
+            <td><span class="mono">$${vol24.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></td>
             <td>
               <div style="font-size: 0.75rem; font-family: var(--font-mono);">
                 <span style="color: #00e676;">🟢 ${buys}</span> / <span style="color: #ff3366;">🔴 ${sells}</span>
               </div>
-              <div style="font-size: 0.7rem; color: var(--text-dim);">نسبت: ${p.buy_sell_ratio || '1.0'}</div>
+              <div style="font-size: 0.7rem; color: var(--text-dim);">فشار خرید: ${p.buy_pressure_pct || 50}%</div>
             </td>
             <td>
               <div style="display: flex; gap: 6px;">
-                <a href="${p.url}" target="_blank" class="copy-btn" style="text-decoration: none; padding: 4px 8px; font-size: 0.75rem; color: #26a69a; border-color: rgba(38,166,154,0.4);" title="مشاهده چارت در سایت DexScreener">
+                <a href="${dexUrl}" target="_blank" class="copy-btn" style="text-decoration: none; padding: 4px 8px; font-size: 0.75rem; color: #26a69a; border-color: rgba(38,166,154,0.4);" title="مشاهده چارت در سایت DexScreener">
                   🦅 چارت ↗
                 </a>
                 <button onclick="loadSymbol('${baseSym}'); switchTab('instTab', document.querySelector('.tab-btn')); window.scrollTo({top:0, behavior:'smooth'});" class="copy-btn" style="padding: 4px 8px; font-size: 0.75rem;" title="تحلیل با هوش مصنوعی">
@@ -7266,6 +7279,15 @@
 
       document.getElementById('outSafeLev').innerText = `${safeLev.toFixed(1)}x`;
       document.getElementById('outMarginReq').innerText = `مارجین مورد نیاز: $${marginReq.toFixed(2)}`;
+
+      // Calculate Liquidation Price based on trade direction (Long if TP > Entry, else Short)
+      const isLong = tp >= entry;
+      const liqBufferPct = (1.0 / safeLev);
+      const estLiqKelly = isLong ? Math.max(0, entry * (1.0 - liqBufferPct)) : (entry * (1.0 + liqBufferPct));
+      const liqInputEl = document.getElementById('calcLiqPriceDisplay');
+      if (liqInputEl) {
+        liqInputEl.value = formatPrice(estLiqKelly);
+      }
 
       const kBadge = document.getElementById('outKellyBadge');
       kBadge.innerText = `${kellyHalfPct.toFixed(1)}%`;
@@ -8853,7 +8875,7 @@ ${s3d.action_advice || ''}
       const balance = parseFloat(document.getElementById('calcBalance').value) || 1000;
       const riskPct = parseFloat(document.getElementById('calcRiskPct').value) || 1.5;
       const leverageInput = document.getElementById('calcLeverage');
-      const leverage = Math.min(100, Math.max(1, parseFloat(leverageInput ? leverageInput.value : 10) || 1));
+      const leverage = Math.min(200, Math.max(1, parseFloat(leverageInput ? leverageInput.value : 10) || 1));
       
       const levLabel = document.getElementById('calcLeverageLabel');
       if (levLabel) levLabel.innerText = `${leverage}x`;

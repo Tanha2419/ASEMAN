@@ -415,6 +415,7 @@ class CryptoPanicEngine:
                 "is_noise": False
             }
 
+    @classmethod
     def translate_headline_to_fa(cls, title: str, description: str = "") -> str:
         if not title or not title.strip():
             return ""
