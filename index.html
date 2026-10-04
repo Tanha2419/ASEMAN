@@ -6532,17 +6532,23 @@
         const gaugePctText = document.getElementById("liqGaugePctText");
         const gaugeHint = document.getElementById("liqGaugeHint");
         
-        const isBullishMagnet = (liq.magnet_direction === "BULLISH_MAGNET");
-        const shortWeight = isBullishMagnet ? 68 : 32;
-        const longWeight = 100 - shortWeight;
+        // Dynamically extract calculated Long vs Short percentage for the selected coin
+        let shortWeight = parseFloat(liq.short_ratio_pct);
+        let longWeight = parseFloat(liq.long_ratio_pct);
+
+        if (isNaN(shortWeight) || isNaN(longWeight) || (shortWeight + longWeight === 0)) {
+          const isBull = (liq.magnet_direction === "BULLISH_MAGNET");
+          shortWeight = isBull ? 58.5 : 41.5;
+          longWeight = 100.0 - shortWeight;
+        }
 
         if (shortPullBar) shortPullBar.style.width = `${shortWeight}%`;
         if (longPullBar) longPullBar.style.width = `${longWeight}%`;
-        if (gaugePctText) gaugePctText.innerText = `${shortWeight}% Short vs ${longWeight}% Long`;
+        if (gaugePctText) gaugePctText.innerText = `🔴 شورت: ${shortWeight.toFixed(1)}% | لانگ: ${longWeight.toFixed(1)}% 🟢`;
         if (gaugeHint) {
-          gaugeHint.innerHTML = isBullishMagnet 
-            ? "🧲 کشش قوی به سمت بالا (احتمال <strong>Short Squeeze</strong> و پامپ نقدینگی)"
-            : "🧲 کشش قوی به سمت پایین (احتمال <strong>Long Flush</strong> و تخلیه اهرم‌ها)";
+          gaugeHint.innerHTML = (shortWeight >= longWeight)
+            ? `🧲 تمرکز نقدینگی در سقف (${shortWeight.toFixed(1)}%): احتمال <strong>Short Squeeze</strong> و شکار استاپ شورت‌ها`
+            : `🧲 تمرکز نقدینگی در کف (${longWeight.toFixed(1)}%): احتمال <strong>Long Flush</strong> و شکار استاپ لانگ‌ها`;
         }
 
         // Update Institutional Consensus Banner
