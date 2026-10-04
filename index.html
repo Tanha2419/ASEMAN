@@ -7885,8 +7885,11 @@
       // Update Telegram preview
       updateTelegramPreview(data);
 
-      // Embed TradingView
-      embedTradingViewWidget(symbol);
+      // Lazy embed TradingView only if chartTab is active
+      const chartTabEl = document.getElementById("chartTab");
+      if (chartTabEl && chartTabEl.classList.contains("active")) {
+        embedTradingViewWidget(symbol);
+      }
     }
 
     function renderInstitutionalTab(data) {
@@ -8699,11 +8702,13 @@ ${s3d.action_advice || ''}
       `;
     }
 
+    let _tvScriptLoaded = false;
     function embedTradingViewWidget(symbol) {
       const container = document.getElementById('tvChartContainer');
+      if (!container) return;
       container.innerHTML = '';
       
-      let clean = symbol.replace('/', '').toUpperCase();
+      let clean = (symbol || 'BTC').replace('/', '').toUpperCase();
       if (!clean.endsWith('USDT')) clean += 'USDT';
       let tvSymbol = `BINANCE:${clean}`;
 
@@ -8712,38 +8717,56 @@ ${s3d.action_advice || ''}
         extBtn.href = `https://www.tradingview.com/chart/?symbol=${tvSymbol}`;
       }
 
-      const script = document.createElement('script');
-      script.src = 'https://s3.tradingview.com/tv.js';
-      script.async = true;
-      script.onload = () => {
-        new TradingView.widget({
-          "autosize": true,
-          "symbol": tvSymbol,
-          "interval": "15",
-          "timezone": "Asia/Tehran",
-          "theme": "dark",
-          "style": "1",
-          "locale": "fa_IR",
-          "toolbar_bg": "#121824",
-          "enable_publishing": false,
-          "hide_side_toolbar": false,
-          "allow_symbol_change": true,
-          "save_image": true,
-          "details": true,
-          "hotlist": true,
-          "calendar": true,
-          "studies": [
-            "MASimple@tv-basicstudies",
-            "RSI@tv-basicstudies"
-          ],
-          "show_popup_button": true,
-          "popup_width": "1000",
-          "popup_height": "650",
-          "withdateranges": true,
-          "container_id": "tvChartContainer"
-        });
+      const initWidget = () => {
+        if (typeof TradingView !== 'undefined' && TradingView.widget) {
+          try {
+            new TradingView.widget({
+              "autosize": true,
+              "symbol": tvSymbol,
+              "interval": "15",
+              "timezone": "Asia/Tehran",
+              "theme": "dark",
+              "style": "1",
+              "locale": "fa_IR",
+              "toolbar_bg": "#121824",
+              "enable_publishing": false,
+              "hide_side_toolbar": false,
+              "allow_symbol_change": true,
+              "save_image": true,
+              "details": true,
+              "hotlist": true,
+              "calendar": true,
+              "studies": [
+                "MASimple@tv-basicstudies",
+                "RSI@tv-basicstudies"
+              ],
+              "show_popup_button": true,
+              "popup_width": "1000",
+              "popup_height": "650",
+              "withdateranges": true,
+              "container_id": "tvChartContainer"
+            });
+          } catch (e) {
+            console.error("TradingView init err:", e);
+          }
+        }
       };
-      container.appendChild(script);
+
+      if (_tvScriptLoaded && typeof TradingView !== 'undefined') {
+        initWidget();
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://s3.tradingview.com/tv.js';
+        script.async = true;
+        script.onload = () => {
+          _tvScriptLoaded = true;
+          initWidget();
+        };
+        script.onerror = () => {
+          container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:400px;color:var(--text-dim);"><span style="font-size:2rem;margin-bottom:10px;">📊</span><span>بارگذاری چارت تریدینگ‌ویو با تاخیر مواجه شد. از دکمه «باز کردن چارت در TradingView» بالا استفاده کنید.</span></div>';
+        };
+        document.head.appendChild(script);
+      }
     }
 
         function copyExchangeOrder(type) {
