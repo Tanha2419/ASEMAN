@@ -342,11 +342,13 @@ def signal_outcome_tracker_loop():
                 # Expire after 3.5 hours
                 if now - created > 12600:
                     tr["closed"] = True
+                    update_signal_in_journal(sym, "EXPIRED", 0.0)
                     continue
 
-                # Fetch live price
-                ticker = ExchangeDataEngine.fetch_ticker(sym)
-                current_price = ticker.get("price", 0)
+                # Fetch live price using 5-tier fallback engine
+                clean_s = sym.upper().replace("USDT", "").replace("USD", "").strip()
+                ticker = agent.fetcher.fetch_ticker(f"{clean_s}USDT")
+                current_price = float(ticker.get("last_price") or ticker.get("price") or 0.0) if ticker else 0.0
                 if not current_price:
                     continue
 
@@ -532,6 +534,9 @@ def live_whale_execution_monitor_loop():
                                         dist_pct=dist_pct
                                     )
                                     TelegramDispatcher.send_raw_text(bot_token, chat_id, msg)
+                                    _sentinel_stats["alerts_sent"] += 1
+                                    _sentinel_stats["last_alert"] = f"🐋 وال {base} ({side} ${usd_val/1e3:.0f}K)"
+                                    _sentinel_stats["last_run"] = datetime.now(timezone(timedelta(hours=3, minutes=30))).strftime("%H:%M:%S (ایران)")
                                     print(f"[WHALE MONITOR] Dispatched alert for {base}: {side} ${usd_val:,.0f} at ${px:,.2f}")
                                     break
                     except Exception as ex_coin:
@@ -875,6 +880,62 @@ def get_signal_journal():
                 "updated_at": time_iran_str
             }
         ]
+        save_signal_journal(records)
+
+    # Real-time sweep: Check unclosed records against live price or expire old signals (> 4 hours)
+    now_ts = time.time()
+    journal_modified = False
+    for r in records:
+        if not r.get("closed"):
+            c_time = float(r.get("created_at") or 0)
+            sym = r.get("symbol", "")
+            entry = float(r.get("entry") or 0)
+            sl = float(r.get("sl") or 0)
+            tp1 = float(r.get("tp1") or 0)
+            tp2 = float(r.get("tp2") or 0)
+            action = r.get("action", "LONG")
+            is_long = "LONG" in action or "BUY" in action
+
+            # Auto-expire signals older than 4 hours
+            if c_time > 0 and (now_ts - c_time > 14400):
+                r["status"] = "EXPIRED"
+                r["closed"] = True
+                r["updated_at"] = time_iran_str
+                journal_modified = True
+                continue
+
+            # Fetch live price to update status immediately on UI load
+            try:
+                clean_s = sym.upper().replace("USDT", "").replace("USD", "").strip()
+                tk = agent.fetcher.fetch_ticker(f"{clean_s}USDT")
+                cur_px = float(tk.get("last_price") or tk.get("price") or 0.0) if tk else 0.0
+                if cur_px and entry:
+                    if not r.get("status") in ["TP1_HIT", "TP2_HIT"]:
+                        hit_tp1 = (cur_px >= tp1) if is_long else (cur_px <= tp1)
+                        hit_sl = (cur_px <= sl) if is_long else (cur_px >= sl)
+                        if hit_tp1:
+                            r["status"] = "TP1_HIT"
+                            r["pnl_pct"] = round(abs((tp1 - entry) / entry) * 100, 2)
+                            r["updated_at"] = time_iran_str
+                            journal_modified = True
+                        elif hit_sl:
+                            r["status"] = "SL_HIT"
+                            r["pnl_pct"] = -round(abs((sl - entry) / entry) * 100, 2)
+                            r["closed"] = True
+                            r["updated_at"] = time_iran_str
+                            journal_modified = True
+                    elif r.get("status") == "TP1_HIT":
+                        hit_tp2 = (cur_px >= tp2) if is_long else (cur_px <= tp2)
+                        if hit_tp2:
+                            r["status"] = "TP2_HIT"
+                            r["pnl_pct"] = round(abs((tp2 - entry) / entry) * 100, 2)
+                            r["closed"] = True
+                            r["updated_at"] = time_iran_str
+                            journal_modified = True
+            except Exception:
+                pass
+
+    if journal_modified:
         save_signal_journal(records)
 
     # Calculate statistics

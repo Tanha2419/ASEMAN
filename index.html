@@ -6559,7 +6559,8 @@
         const conDesc = document.getElementById("instConsensusDesc");
         const conStats = document.getElementById("instConsensusStats");
 
-        const whaleDist = parseFloat(whales.distance_pct || 0);
+        const isBullishMagnet = (liq.magnet_direction === "BULLISH_MAGNET");
+        const whaleDist = parseFloat(whales.distance_pct || whales.distance_from_whale_entry_pct || 0);
         const hasAbsBuy = abs.bid_wall_total > 0;
         
         if (isBullishMagnet && whaleDist >= -2.0) {
