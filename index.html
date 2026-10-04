@@ -1811,23 +1811,23 @@
   <div class="bloomberg-marquee">
     <div class="marquee-label">⚡ LIVE PULSE</div>
     <div class="marquee-track" id="bloombergMarqueeTrack">
-      <div class="marquee-item" onclick="switchSymbol('BTC')"><span>BTC/USDT:</span> <strong id="mqPriceBTC">$84,250</strong> <span style="color:#00e676;">+2.45% ▲</span></div>
-      <div class="marquee-item" onclick="switchSymbol('ETH')"><span>ETH/USDT:</span> <strong id="mqPriceETH">$2,680</strong> <span style="color:#00e676;">+1.80% ▲</span></div>
-      <div class="marquee-item" onclick="switchSymbol('SOL')"><span>SOL/USDT:</span> <strong id="mqPriceSOL">$194.5</strong> <span style="color:#00e676;">+4.15% ▲</span></div>
-      <div class="marquee-item" onclick="switchSymbol('BNB')"><span>BNB/USDT:</span> <strong id="mqPriceBNB">$605.2</strong> <span style="color:#00e676;">+1.12% ▲</span></div>
-      <div class="marquee-item" onclick="switchSymbol('XRP')"><span>XRP/USDT:</span> <strong id="mqPriceXRP">$0.624</strong> <span style="color:#ff3366;">-0.85% ▼</span></div>
-      <div class="marquee-item" onclick="switchSymbol('SUI')"><span>SUI/USDT:</span> <strong id="mqPriceSUI">$2.14</strong> <span style="color:#00e676;">+6.30% ▲</span></div>
-      <div class="marquee-item" onclick="switchSymbol('DOGE')"><span>DOGE/USDT:</span> <strong id="mqPriceDOGE">$0.142</strong> <span style="color:#00e676;">+3.20% ▲</span></div>
+      <div class="marquee-item" onclick="switchSymbol('BTC')"><span>BTC/USDT:</span> <strong id="mqPriceBTC">-</strong> <span id="mqChangeBTC" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('ETH')"><span>ETH/USDT:</span> <strong id="mqPriceETH">-</strong> <span id="mqChangeETH" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('SOL')"><span>SOL/USDT:</span> <strong id="mqPriceSOL">-</strong> <span id="mqChangeSOL" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('BNB')"><span>BNB/USDT:</span> <strong id="mqPriceBNB">-</strong> <span id="mqChangeBNB" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('XRP')"><span>XRP/USDT:</span> <strong id="mqPriceXRP">-</strong> <span id="mqChangeXRP" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('SUI')"><span>SUI/USDT:</span> <strong id="mqPriceSUI">-</strong> <span id="mqChangeSUI" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('DOGE')"><span>DOGE/USDT:</span> <strong id="mqPriceDOGE">-</strong> <span id="mqChangeDOGE" style="color:#00e676;">در حال دریافت...</span></div>
       <div class="marquee-item"><span>SENTINEL:</span> <strong style="color:#00e676;">24/7 ACTIVE</strong> <span class="pulse-dot"></span></div>
-      <div class="marquee-item"><span>F&G INDEX:</span> <strong style="color:#ffd700;">80 (EXTREME GREED)</strong></div>
+      <div class="marquee-item"><span>F&G INDEX:</span> <strong id="mqFngValue" style="color:#ffd700;">در حال پایش...</strong></div>
       <!-- Duplicate for seamless infinite loop -->
-      <div class="marquee-item" onclick="switchSymbol('BTC')"><span>BTC/USDT:</span> <strong id="mqPriceBTC2">$84,250</strong> <span style="color:#00e676;">+2.45% ▲</span></div>
-      <div class="marquee-item" onclick="switchSymbol('ETH')"><span>ETH/USDT:</span> <strong id="mqPriceETH2">$2,680</strong> <span style="color:#00e676;">+1.80% ▲</span></div>
-      <div class="marquee-item" onclick="switchSymbol('SOL')"><span>SOL/USDT:</span> <strong id="mqPriceSOL2">$194.5</strong> <span style="color:#00e676;">+4.15% ▲</span></div>
-      <div class="marquee-item" onclick="switchSymbol('BNB')"><span>BNB/USDT:</span> <strong id="mqPriceBNB2">$605.2</strong> <span style="color:#00e676;">+1.12% ▲</span></div>
-      <div class="marquee-item" onclick="switchSymbol('XRP')"><span>XRP/USDT:</span> <strong id="mqPriceXRP2">$0.624</strong> <span style="color:#ff3366;">-0.85% ▼</span></div>
-      <div class="marquee-item" onclick="switchSymbol('SUI')"><span>SUI/USDT:</span> <strong id="mqPriceSUI2">$2.14</strong> <span style="color:#00e676;">+6.30% ▲</span></div>
-      <div class="marquee-item" onclick="switchSymbol('DOGE')"><span>DOGE/USDT:</span> <strong id="mqPriceDOGE2">$0.142</strong> <span style="color:#00e676;">+3.20% ▲</span></div>
+      <div class="marquee-item" onclick="switchSymbol('BTC')"><span>BTC/USDT:</span> <strong id="mqPriceBTC2">-</strong> <span id="mqChangeBTC2" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('ETH')"><span>ETH/USDT:</span> <strong id="mqPriceETH2">-</strong> <span id="mqChangeETH2" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('SOL')"><span>SOL/USDT:</span> <strong id="mqPriceSOL2">-</strong> <span id="mqChangeSOL2" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('BNB')"><span>BNB/USDT:</span> <strong id="mqPriceBNB2">-</strong> <span id="mqChangeBNB2" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('XRP')"><span>XRP/USDT:</span> <strong id="mqPriceXRP2">-</strong> <span id="mqChangeXRP2" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('SUI')"><span>SUI/USDT:</span> <strong id="mqPriceSUI2">-</strong> <span id="mqChangeSUI2" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('DOGE')"><span>DOGE/USDT:</span> <strong id="mqPriceDOGE2">-</strong> <span id="mqChangeDOGE2" style="color:#00e676;">در حال دریافت...</span></div>
     </div>
   </div>
 
@@ -2981,8 +2981,12 @@
                 <span id="arkhamCostBasis" style="color: #00e676; font-weight: 800; font-size: 0.95rem;">-</span>
               </div>
               <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: #94a3b8; font-size: 0.82rem;">فاصله قیمت از ورود نهنگ:</span>
+                <span id="arkhamDistancePct" style="color: #00e676; font-weight: 800; font-size: 0.82rem;">-</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                 <span style="color: #94a3b8; font-size: 0.82rem;">وضعیت سود/زیان نهنگ‌ها:</span>
-                <span id="arkhamPnlStatus" style="color: #00e676; font-weight: 800; font-size: 0.82rem;">در سود انباشت (+5.1%)</span>
+                <span id="arkhamPnlStatus" style="color: #00e676; font-weight: 800; font-size: 0.82rem;">-</span>
               </div>
               <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                 <span style="color: #94a3b8; font-size: 0.82rem;">خط قرمز دفاع نهنگ‌ها (Defense Line):</span>
@@ -5635,6 +5639,12 @@
       } finally {
         isTickUpdating = false;
       }
+    }
+
+    function switchSymbol(sym) {
+      loadSymbol(sym);
+      switchTab('instTab', document.querySelector('.tab-btn'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function loadSymbol(sym) {
@@ -9149,12 +9159,20 @@ ${s3d.action_advice || ''}
           if (res.ok) {
             const data = await res.json();
             const p = data.last_price || data.lastPrice || data.price;
+            const chg = parseFloat(data.price_change_percent || data.priceChangePercent || 0);
             if (p) {
               const formatted = "$" + Number(p).toLocaleString(undefined, {minimumFractionDigits: (p < 5 ? 3 : 2), maximumFractionDigits: (p < 5 ? 4 : 2)});
               const el1 = document.getElementById("mqPrice" + s);
               const el2 = document.getElementById("mqPrice" + s + "2");
               if (el1) el1.innerText = formatted;
               if (el2) el2.innerText = formatted;
+
+              const chgText = (chg >= 0 ? "+" : "") + chg.toFixed(2) + "% " + (chg >= 0 ? "▲" : "▼");
+              const chgColor = chg >= 0 ? "#00e676" : "#ff3366";
+              const cEl1 = document.getElementById("mqChange" + s);
+              const cEl2 = document.getElementById("mqChange" + s + "2");
+              if (cEl1) { cEl1.innerText = chgText; cEl1.style.color = chgColor; }
+              if (cEl2) { cEl2.innerText = chgText; cEl2.style.color = chgColor; }
             }
           }
         }
