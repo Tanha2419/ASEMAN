@@ -746,9 +746,20 @@ def get_telegram_config():
 @app.post("/api/telegram/config")
 def save_telegram_config(cfg: TelegramConfigRequest):
     try:
+        existing = {}
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                    existing = json.load(f)
+            except Exception:
+                pass
+
+        new_tok = cfg.bot_token.strip() if cfg.bot_token else existing.get("bot_token", "")
+        new_chat = cfg.chat_id.strip() if cfg.chat_id else existing.get("chat_id", "")
+
         data = {
-            "bot_token": cfg.bot_token.strip(),
-            "chat_id": cfg.chat_id.strip(),
+            "bot_token": new_tok,
+            "chat_id": new_chat,
             "auto_pilot": bool(cfg.auto_pilot),
             "interval_minutes": int(cfg.interval_minutes or 20),
             "min_score": int(cfg.min_score or 85),

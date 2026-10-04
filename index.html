@@ -5367,6 +5367,9 @@
         } else if (r.status === 'SL_HIT') {
           statusBadge = `<span style="background: rgba(255,51,102,0.2); color: #ff3366; padding: 3px 8px; border-radius: 4px; font-weight: 800; font-size: 0.75rem;">🛑 حد ضرر (خروج)</span>`;
           pnlBadge = `<span style="color: #ff3366; font-weight: 800; font-family: var(--font-mono);">-${Math.abs(r.pnl_pct || 0).toFixed(2)}%</span>`;
+        } else if (r.status === 'EXPIRED') {
+          statusBadge = `<span style="background: rgba(148,163,184,0.2); color: #94a3b8; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">⌛ منقضی شده (خروج)</span>`;
+          pnlBadge = `<span style="color: #94a3b8; font-family: var(--font-mono);">0.00%</span>`;
         } else {
           statusBadge = `<span style="background: rgba(0,210,255,0.15); color: #00d2ff; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">⚡ در حال پایش لایو</span>`;
           pnlBadge = `<span style="color: #94a3b8; font-family: var(--font-mono);">در جریان...</span>`;
@@ -9364,6 +9367,9 @@ ${s3d.action_advice || ''}
       loadSymbol('BTC');
       setInterval(tickLivePrice, 3000);
       loadTelegramConfig();
+      fetchJournalLive();
+      setInterval(loadTelegramConfig, 20000);
+      setInterval(fetchJournalLive, 30000);
     });
   
     // Education Modal Functions
