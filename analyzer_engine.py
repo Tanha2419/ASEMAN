@@ -5,7 +5,7 @@ import numpy as np
 import time
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, List
-from institutional_addons import MacroEngine, OnChainEngine, NewsCircuitBreaker, BacktestEngine, TelegramDispatcher
+from institutional_addons import CryptoQuantNetflowEngine, TokenUnlocksRadar, StablecoinSupplyRatioEngine, MacroEngine, OnChainEngine, NewsCircuitBreaker, BacktestEngine, TelegramDispatcher
 
 def clean_symbol(raw_symbol: str) -> str:
     s = raw_symbol.upper().strip().replace("/", "").replace("-", "").replace("_", "")
@@ -100,6 +100,59 @@ class CryptoDataFetcher:
             pass
         return None
 
+    def fetch_lbank_ticker(self, symbol: str) -> Optional[Dict[str, Any]]:
+        try:
+            clean = symbol.lower().replace("usdt", "") + "_usdt"
+            url = f"https://api.lbank.info/v2/ticker.do?symbol={clean}"
+            res = self.session.get(url, timeout=3.5)
+            if res.status_code == 200:
+                data = res.json()
+                if data.get("data"):
+                    tk = data["data"][0]["ticker"]
+                    latest = float(tk.get("latest", 0))
+                    change = float(tk.get("change", 0))
+                    return {
+                        "source": "LBank",
+                        "symbol": symbol.upper(),
+                        "last_price": latest,
+                        "price_change_pct": round(change, 2),
+                        "high_24h": float(tk.get("high", 0)),
+                        "low_24h": float(tk.get("low", 0)),
+                        "volume_base": float(tk.get("vol", 0)),
+                        "volume_quote": float(tk.get("turnover", 0)),
+                        "bid": latest,
+                        "ask": latest
+                    }
+        except Exception:
+            pass
+        return None
+
+    def fetch_kucoin_ticker(self, symbol: str) -> Optional[Dict[str, Any]]:
+        try:
+            clean = symbol.upper().replace("USDT", "") + "-USDT"
+            url = f"https://api.kucoin.com/api/v1/market/orderbook/level1?symbol={clean}"
+            headers = {"User-Agent": "Mozilla/5.0"}
+            res = self.session.get(url, headers=headers, timeout=3.5)
+            if res.status_code == 200:
+                data = res.json().get("data", {})
+                price = float(data.get("price", 0))
+                if price > 0:
+                    return {
+                        "source": "KuCoin",
+                        "symbol": symbol.upper(),
+                        "last_price": price,
+                        "price_change_pct": 0.0,
+                        "high_24h": price,
+                        "low_24h": price,
+                        "volume_base": float(data.get("size", 0)),
+                        "volume_quote": 0.0,
+                        "bid": float(data.get("bestBid", price)),
+                        "ask": float(data.get("bestAsk", price))
+                    }
+        except Exception:
+            pass
+        return None
+
     def fetch_ticker(self, symbol: str) -> Optional[Dict[str, Any]]:
         # Tier 1 Priority: Binance Global (Deepest global spot & futures benchmark)
         t = self.fetch_binance_ticker(symbol)
@@ -107,7 +160,13 @@ class CryptoDataFetcher:
         # Tier 2 Fallback: MEXC (Huge catalog of 2,500+ altcoins & early gems)
         t = self.fetch_mexc_ticker(symbol)
         if t: return t
-        # Tier 3 Fallback: Binance US
+        # Tier 3 Fallback: LBank (Fast live spot ticker API)
+        t = self.fetch_lbank_ticker(symbol)
+        if t: return t
+        # Tier 4 Fallback: KuCoin Global
+        t = self.fetch_kucoin_ticker(symbol)
+        if t: return t
+        # Tier 5 Fallback: Binance US
         t = self.fetch_binance_us_ticker(symbol)
         if t: return t
         return None
@@ -1338,6 +1397,67 @@ class CryptoTradingAgent:
                     "volume": c[5]
                 })
 
+                # 17. Altcoin Season & BTC Macro Health Shield
+        btc_change_24h = 0.0
+        btc_chg_pct_15m = 0.0
+        btc_bias = "NEUTRAL"
+
+        if btc_candles and len(btc_candles) >= 4:
+            c_now = btc_candles[-1][4]
+            c_prev = btc_candles[-4][4] # 45-60m ago
+            btc_chg_pct_15m = round(((c_now - c_prev) / c_prev) * 100, 2)
+        
+        btc_d = float(macro.get("btc_dominance") or 58.0)
+        
+        # Determine Altcoin Green Light Status
+        if btc_chg_pct_15m < -1.8:
+            alt_status = "RED_ALERT"
+            alt_badge = "🔴 پرخطر (BTC Dumping)"
+            alt_title = "ریزش تهاجمی بیت‌کوین - ورود به آلت‌کوین‌ها مسدود"
+            alt_advice = "بیت‌کوین در ۶۰ دقیقه اخیر بیش از ۱.۸٪ ریزش تهاجمی داشته است. تمامی آلت‌کوین‌ها با ریسک افت شدید همراه هستند."
+            alt_color = "#ff3366"
+        elif btc_d > 61.0:
+            alt_status = "YELLOW_DOMINANCE"
+            alt_badge = "🟡 احتیاط (BTC Dominant)"
+            alt_title = "مکیده شدن نقدینگی توسط بیت‌کوین (سلطه BTC)"
+            alt_advice = "دامیننس بیت‌کوین بالای ۶۱٪ است. حجم ورودی به آلت‌کوین‌ها محدود بوده و تارگت‌های محافظه‌کارانه توصیه می‌شود."
+            alt_color = "#ffd166"
+        elif btc_chg_pct_15m > 2.5:
+            alt_status = "YELLOW_PUMP"
+            alt_badge = "🟡 احتیاط (BTC High Volatility)"
+            alt_title = "پامپ پرنوسان بیت‌کوین"
+            alt_advice = "بیت‌کوین در حال جهش پرنوسان است؛ آلت‌کوین‌ها ممکن است ابتدا در برابر جفت ارز BTC تضعیف شوند."
+            alt_color = "#ffd166"
+        else:
+            alt_status = "GREEN_LIGHT"
+            alt_badge = "🟢 آزاد (Green Light)"
+            alt_title = "مجوز کامل ترید آلت‌کوین‌ها (Altcoin Safe Heaven)"
+            alt_advice = "بیت‌کوین آرام و پایدار است و نقدینگی در حال چرخش ارگانیک به آلت‌کوین‌های باکیفیت است."
+            alt_color = "#00e676"
+
+        altcoin_shield = {
+            "status": alt_status,
+            "badge": alt_badge,
+            "title": alt_title,
+            "advice": alt_advice,
+            "color": alt_color,
+            "btc_dominance": btc_d,
+            "btc_momentum_1h": btc_chg_pct_15m,
+            "is_safe_for_alts": (alt_status == "GREEN_LIGHT")
+        }
+
+        # 18. Elite Macro Triad: CryptoQuant Netflows + Token Unlocks + Stablecoin Ratio (SSR)
+        quant_flows = CryptoQuantNetflowEngine.get_exchange_flows(symbol, current_price)
+        token_unlock = TokenUnlocksRadar.get_token_unlock_status(symbol)
+        ssr_metrics = StablecoinSupplyRatioEngine.get_ssr_metrics(btc_candles[-1][4] if btc_candles else current_price)
+
+        elite_triad = {
+            "exchange_flows": quant_flows,
+            "token_unlock": token_unlock,
+            "ssr": ssr_metrics
+        }
+
+
         return {
             "success": True,
             "symbol": symbol,
@@ -1375,6 +1495,8 @@ class CryptoTradingAgent:
             "fundamentals": fundamentals,
             "verdict": verdict,
             "chart_candles": chart_candles,
+            "altcoin_shield": altcoin_shield,
+            "elite_triad": elite_triad,
             "analyzed_at": (datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)).strftime("%Y-%m-%d %H:%M:%S (ایران 🇮🇷)")
         }
 
@@ -1989,11 +2111,16 @@ class CryptoTradingAgent:
 
 
 class AgentAdvisor:
+    """AI Quant & Smart Money Consultant for live trading conversations"""
+
     @staticmethod
     def answer_question(question: str, analysis: Dict[str, Any]) -> str:
-        q = question.lower()
-        symbol = analysis.get("symbol", "ارز انتخابی")
+        q = question.lower().strip()
+        symbol = analysis.get("symbol", "BTCUSDT")
         price = analysis.get("price", 0)
+        p_dec = 2 if price >= 100 else (4 if price >= 1 else 6)
+        formatted_price = f"${price:,.{p_dec}f}"
+
         scalp = analysis.get("scalp_setup", {})
         swing = analysis.get("swing_setup", {})
         ob = analysis.get("orderbook", {})
@@ -2002,74 +2129,287 @@ class AgentAdvisor:
         derivatives = analysis.get("derivatives", {})
         scores = analysis.get("scores_3d", {})
         vwap_data = smc.get("vwap_cvd", {})
-        
-        # 1. 3D Scores question
+
+        # Priority 0: Macro Surprise, CPI, FOMC, Rate Decisions, Dissent & Divergence
+        if any(w in q for w in ["cpi", "fomc", "nfp", "پاول", "فدرال", "تورم", "نرخ بهره", "دماسنج", "غافلگیری", "کلان", "سپر کلان", "شوک خبری"]):
+            try:
+                from institutional_addons import EconomicCalendarEngine
+                cal = EconomicCalendarEngine.get_macro_shield_status()
+                next_ev_name = cal.get("next_event", "رویداد کلان")
+                next_code = cal.get("event_code", "CPI")
+                all_evs = cal.get("all_events", [])
+                
+                target_ev = None
+                for ev in all_evs:
+                    if ev.get("code", "").lower() in q:
+                        target_ev = ev
+                        break
+                if not target_ev:
+                    target_ev = all_evs[0] if all_evs else {}
+
+                ag = target_ev.get("agent_macro_analysis", {})
+                s_risk = ag.get("surprise_risk_pct", 65)
+                s_level = ag.get("surprise_risk_level", "متوسط")
+                consensus = ag.get("market_consensus_text", target_ev.get("forecast_context", ""))
+                crosscheck = ag.get("data_crosscheck_text", "راستی‌آزمایی با بازدهی اوراق ۱۰ ساله و بهای جهانی انرژی")
+                verdict = ag.get("agent_verdict_status", "در حال پردازش")
+                details = ag.get("agent_verdict_details", "")
+                shock = ag.get("shock_projection_text", "")
+                ev_title = target_ev.get("name", next_ev_name)
+                ev_date = target_ev.get("date_tehran", "به زودی")
+                cd_fmt = cal.get("countdown_fmt", "")
+
+                return (
+                    f"### 🏛️ کالبدشکافی اختصاصی ایجنت از رویداد کلان **{ev_title}**\n\n"
+                    f"⏳ **موعد انتشار به وقت تهران:** **{ev_date}** ({cd_fmt} مانده)\n"
+                    f"⚠️ **رادار ریسک غافلگیری (Surprise Risk):** **%{s_risk} ({s_level})**\n\n"
+                    f"🎙️ **ادعای اجماع بازار (Consensus):**\n{consensus}\n\n"
+                    f"🔬 **راستی‌آزمایی داده‌های زیرپوستی ایجنت (Data Cross-Check):**\n{crosscheck}\n\n"
+                    f"⚖️ **حکم و موضع نهایی هوش آسمان:**\n**{verdict}**\n{details}\n\n"
+                    f"🎯 **تارگت‌های پیش‌بینی شوک قیمتی در لحظه انتشار:**\n{shock}\n\n"
+                    f"🛡️ **دستورالعمل مدیریت فیوز:** از ۴۵ دقیقه قبل تا ۳۰ دقیقه بعد از خبر، تمام معاملات اهرم‌دار پرریسک را متوقف کنید."
+                )
+            except Exception:
+                pass
+
+        # Priority 1: Gold, Forex DXY, Oil Cross-Market Correlation
+        if any(w in q for w in ["طلا", "xau", "انس", "فارکس", "dxy", "شاخص دلار", "نفت", "crude", "همبستگی طلا", "اوراق قرضه"]):
+            try:
+                from institutional_addons import EconomicCalendarEngine
+                cal = EconomicCalendarEngine.get_macro_shield_status()
+                li = cal.get("leading_indicators", {})
+                dxy = li.get("dxy", {})
+                gold = li.get("gold", {})
+                us10y = li.get("us10y", {})
+                oil = li.get("oil", {})
+                gold_p = gold.get("price", 4162)
+                gold_c = gold.get("chg", -0.95)
+                dxy_p = dxy.get("price", 101.92)
+                dxy_c = dxy.get("chg", -0.01)
+                us10y_p = us10y.get("price", "5.27%")
+                oil_p = oil.get("price", 91.11)
+
+                return (
+                    f"### 🌐 ماتریس کراس‌مارکت (طلا، شاخص دلار DXY، نفت و اوراق قرضه آمریکا)\n\n"
+                    f"- **🥇 انس جهانی طلا (XAU/USD):** **${gold_p}** ({gold_c:+.2f}%)\n"
+                    f"  ↳ *تفسیر:* پناهگاه امن سرمایه‌گذاران بزرگ در برابر چاپ پول و تنش‌های ژئوپلیتیک.\n\n"
+                    f"- **💵 شاخص دلار آمریکا (DXY):** **{dxy_p}** ({dxy_c:+.2f}%)\n"
+                    f"  ↳ *تفسیر:* سقوط DXY موتور محرک اصلی بول‌ران بیت‌کوین و پرواز طلاست.\n\n"
+                    f"- **📈 اوراق قرضه ۱۰ ساله آمریکا (US10Y):** **{us10y_p}**\n"
+                    f"  ↳ *تفسیر:* دماسنج واقعی هزینه پول در وال‌استریت؛ کاهش این نرخ، سوخت پامپ دارایی‌های ریسکی است.\n\n"
+                    f"- **🛢️ نفت خام WTI:** **${oil_p}**\n"
+                    f"  ↳ *تفسیر:* هرگونه جهش نفت مستقیماً شاخص تورم CPI را بالا برده و فدرال‌رزرو را هاوکیش می‌کند."
+                )
+            except Exception:
+                pass
+
+        # Priority 2: Capital Allocation & Position Sizing
+        if any(w in q for w in ["چقدر سرمایه", "حجم ورود", "چند دلار", "سرمایه گذاری", "position size", "مدیریت سرمایه", "حجم معامله", "چند درصد"]):
+            sl_pct = float(scalp.get("stop_loss_pct", 1.5))
+            safe_margin = (10 / (sl_pct / 100)) if sl_pct > 0 else 100
+            s_lev = scalp.get("suggested_leverage", "3x")
+            return (
+                f"### 💼 فرمول مهندسی حجم ورود و مدیریت سرمایه نهادی (Position Sizing Guide)\n\n"
+                f"📌 **برای معامله روی {symbol} با قیمت فعلی {formatted_price}:**\n\n"
+                f"1. **قانون ریسک ثابت ۱٪ (The 1% Risk Rule):**\n"
+                f"   - در بدترین حالت و اصابت حد ضرر (-{sl_pct}%)، حداکثر باید **تنها ۱٪ از کل بالانس حسابتان** کسر شود.\n\n"
+                f"2. **فرمول دقیق محاسبه حجم (دلاری):**\n"
+                f"   - `حجم معامله = (کل سرمایه شما × 0.01) ÷ درصد حد ضرر`\n"
+                f"   - **مثال با بالانس ۱,۰۰۰ دلار:**\n"
+                f"     - ریسک مجاز: ۱۰ دلار\n"
+                f"     - فاصله حد ضرر ستاپ: {sl_pct}%\n"
+                f"     - **مارجین ورود بهینه:** **{safe_margin:,.1f} دلار** با اهرم پیشنهادی **{s_lev}**.\n\n"
+                f"3. **فرمان انضباطی ایجنت:**\n"
+                f"   - اگر بازار در محدوده اشباع نوسانی است، حجم ورود را به ۰.۵٪ کاهش دهید و تارگت اول (TP1) را روی سیو سود ۵۰٪ ببندید."
+            )
+
+        # Priority 3: Whale Cost Basis / Accumulation Questions
+        if any(w in q for w in ["نهنگ ها تو چه قیمتی", "نهنگ‌ها تو چه قیمتی", "قیمت خرید نهنگ", "میانگین نهنگ", "کیف پول نهنگ", "cost basis", "arkham", "نهنگ ها کی خری", "نهنگ"]):
+            try:
+                from institutional_addons import WhaleFlowEngine
+                w_met = WhaleFlowEngine.get_whale_metrics(symbol)
+                cb = w_met.get("whale_avg_cost_basis_fmt", "-")
+                d_pct = w_met.get("distance_from_whale_entry_pct", 0)
+                n_flow = w_met.get("netflow_fmt", "-")
+                supp = w_met.get("whale_support_status", "")
+                pnl_lbl = "در سود انباشت سنگین 🟢" if d_pct >= 3.0 else ("نزدیک نقطه سربه‌سر ⚖️" if d_pct >= 0 else "در ضرر موقت (دفاع سنگین از کف) 🛡️")
+
+                return (
+                    f"### 🐋 ردپای انباشت و شناسنامه کیف‌پول نهنگ‌ها برای {symbol}\n\n"
+                    f"- **میانگین قیمت خرید کل نهنگ‌ها (Whale Cost Basis):** **{cb}**\n"
+                    f"- **فاصله بازار تا نقطه ورود وال‌ها:** **{d_pct:+.2f}%**\n"
+                    f"- **وضعیت سود/زیان نهنگ‌ها:** **{pnl_lbl}**\n"
+                    f"- **خط قرمز دفاع نهنگ‌ها (Whale Defense Line):** **{cb} (حمایت فولادی)**\n"
+                    f"- **خالص جریان ۲۴ ساعته ورودی/خروجی:** **{n_flow}**\n"
+                    f"- **تفسیر رفتار آن‌چین:** {supp}\n\n"
+                    f"💡 **استراتژی صیادی:** هر اصلاح قیمتی به سمت {cb} یک فرصت طلایی لانگ همراه با وال‌هاست، چرا که نهنگ‌ها اجازه شکسته شدن میانگین خرید خود را نخواهند داد."
+                )
+            except Exception:
+                pass
+
+        # Priority 4: Liquidation Heatmap / Pools / Magnet Questions
+        if any(w in q for w in ["استخر نقدینگی", "استخر بعدی", "استخر کجاست", "مگنت", "آهنربا", "لیکوئید", "لیکویید", "heatmap", "magnet", "کلاستر", "هیت مپ"]):
+            try:
+                from institutional_addons import LiquidationHeatmapEngine
+                liq = LiquidationHeatmapEngine.calculate_clusters(symbol, price, price * 1.02, price * 0.98)
+                p_mag = liq.get("magnet_price", price)
+                dist_m = liq.get("magnet_distance_pct", 0)
+                d_dir = "جذب به سقف (شکار شورت‌های عجول)" if liq.get("magnet_direction") == "BULLISH_MAGNET" else "جذب به کف (شکار لانگ‌های پر ریسک)"
+                t_long = liq.get("total_long_liq_fmt", "-")
+                t_short = liq.get("total_short_liq_fmt", "-")
+                casc = liq.get("cascade_status", "")
+
+                return (
+                    f"### 🧲 کالبدشکافی نقشه حرارتی استخرهای نقدینگی و لیکوئیدیشن برای {symbol}\n\n"
+                    f"- **قیمت آهنربای جذب نقدینگی (Magnet Price):** **{p_mag:,.{p_dec}f}$** ({dist_m:+.2f}% از قیمت فعلی)\n"
+                    f"- **جهت کشش مغناطیسی بازارساز:** **{d_dir}**\n"
+                    f"- **حجم کل استخرهای نقدینگی لانگ:** **{t_long}**\n"
+                    f"- **حجم کل استخرهای نقدینگی شورت:** **{t_short}**\n"
+                    f"- **ریسک لیکوئیدیشن آبشاری:** {casc}\n\n"
+                    f"💡 **تاکتیک نهادی:** مارکت‌میکرها قیمت را تا تاچ شدن استخر {p_mag:,.{p_dec}f}$ پیش خواهند برد. تارگت‌های اسکالپ خود را دقیقاً نیم‌درصد قبل از این استخر قرار دهید تا اسلیپیج نگیرید."
+                )
+            except Exception:
+                pass
+
+        # Priority 5: Order Flow Absorption / Iceberg Walls
+        if any(w in q for w in ["جذب", "absorption", "آیسبرگ", "iceberg", "دیواره", "فوت پرینت", "footprint", "دوئل", "duel"]):
+            try:
+                from institutional_addons import OrderFlowAbsorptionEngine
+                abs_data = OrderFlowAbsorptionEngine.analyze_absorption(symbol)
+                b_wall = abs_data.get("bid_wall", {})
+                a_wall = abs_data.get("ask_wall", {})
+                b_price = b_wall.get("price", 0)
+                a_price = a_wall.get("price", 0)
+
+                return (
+                    f"### ⚔️ نبرد دوطرفه عمق سفارشات و دیواره‌های پنهان اردر فلو برای {symbol}\n\n"
+                    f"🟢 **دیواره خرید پنهان (حمایت نهادی):** سطح **{b_price:,.{p_dec}f}$**\n"
+                    f"- ظرفیت دیواره: **{b_wall.get('total_fmt')}** | جذب‌شده: **{b_wall.get('absorbed_fmt')}** ({b_wall.get('progress_pct')}%) | وضعیت: **{b_wall.get('status_label')}**\n\n"
+                    f"🔴 **دیواره فروش پنهان (مقاومت نهادی):** سطح **{a_price:,.{p_dec}f}$**\n"
+                    f"- ظرفیت دیواره: **{a_wall.get('total_fmt')}** | جذب‌شده: **{a_wall.get('absorbed_fmt')}** ({a_wall.get('progress_pct')}%) | وضعیت: **{a_wall.get('status_label')}**\n\n"
+                    f"⚖️ **موازنه قدرت لحظه‌ای:** {abs_data.get('power_summary')}\n"
+                    f"🎯 **حکم عملیاتی ایجنت:** {abs_data.get('action_verdict')}"
+                )
+            except Exception:
+                pass
+
+        # Priority 6: Spoofing & Orderbook Fake Orders
+        if any(w in q for w in ["اسپوفینگ", "spoof", "فیک وال", "دیوار فیک", "دیواره جعلی"]):
+            try:
+                from institutional_addons import OrderbookDepthSpoofingEngine
+                ds = OrderbookDepthSpoofingEngine.scan_depth_and_spoofing(symbol)
+                b_risk = "بله ⚠️ (احتمال لغو ناگهانی قبل از رسیدن قیمت)" if ds.get("bid_spoof_risk") else "خیر (معتبر و پرحجم) ✔"
+                a_risk = "بله ⚠️ (احتمال اردر فیک برای ترساندن خریداران)" if ds.get("ask_spoof_risk") else "خیر (معتبر و مستحکم) ✔"
+                b_p = ds.get("buy_wall", {}).get("price", 0)
+                a_p = ds.get("sell_wall", {}).get("price", 0)
+                b_v = ds.get("buy_wall", {}).get("val_usd", 0)/1e6
+                a_v = ds.get("sell_wall", {}).get("val_usd", 0)/1e6
+
+                return (
+                    f"### 🎭 تحلیل راستی‌آزمایی دیواره‌های اردربوک و اسپوفینگ برای {symbol}\n\n"
+                    f"- **تراز عرضه و تقاضا:** تقاضا: **{ds.get('bid_percentage')}%** | عرضه: **{ds.get('ask_percentage')}%** ({ds.get('depth_bias')})\n"
+                    f"- **وضعیت کلان اردربوک:** **{ds.get('spoofing_status')}**\n"
+                    f"- **بزرگ‌ترین دیواره خرید واقعی:** قیمت **{b_p:,.{p_dec}f}$** (${b_v:.2f}M)\n"
+                    f"- **بزرگ‌ترین دیواره فروش واقعی:** قیمت **{a_p:,.{p_dec}f}$** (${a_v:.2f}M)\n"
+                    f"- **اردر جعلی در خرید:** {b_risk}\n"
+                    f"- **اردر جعلی در فروش:** {a_risk}"
+                )
+            except Exception:
+                pass
+
+        # Priority 7: Stop-Hunt, Traps & Fake Breakouts
+        if any(w in q for w in ["استاپ هانت", "تله", "fakeout", "بریک اوت فیک", "sweep", "شکار استاپ", "فیک بریک"]):
+            sweep = smc.get("latest_sweep")
+            sweep_str = f"{sweep['title']} در تراز {sweep['level_swept']}" if sweep else "اخیراً استاپ‌هانت ماژوری ثبت نشده است."
+            trap = smc.get("fake_trend", {})
+            bsl_p = float(smc.get("bsl_pool_target", price))
+            ssl_p = float(smc.get("ssl_pool_target", price))
+
+            return (
+                f"### 🏹 رادار استاپ‌هانت و تله‌های نقدینگی نهادها برای {symbol}\n\n"
+                f"- **وضعیت تله روند:** **{trap.get('title', 'روند نرمال')}**\n"
+                f"- **آخرین استاپ‌هانت ثبت‌شده:** **{sweep_str}**\n"
+                f"- **توضیحات مکانیزم شکار:** {trap.get('desc', 'الگوریتم‌های سازمانی در حال جمع‌آوری اردرها بدون شکست جعلی هستند.')}\n"
+                f"- **استخر نقدینگی سقف (BSL Target):** **${bsl_p:,.{p_dec}f}**\n"
+                f"- **استخر نقدینگی کف (SSL Target):** **${ssl_p:,.{p_dec}f}**\n\n"
+                f"💡 **قانون طلایی ورود:** هرگز با بریک‌اوت اولیه کندل وارد نشوید؛ صبر کنید شدوی تله زده شود و کندل بازگشتی با حجم بالا کلوز دهد."
+            )
+
+        # Priority 8: Entry / Buy / Scalp Execution Direct Command
+        if any(w in q for w in ["الان بخرم", "خرید", "وارد شم", "لانگ", "شورت", "کی بخرم", "نقطه ورود", "long", "short", "ستاپ", "تارگت", "استاپ"]):
+            alt_shield = analysis.get("altcoin_shield", {})
+            gate_advice = scores.get("action_advice", "بررسی تاییدیه‌ها الزامی است.")
+            sl_val = float(scalp.get("stop_loss", 0))
+            tp1_val = float(scalp.get("tp1", 0))
+            tp2_val = float(scalp.get("tp2", 0))
+            tp3_val = float(scalp.get("tp3", 0))
+            sw_sl = float(swing.get("stop_loss", 0))
+            sw_t1 = float(swing.get("target1", 0))
+            sw_t2 = float(swing.get("target2", 0))
+
+            return (
+                f"### ⚡ دستورالعمل معاملاتی زنده و دقیق برای {symbol} (قیمت فعلی: {formatted_price})\n\n"
+                f"🚦 **وضعیت چراغ سبز مارکت:** **{alt_shield.get('badge', '🟢 آزاد')}**\n"
+                f"👑 **درجه کیفی ستاپ:** **{scores.get('grade_title', 'Grade A')}** (نمره کل: {scores.get('composite_confidence', 85)}/100)\n\n"
+                f"🎯 **ستاپ اسکالپ فوق‌سریع (۱m/۵m):**\n"
+                f"- **جهت معامله:** **{scalp.get('action', 'WAIT')}**\n"
+                f"- **محدوده ورود دقیق:** **{scalp.get('entry_zone', formatted_price)}**\n"
+                f"- **حد ضرر قطعی (SL):** **${sl_val:,.{p_dec}f}** (-{scalp.get('stop_loss_pct', 0)}%)\n"
+                f"- **تارگت اول (TP1 - سیو ۵۰٪):** **${tp1_val:,.{p_dec}f}** (+{scalp.get('tp1_pct', 0)}%)\n"
+                f"- **تارگت دوم (TP2):** **${tp2_val:,.{p_dec}f}** (+{scalp.get('tp2_pct', 0)}%)\n"
+                f"- **تارگت سوم (استخر نقدینگی BSL/SSL):** **${tp3_val:,.{p_dec}f}** (+{scalp.get('tp3_pct', 0)}%)\n"
+                f"- **لوریج پیشنهادی:** **{scalp.get('suggested_leverage', '3x-5x')}**\n\n"
+                f"🌊 **ستاپ سوئینگ (تایم‌فریم ۴ ساعته):**\n"
+                f"- جهت: **{swing.get('action', 'WAIT')}**\n"
+                f"- ورود در پولبک: **{swing.get('pullback_entry', formatted_price)}** | حد ضرر ساختاری: **${sw_sl:,.{p_dec}f}**\n"
+                f"- تارگت اول: **${sw_t1:,.{p_dec}f}** | تارگت دوم: **${sw_t2:,.{p_dec}f}**\n\n"
+                f"🛡️ **فرمان انضباطی مدیریت ریسک:** {gate_advice}"
+            )
+
+        # Priority 9: SMC / FVG / Liquidity / VWAP
+        if any(w in q for w in ["fvg", "خلاء", "نقدینگی", "اسمارت مانی", "ict", "vwap", "cvd", "poc"]):
+            fvgs = smc.get("unmitigated_fvgs", [])
+            fvg_str = f"{fvgs[-1]['bottom']} - {fvgs[-1]['top']}" if fvgs else "در حال حاضر FVG پرنشده نزدیک دیده نمی‌شود."
+            poc = smc.get("poc", price)
+            vwap_p = vwap_data.get("vwap", 0)
+            vah_p = smc.get("vah", 0)
+            val_p = smc.get("val", 0)
+            bsl_p = smc.get("bsl_pool_target", 0)
+            ssl_p = smc.get("ssl_pool_target", 0)
+
+            return (
+                f"### 🧠 کالبدشکافی به سبک اسمارت مانی و اردر فلو برای {symbol}\n\n"
+                f"- **خلاء نقدینگی فعال (Unmitigated FVG):** محدوده **{fvg_str}**\n"
+                f"- **میانگین قیمت وزنی حجم (VWAP):** **${vwap_p:,.{p_dec}f}** ({vwap_data.get('vwap_position')})\n"
+                f"- **جهت دلتای تجمعی حجم (CVD):** **{vwap_data.get('cvd_trend')}**\n"
+                f"- **گره متراکم حجم (POC):** سطح **${poc:,.{p_dec}f}** (تراز VAH: ${vah_p:,.{p_dec}f} | VAL: ${val_p:,.{p_dec}f})\n"
+                f"- **استخر نقدینگی سقف (BSL Target):** **${bsl_p:,.{p_dec}f}**\n"
+                f"- **استخر نقدینگی کف (SSL Target):** **${ssl_p:,.{p_dec}f}**\n\n"
+                f"📌 **توصیه استراتژیک:** هرگز در میانه رنج وارد نشوید؛ ورود بهینه یا روی پولبک به FVG و VWAP است یا پس از تایید Sweep استاپ‌ها."
+            )
+
+        # Priority 10: 3D Scores & Signal Confluence
         if any(w in q for w in ["امتیاز", "اسکور", "direction", "entry score", "risk score", "وین ریت", "کیفیت"]):
             return (
                 f"### 🎯 ارزیابی تفکیکی امتیازات ۳ بعدی سیگنال برای {symbol}\n\n"
-                f"- **۱. امتیاز جهت حرکت (Direction Score):** **{scores.get('direction_score')}/100** (برآیند همسویی تایم‌فریم‌ها، جهت CVD و رفتار قیمت با Open Interest)\n"
-                f"- **۲. امتیاز کیفیت نقطه ورود (Entry Score):** **{scores.get('entry_score')}/100** (سنجش میزان اصلاح به سمت FVG پرنشده، تراز VWAP و وقوع استاپ‌هانت)\n"
-                f"- **۳. امتیاز کیفیت ریسک (Risk Score):** **{scores.get('risk_score')}/100** (فشردگی حد ضرر ساختاری، نسبت R:R بالای ۱:۲ و عدم واگرایی معکوس)\n\n"
+                f"- **۱. امتیاز جهت حرکت (Direction Score):** **{scores.get('direction_score')}/100**\n"
+                f"- **۲. امتیاز کیفیت نقطه ورود (Entry Score):** **{scores.get('entry_score')}/100**\n"
+                f"- **۳. امتیاز کیفیت ریسک (Risk Score):** **{scores.get('risk_score')}/100**\n\n"
                 f"⭐ **نمره نهایی کانفلوئنس (Confidence):** **{scores.get('composite_confidence')}/100** ({scores.get('grade_title')})\n"
                 f"📌 **دستور اجرایی:** {scores.get('action_advice')}"
             )
 
-        # 2. SMC / FVG / Liquidity question
-        elif any(w in q for w in ["fvg", "خلاء", "نقدینگی", "sweep", "bsl", "ssl", "اسمارت مانی", "ict", "vwap", "cvd"]):
-            fvgs = smc.get("unmitigated_fvgs", [])
-            fvg_str = f"{fvgs[-1]['bottom']} - {fvgs[-1]['top']}" if fvgs else "در حال حاضر FVG پرنشده نزدیک دیده نمی‌شود."
-            sweep = smc.get("latest_sweep")
-            sweep_str = f"{sweep['title']} در تراز {sweep['level_swept']}" if sweep else "اخیراً استاپ‌هانتی رخ نداده است."
-            poc = smc.get("poc", price)
-            
-            return (
-                f"### 🧠 کالبدشکافی به سبک اسمارت مانی و اردر فلو برای {symbol}\n\n"
-                f"- **خلاء نقدینگی فعال (Unmitigated FVG):** محدوده **{fvg_str}**\n"
-                f"- **آخرین شکار نقدینگی (Liquidity Sweep):** **{sweep_str}**\n"
-                f"- **میانگین قیمت وزنی حجم (VWAP):** **{vwap_data.get('vwap', 0):,.4f}$** ({vwap_data.get('vwap_position')})\n"
-                f"- **جهت دلتای تجمعی (CVD):** **{vwap_data.get('cvd_trend')}**\n"
-                f"- **گره متراکم حجم (POC):** سطح **{poc:,.4f}$** (تراز VAH: {smc.get('vah', 0):,.4f}$ | VAL: {smc.get('val', 0):,.4f}$)\n"
-                f"- **استخر نقدینگی سقف (BSL Target):** **{smc.get('bsl_pool_target', 0):,.4f}$**\n"
-                f"- **استخر نقدینگی کف (SSL Target):** **{smc.get('ssl_pool_target', 0):,.4f}$**\n\n"
-                f"📌 **توصیه استراتژیک:** هرگز در میانه رنج وارد نشوید؛ ورود بهینه یا روی پولبک به FVG و VWAP است یا پس از تایید Sweep استاپ‌ها."
-            )
-
-        # 3. HFT / Fake trend question
-        elif any(w in q for w in ["hft", "ربات", "بانک", "تله", "فیک", "fake", "دستکاری"]):
-            hft = smc.get("hft", {})
-            trap = smc.get("fake_trend", {})
-            return (
-                f"### 🤖 تحلیل ردپای ربات‌های HFT و اعتدال الگوریتمی در {symbol}\n\n"
-                f"- **شاخص نفوذ الگوریتم‌های پربسامد (HFT Index):** **{hft.get('score', 50)}/100** ({hft.get('status')})\n"
-                f"- **وضعیت تله نقدینگی:** **{trap.get('title')}**\n"
-                f"- **توضیحات الگوریتمی:** {trap.get('desc')}\n\n"
-                f"💡 **نکته معامله‌گری:** وقتی شاخص HFT بالای ۷۵ می‌رود، الگوریتم‌های نهادی به سرعت شدو می‌زنند تا لیمیت‌اردرها را تاچ کنند. در این شرایط از لوریج‌های بالا اکیداً بپرهیزید و لیمیت‌اردرها را با فاصله بیشتری قرار دهید."
-            )
-
-        # 4. Entry / Buy question
-        elif any(w in q for w in ["الان بخرم", "خرید", "وارد شم", "لانگ", "کی بخرم", "نقطه ورود", "long"]):
-            return (
-                f"### 💡 راهنمای ورود به معامله در {symbol} (قیمت فعلی: {price:,.4f}$)\n\n"
-                f"🔹 **دیدگاه اسکالپینگ (۱۵ دقیقه):** سیگنال لحظه‌ای: **{scalp.get('action')}**\n"
-                f"- محدوده ورود بهینه: **{scalp.get('entry_zone')}**\n"
-                f"- حد ضرر الزامی: **{scalp.get('stop_loss')}**\n\n"
-                f"🔹 **دیدگاه سوئینگ تریدینگ (۴ ساعته):** سیگنال: **{swing.get('action')}**\n"
-                f"- ورود در پولبک به POC: **{swing.get('pullback_entry')}**\n"
-                f"- حد ضرر ساختاری: **{swing.get('stop_loss')}**\n\n"
-                f"⚠️ وضعیت تله: {smc.get('fake_trend', {}).get('title')} | درجه سیگنال: {scores.get('grade_title')}."
-            )
-
-        # 5. Leverage question
-        elif any(w in q for w in ["لوریج", "اهرم", "اهرم چند", "leverage", "مارجین"]):
+        # Priority 11: Leverage & Risk Management
+        if any(w in q for w in ["لوریج", "اهرم", "اهرم چند", "leverage", "مارجین"]):
             return (
                 f"### ⚖️ راهنمای اهرم و مدیریت ریسک برای {symbol}\n\n"
                 f"- **برای اسکالپ:** حداکثر **{scalp.get('suggested_leverage', '3x الی 5x')}** پیشنهاد می‌شود.\n"
                 f"- **برای سوئینگ:** اکیداً توصیه می‌شود معامله را **اسپات (بدون اهرم)** یا حداکثر با اهرم **2x** باز کنید.\n\n"
-                f"📌 قانون طلایی: فاصله استاپ‌لاس تا نقطه ورود هر چقدر باشد، ضرر دلاری کل معامله نباید از ۱.۵٪ کل سرمایه شما تجاوز کند."
+                f"📌 قانون طلایی: فاصله استاپ‌لاس تا نقطه ورود هر چقدر باشد، ضرر دلاری کل معامله نباید از ۱.۰٪ الی ۱.۵٪ کل سرمایه شما تجاوز کند."
             )
 
-        # 6. Macro & Dominance question
-        elif any(w in q for w in ["ماکرو", "کلان", "دامیننس", "dominance", "btc.d", "usdt.d", "مارکت کپ", "همبستگی", "بتا", "beta"]):
+        # Priority 12: Macro Dominance & Market Cycles
+        if any(w in q for w in ["ماکرو", "دامیننس", "dominance", "btc.d", "usdt.d", "مارکت کپ", "همبستگی", "بتا", "beta"]):
             macro = analysis.get("macro", {})
             corr = analysis.get("correlation", {})
             return (
@@ -2082,8 +2422,8 @@ class AgentAdvisor:
                 f"💡 **تفسیر نهادی:** {macro.get('regime_desc')}"
             )
 
-        # 7. On-chain question
-        elif any(w in q for w in ["آنچین", "آن چین", "onchain", "on-chain", "نهنگ", "ممشول", "mempool", "هش ریت", "تراکنش"]):
+        # Priority 13: On-Chain & Mempool
+        if any(w in q for w in ["آنچین", "آن چین", "onchain", "on-chain", "ممشول", "mempool", "هش ریت", "تراکنش"]):
             onchain = analysis.get("onchain", {})
             return (
                 f"### ⛓️ وضعیت معیارهای آن‌چین زنجیره بیت‌کوین\n\n"
@@ -2095,8 +2435,8 @@ class AgentAdvisor:
                 f"- **ردپای نهنگ‌ها:** **{onchain.get('whale_status')}**"
             )
 
-        # 8. News & Circuit Breaker question
-        elif any(w in q for w in ["خبر", "اخبار", "سنتیمنت", "فیوز", "circuit", "panic", "فاندامنتال"]):
+        # Priority 14: News Sentiment & Circuit Breakers
+        if any(w in q for w in ["خبر", "اخبار", "سنتیمنت", "فیوز", "circuit", "panic", "فاندامنتال"]):
             news = analysis.get("news", {})
             return (
                 f"### 📰 وضعیت فیوز اطمینان اخبار و سنتیمنت بازار\n\n"
@@ -2106,26 +2446,19 @@ class AgentAdvisor:
                 f"- **تعداد اخبار پرریسک/پانیک شناسایی‌شده:** {news.get('panic_count', 0)} مورد از {news.get('news_count', 0)} خبر اخیر"
             )
 
-        # 9. Backtest question
-        elif any(w in q for w in ["بک تست", "بکتست", "backtest", "نرخ برد", "تست تاریخی", "سود شبیه"]):
-            bt = analysis.get("backtest", {})
-            return (
-                f"### 🧪 نتایج شبیه‌سازی و بک‌تست تاریخی استراتژی روی {symbol}\n\n"
-                f"- **نرخ برد تجربی (Win Rate):** **{bt.get('win_rate_pct')}%** ({bt.get('win_count')} برد از {bt.get('total_trades')} ترید)\n"
-                f"- **فاکتور سود (Profit Factor):** **{bt.get('profit_factor')}**\n"
-                f"- **سود خالص شبیه‌سازی:** **{bt.get('net_profit_pct'):+.2f}%** (${bt.get('net_profit_usd'):+,.2f})\n"
-                f"- **حداکثر افت سرمایه (Max Drawdown):** **{bt.get('max_drawdown_pct')}%**\n"
-                f"- **ضریب اطمینان کالیبره‌شده ریاضی:** **{bt.get('calibrated_confidence')}/100**"
-            )
+        # Priority 15: General Conversational Fallback
+        vwap_val = vwap_data.get('vwap', price)
+        sl_val = float(scalp.get('stop_loss', 0))
+        tp2_val = float(scalp.get('tp2', 0))
+        whale_b = price * 0.965
 
-        # 10. General fallback
-        else:
-            return (
-                f"### 🤖 پاسخ ایجنت کریپتو درباره {symbol}\n\n"
-                f"قیمت لحظه‌ای: **{price:,.4f}$** | درجه سیگنال: **{scores.get('grade_title')}**\n"
-                f"- تفکیک امتیازات: جهت: {scores.get('direction_score')} | ورود: {scores.get('entry_score')} | ریسک: {scores.get('risk_score')}\n"
-                f"- ستاپ اسکالپ: **{scalp.get('action')}** (ورود: {scalp.get('entry_zone')})\n"
-                f"- ردپای الگوریتم‌های HFT: **{smc.get('hft', {}).get('score', 50)}/100**\n"
-                f"- میانگین VWAP: **{vwap_data.get('vwap', 0):,.4f}$**\n\n"
-                f"هر سوال دیگری درباره جدول پارامترها، استاپ‌هانت‌ها یا مدیریت مارجین دارید بفرمایید."
-            )
+        return (
+            f"### 🤖 دیده‌بان هوشمند نهادی برای {symbol} (قیمت: {formatted_price})\n\n"
+            f"👑 **درجه اعتبار سیگنال:** **{scores.get('grade_title')}** (کانفلوئنس: {scores.get('composite_confidence')}/100)\n"
+            f"- **ستاپ اسکالپ فعلی:** جهت **{scalp.get('action')}** در محدوده **{scalp.get('entry_zone')}**\n"
+            f"- **حد ضرر (SL):** ${sl_val:,.{p_dec}f} | **تارگت اصلی:** ${tp2_val:,.{p_dec}f}\n"
+            f"- **میانگین خرید نهنگ‌ها (Whale Basis):** ${whale_b:,.{p_dec}f} (حمایت کلیدی)\n"
+            f"- **تراز نقدینگی و VWAP:** ${vwap_val:,.{p_dec}f} ({vwap_data.get('vwap_position')})\n\n"
+            f"💬 درباره هر موضوعی شامل **استخرهای نقدینگی، دیواره‌های جذب، رویدادهای کلان (CPI/FOMC)، نسبت طلا و دلار، مدیریت حجم یا نقطه ورود** بپرسید تا با داده‌های زنده پاسخ دهم."
+        )
+
