@@ -5431,8 +5431,7 @@
       const csvContent = "﻿" + [
         headers.join(","),
         ...rows.map(e => e.map(x => `"${String(x).replace(/"/g, '""')}"`).join(","))
-      ].join("
-");
+      ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -7433,9 +7432,9 @@
       const altShield = data.altcoin_shield || {};
       const shieldBanner = document.getElementById("altcoinGreenLightBanner");
       const sIcon = document.getElementById("altShieldIcon");
-      const sBadge = document.getElementById("altShieldBadge");
-      const sTitle = document.getElementById("altShieldTitle");
-      const sDesc = document.getElementById("altShieldDesc");
+      const altBadge = document.getElementById("altShieldBadge");
+      const altTitle = document.getElementById("altShieldTitle");
+      const altDesc = document.getElementById("altShieldDesc");
       const sDom = document.getElementById("altShieldBtcDom");
       const sMom = document.getElementById("altShieldBtcMom");
 
@@ -7444,21 +7443,21 @@
           shieldBanner.style.background = "rgba(255, 51, 102, 0.12)";
           shieldBanner.style.borderColor = "rgba(255, 51, 102, 0.4)";
           if (sIcon) sIcon.innerText = "🛑";
-          if (sBadge) { sBadge.innerText = altShield.badge; sBadge.style.background = "#ff3366"; sBadge.style.color = "#fff"; }
+          if (altBadge) { altBadge.innerText = altShield.badge; altBadge.style.background = "#ff3366"; altBadge.style.color = "#fff"; }
         } else if (altShield.status.includes("YELLOW")) {
           shieldBanner.style.background = "rgba(255, 209, 102, 0.1)";
           shieldBanner.style.borderColor = "rgba(255, 209, 102, 0.4)";
           if (sIcon) sIcon.innerText = "⚠️";
-          if (sBadge) { sBadge.innerText = altShield.badge; sBadge.style.background = "#ffd166"; sBadge.style.color = "#000"; }
+          if (altBadge) { altBadge.innerText = altShield.badge; altBadge.style.background = "#ffd166"; altBadge.style.color = "#000"; }
         } else {
           shieldBanner.style.background = "rgba(0, 230, 118, 0.08)";
           shieldBanner.style.borderColor = "rgba(0, 230, 118, 0.35)";
           if (sIcon) sIcon.innerText = "🟢";
-          if (sBadge) { sBadge.innerText = altShield.badge; sBadge.style.background = "#00e676"; sBadge.style.color = "#000"; }
+          if (altBadge) { altBadge.innerText = altShield.badge; altBadge.style.background = "#00e676"; altBadge.style.color = "#000"; }
         }
 
-        if (sTitle) sTitle.innerText = altShield.title || "رادار سلامت بیت‌کوین و مجوز آلت‌کوین‌ها";
-        if (sDesc) sDesc.innerText = altShield.advice || "وضعیت بیت‌کوین در شرایط پایدار است.";
+        if (altTitle) altTitle.innerText = altShield.title || "رادار سلامت بیت‌کوین و مجوز آلت‌کوین‌ها";
+        if (altDesc) altDesc.innerText = altShield.advice || "وضعیت بیت‌کوین در شرایط پایدار است.";
         if (sDom) sDom.innerText = (altShield.btc_dominance || 58.0) + "%";
         if (sMom) {
           const mom = altShield.btc_momentum_1h || 0;
