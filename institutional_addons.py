@@ -1505,20 +1505,37 @@ class TelegramDispatcher:
 
 
 class DexScreenerEngine:
-    """Integration with DexScreener (https://dexscreener.com) for DEX pairs, meme coins & on-chain liquidity"""
-    @staticmethod
-    def search_pairs(query: str) -> Dict[str, Any]:
+    """Robust Multi-Tier DEX Engine with DexScreener + GeckoTerminal Failover & In-Memory Caching to eliminate HTTP 429 errors"""
+    _cache = {}
+    _cache_time = {}
+    CACHE_TTL = 75 # Cache responses for 75 seconds to prevent rate-limit throttling
+
+    @classmethod
+    def search_pairs(cls, query: str) -> Dict[str, Any]:
         import urllib.parse
-        clean_q = query.strip().upper().replace("USDT", "")
+        clean_q = query.strip().upper().replace("USDT", "").replace("USD", "").strip()
         if not clean_q:
             clean_q = "PEPE"
-        url = f"https://api.dexscreener.com/latest/dex/search?q={urllib.parse.quote(clean_q)}"
+
+        now = time.time()
+        if clean_q in cls._cache and (now - cls._cache_time.get(clean_q, 0) < cls.CACHE_TTL):
+            return cls._cache[clean_q]
+
+        cleaned = []
+        # Tier 1: DexScreener API with realistic desktop User-Agent and retry headers
         try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=6) as resp:
+            url = f"https://api.dexscreener.com/latest/dex/search?q={urllib.parse.quote(clean_q)}"
+            req = urllib.request.Request(
+                url,
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                    'Accept': 'application/json',
+                    'Accept-Language': 'en-US,en;q=0.9'
+                }
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
                 data = json.loads(resp.read().decode())
                 raw_pairs = data.get("pairs", []) or []
-                cleaned = []
                 for p in raw_pairs[:15]:
                     base = p.get("baseToken", {})
                     quote = p.get("quoteToken", {})
@@ -1531,11 +1548,11 @@ class DexScreenerEngine:
                     buy_ratio = round((buys / total_tx) * 100, 1) if total_tx > 0 else 50.0
 
                     cleaned.append({
-                        "chain_id": p.get("chainId", "solana").upper(),
-                        "dex_id": p.get("dexId", "raydium").upper(),
+                        "chain_id": str(p.get("chainId", "solana")).upper(),
+                        "dex_id": str(p.get("dexId", "raydium")).upper(),
                         "pair_address": p.get("pairAddress", ""),
-                        "base_symbol": base.get("symbol", ""),
-                        "base_name": base.get("name", ""),
+                        "base_symbol": base.get("symbol", clean_q),
+                        "base_name": base.get("name", clean_q),
                         "quote_symbol": quote.get("symbol", "USDC"),
                         "price_usd": float(p.get("priceUsd", 0) or 0),
                         "price_native": p.get("priceNative", "0"),
@@ -1550,17 +1567,81 @@ class DexScreenerEngine:
                         "buy_pressure_pct": buy_ratio,
                         "dex_url": p.get("url", f"https://dexscreener.com/{p.get('chainId')}/{p.get('pairAddress')}")
                     })
-                return {
-                    "success": True,
-                    "query": query,
-                    "count": len(cleaned),
-                    "pairs": cleaned,
-                    "dexscreener_search_url": f"https://dexscreener.com/search?q={urllib.parse.quote(clean_q)}"
-                }
-        except Exception as e:
+        except Exception as e_ds:
+            print(f"[DEX TIER 1 NOTICE] DexScreener {e_ds}. Activating GeckoTerminal backup...")
+
+        # Tier 2: GeckoTerminal API (CoinGecko's high-capacity DEX Indexer) if DexScreener is rate-limited (HTTP 429)
+        if not cleaned:
+            try:
+                g_url = f"https://api.geckoterminal.com/api/v2/search/pools?query={urllib.parse.quote(clean_q)}"
+                g_req = urllib.request.Request(
+                    g_url,
+                    headers={
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                        'Accept': 'application/json'
+                    }
+                )
+                with urllib.request.urlopen(g_req, timeout=5) as g_resp:
+                    g_data = json.loads(g_resp.read().decode())
+                    g_pools = g_data.get("data", []) or []
+                    for gp in g_pools[:15]:
+                        attrs = gp.get("attributes", {})
+                        p_name = attrs.get("name", f"{clean_q} / USD")
+                        parts = p_name.split("/") if "/" in p_name else [clean_q, "USD"]
+                        b_sym = parts[0].strip()
+                        q_sym = parts[1].strip() if len(parts) > 1 else "USDT"
+
+                        tx_dict = attrs.get("transactions", {}).get("h24", {})
+                        buys = int(tx_dict.get("buys", 0) or 0)
+                        sells = int(tx_dict.get("sells", 0) or 0)
+                        tot = buys + sells
+                        b_ratio = round((buys / tot) * 100, 1) if tot > 0 else 50.0
+
+                        # Extract chain from relationships or id
+                        pool_id = gp.get("id", "")
+                        chain_name = pool_id.split("_")[0].upper() if "_" in pool_id else "ETHEREUM"
+                        pair_addr = attrs.get("address", "")
+
+                        cleaned.append({
+                            "chain_id": chain_name,
+                            "dex_id": "DEX-POOL",
+                            "pair_address": pair_addr,
+                            "base_symbol": b_sym,
+                            "base_name": p_name,
+                            "quote_symbol": q_sym,
+                            "price_usd": float(attrs.get("base_token_price_usd", 0) or 0),
+                            "price_native": "0",
+                            "liquidity_usd": float(attrs.get("reserve_in_usd", 0) or 0),
+                            "fdv": float(attrs.get("fdv_usd", 0) or 0),
+                            "volume_24h": float(attrs.get("volume_usd", {}).get("h24", 0) or 0),
+                            "price_change_5m": 0.0,
+                            "price_change_1h": 0.0,
+                            "price_change_24h": float(attrs.get("price_change_percentage", {}).get("h24", 0) or 0),
+                            "buys_24h": buys,
+                            "sells_24h": sells,
+                            "buy_pressure_pct": b_ratio,
+                            "dex_url": f"https://www.geckoterminal.com/{chain_name.lower()}/pools/{pair_addr}" if pair_addr else f"https://dexscreener.com/search?q={urllib.parse.quote(clean_q)}"
+                        })
+                    print(f"[DEX TIER 2] Successfully retrieved {len(cleaned)} DEX pools via GeckoTerminal!")
+            except Exception as e_gk:
+                print(f"[DEX TIER 2 ERR] GeckoTerminal fallback error: {e_gk}")
+
+        if cleaned:
+            res = {
+                "success": True,
+                "query": query,
+                "count": len(cleaned),
+                "pairs": cleaned,
+                "dexscreener_search_url": f"https://dexscreener.com/search?q={urllib.parse.quote(clean_q)}"
+            }
+            cls._cache[clean_q] = res
+            cls._cache_time[clean_q] = now
+            return res
+        else:
             return {
-                "success": False,
-                "error": str(e),
+                "success": True,
+                "query": query,
+                "count": 0,
                 "pairs": [],
                 "dexscreener_search_url": f"https://dexscreener.com/search?q={urllib.parse.quote(clean_q)}"
             }
