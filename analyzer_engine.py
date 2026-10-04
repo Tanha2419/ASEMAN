@@ -2140,10 +2140,35 @@ class AgentAdvisor:
                 all_evs = cal.get("all_events", [])
                 
                 target_ev = None
+                # Semantic matching for macro events (Farsi + English keywords)
                 for ev in all_evs:
-                    if ev.get("code", "").lower() in q:
+                    code_l = ev.get("code", "").lower()
+                    name_l = ev.get("name", "").lower()
+                    # Check explicit code or matching tokens in Persian question
+                    if code_l in q:
                         target_ev = ev
                         break
+                    if "تورم" in q or "cpi" in q or "مصرف‌کننده" in q or "مصرف کننده" in q:
+                        if code_l == "cpi":
+                            target_ev = ev
+                            break
+                    elif "اشتغال" in q or "nfp" in q or "بیکاری" in q or "پیرول" in q:
+                        if code_l == "nfp":
+                            target_ev = ev
+                            break
+                    elif "fomc" in q or "بهره" in q or "فدرال" in q or "پاول" in q:
+                        if code_l == "fomc":
+                            target_ev = ev
+                            break
+                    elif "gdp" in q or "ناخالص" in q or "تولید" in q:
+                        if code_l == "gdp":
+                            target_ev = ev
+                            break
+                    elif "pce" in q:
+                        if code_l == "pce":
+                            target_ev = ev
+                            break
+
                 if not target_ev:
                     target_ev = all_evs[0] if all_evs else {}
 
@@ -2157,16 +2182,34 @@ class AgentAdvisor:
                 shock = ag.get("shock_projection_text", "")
                 ev_title = target_ev.get("name", next_ev_name)
                 ev_date = target_ev.get("date_tehran", "به زودی")
-                cd_fmt = cal.get("countdown_fmt", "")
+                vol_fa = target_ev.get("volatility_fa", "نوسان شدید")
+                inline_re = target_ev.get("reaction_inline", {})
+                gold_re = inline_re.get("gold", {})
+                forex_re = inline_re.get("forex", {})
+                crypto_re = inline_re.get("crypto", {})
+                
+                # Check if specific question asks about Gold, Crypto or Forex
+                gold_section = ""
+                if any(w in q for w in ["طلا", "انس", "xau", "پیپ"]):
+                    high_re = target_ev.get("reaction_higher", {}).get("gold", {})
+                    low_re = target_ev.get("reaction_lower", {}).get("gold", {})
+                    gold_section = (
+                        f"\n\n🥇 **پیش‌بینی تخصصی نوسان انس طلا (XAU/USD):**\n"
+                        f"• **میزان نوسان تخمینی:** {vol_fa}\n"
+                        f"• **جهت در سناریوی اعلام همسو با پیش‌بینی:** {gold_re.get('arrow', '⬆️')} {gold_re.get('dir', 'صعودی')} — {gold_re.get('desc', '')}\n"
+                        f"• **در صورت اعلام تورم پایین‌تر از پیش‌بینی (سوپر صعودی):** {low_re.get('arrow', '⬆️')} {low_re.get('dir', 'پرواز طلا')}\n"
+                        f"• **در صورت اعلام تورم بالاتر از انتظار (شوک منفی):** {high_re.get('arrow', '⬇️')} {high_re.get('dir', 'ریزش شدید طلا')}\n"
+                    )
 
                 return (
                     f"### 🏛️ کالبدشکافی اختصاصی ایجنت از رویداد کلان **{ev_title}**\n\n"
-                    f"⏳ **موعد انتشار به وقت تهران:** **{ev_date}** ({cd_fmt} مانده)\n"
+                    f"⏳ **موعد انتشار به وقت تهران:** **{ev_date}**\n"
                     f"⚠️ **رادار ریسک غافلگیری (Surprise Risk):** **%{s_risk} ({s_level})**\n\n"
                     f"🎙️ **ادعای اجماع بازار (Consensus):**\n{consensus}\n\n"
                     f"🔬 **راستی‌آزمایی داده‌های زیرپوستی ایجنت (Data Cross-Check):**\n{crosscheck}\n\n"
                     f"⚖️ **حکم و موضع نهایی هوش آسمان:**\n**{verdict}**\n{details}\n\n"
-                    f"🎯 **تارگت‌های پیش‌بینی شوک قیمتی در لحظه انتشار:**\n{shock}\n\n"
+                    f"🎯 **تارگت‌های پیش‌بینی شوک قیمتی در لحظه انتشار:**\n{shock}"
+                    f"{gold_section}\n\n"
                     f"🛡️ **دستورالعمل مدیریت فیوز:** از ۴۵ دقیقه قبل تا ۳۰ دقیقه بعد از خبر، تمام معاملات اهرم‌دار پرریسک را متوقف کنید."
                 )
             except Exception:
