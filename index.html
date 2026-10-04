@@ -7365,9 +7365,10 @@
     }
 
     function renderDashboard(data) {
+      const scSetup = (data && data.scalp_setup) ? data.scalp_setup : {};
       // Dynamic Ambient Mood Glow (Bullish Emerald vs Bearish Rose)
-      const isBullish = (scalp_setup && (scalp_setup.action_code === 'BUY' || scalp_setup.action.includes('LONG')));
-      const isBearish = (scalp_setup && (scalp_setup.action_code === 'SELL' || scalp_setup.action.includes('SHORT')));
+      const isBullish = (scSetup.action_code === 'BUY' || (scSetup.action && scSetup.action.includes('LONG')));
+      const isBearish = (scSetup.action_code === 'SELL' || (scSetup.action && scSetup.action.includes('SHORT')));
       document.body.classList.toggle('ambient-bullish', isBullish);
       document.body.classList.toggle('ambient-bearish', isBearish);
 
