@@ -2733,7 +2733,7 @@
               
               <!-- Timeline Bar -->
               <div style="position: relative; height: 34px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; display: flex; align-items: center; padding: 0 10px;">
-                <div style="position: absolute; left: 10px; right: 10px; height: 3px; background: linear-gradient(90deg, #ff3366 0%, #38bdf8 40%, #00e676 100%);"></div>
+                <div id="smartTimelineBar" style="position: absolute; left: 10px; right: 10px; height: 3px; background: linear-gradient(90deg, #ff3366 0%, #38bdf8 40%, #00e676 100%);"></div>
                 
                 <div style="width: 100%; display: flex; justify-content: space-between; position: relative; z-index: 2;">
                   <!-- Stop Loss -->
@@ -7928,6 +7928,48 @@
       if (tp1El) tp1El.innerText = scalp.tp1 ? `TP1: ${formatPrice(scalp.tp1)}` : "TP1: -";
       const tp2El = document.getElementById("smartTp2Val");
       if (tp2El) tp2El.innerText = scalp.tp2 ? `TP2: ${formatPrice(scalp.tp2)}` : "TP2: -";
+
+      // Update timeline bar gradient based on direction
+      const timeBar = document.getElementById("smartTimelineBar");
+      if (timeBar) {
+        const actU = (scalp.action || "").toUpperCase();
+        if (actU.includes("SHORT") || actU.includes("SELL")) {
+          timeBar.style.background = "linear-gradient(90deg, #00e676 0%, #38bdf8 40%, #ff3366 100%)";
+        } else if (actU.includes("LONG") || actU.includes("BUY")) {
+          timeBar.style.background = "linear-gradient(90deg, #ff3366 0%, #38bdf8 40%, #00e676 100%)";
+        } else {
+          timeBar.style.background = "linear-gradient(90deg, #64748b 0%, #ffd700 50%, #64748b 100%)";
+        }
+      }
+
+      // Dynamically generate Catalyst Badges based on actual signal direction and triggers
+      const catalystBox = document.getElementById("smartCatalystBadges");
+      if (catalystBox) {
+        const act = (scalp.action || "").toUpperCase();
+        const isLong = act.includes("LONG") || act.includes("BUY");
+        const isShort = act.includes("SHORT") || act.includes("SELL");
+        const isWait = !isLong && !isShort;
+
+        if (isWait) {
+          catalystBox.innerHTML = `
+            <span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(255, 193, 7, 0.15); color: #ffc107;">⏸️ وضعیت خنثی / بدون مجوز ورود</span>
+            <span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(148, 163, 184, 0.15); color: #94a3b8;">🔍 رصد تقاطع اردر فلو</span>
+            <span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(0, 210, 255, 0.15); color: #00d2ff;">🛡️ انضباط ریسک: عدم تایید ورود</span>
+          `;
+        } else if (isShort) {
+          catalystBox.innerHTML = `
+            <span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(255, 51, 102, 0.15); color: #ff3366;">📉 اردر فلو تایید (فشار فروش و تخلیه CVD)</span>
+            <span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(255, 82, 82, 0.15); color: #ff5252;">🐋 توزیع و دامپ نهنگ‌ها (Whale Dump)</span>
+            <span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(255, 145, 0, 0.15); color: #ff9100;">🧠 ساختار شکست نزولی (Bearish CHoCH)</span>
+          `;
+        } else {
+          catalystBox.innerHTML = `
+            <span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">⚡ اردر فلو تایید (جذب خرید)</span>
+            <span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(0, 230, 118, 0.15); color: #00e676;">🐋 انباشت سازمانی نهنگ‌ها (Whale Accumulation)</span>
+            <span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; background: rgba(255, 215, 0, 0.15); color: #ffd700;">🧠 ساختار شکست صعودی (Bullish BOS)</span>
+          `;
+        }
+      }
 
       // VWAP Card
       if (vwap.vwap) {
