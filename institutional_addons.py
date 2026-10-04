@@ -852,24 +852,30 @@ class BacktestEngine:
                 diff = np.diff(win_closes[-15:])
                 g = np.mean(np.maximum(diff, 0.0))
                 l = np.mean(np.maximum(-diff, 0.0))
-                rsi_val = 100.0 - (100.0 / (1.0 + (g / (l + 1e-6))))
+                rsi_val = 100.0 - (100.0 / (1.0 + (g / (l + 1e-14))))
             else:
                 rsi_val = 50.0
 
             avg_v = np.mean(sub_vols[-20:]) if len(sub_vols) >= 20 else sub_vols[-1]
             vol_ok = sub_vols[-1] >= (avg_v * 0.80)
 
-            # Strict Confluence Triggers: Trend slope + Pullback + RSI healthy + Volume confirmed
-            is_long = (curr_p > vwap) and (ema20 > ema50 * 1.0005) and (prev_p <= ema20 and curr_p > ema20) and (40 <= rsi_val <= 66) and vol_ok
-            is_short = (curr_p < vwap) and (ema20 < ema50 * 0.9995) and (prev_p >= ema20 and curr_p < ema20) and (34 <= rsi_val <= 58) and vol_ok
+            # High-Yield Confluence Triggers: Trend + Pullback/Breakout + RSI Momentum + Volume
+            # Supports both mega-caps (BTC/ETH) and high-beta altcoins/memecoins (SOL, PEPE, DOGE)
+            is_long = (curr_p >= vwap * 0.998) and (ema20 >= ema50 * 0.999) and (curr_p > ema20 or prev_p <= ema20) and (38 <= rsi_val <= 70) and vol_ok
+            is_short = (curr_p <= vwap * 1.002) and (ema20 <= ema50 * 1.001) and (curr_p < ema20 or prev_p >= ema20) and (30 <= rsi_val <= 62) and vol_ok
 
             if is_long:
                 entry_price = curr_p
                 swing_low = float(np.min(lows[max(0, i-5):i+1]))
-                sl_dist_pct = min(1.2, max(0.5, ((entry_price - swing_low) / entry_price) * 100))
-                sl_price = round(entry_price * (1.0 - sl_dist_pct / 100.0), 4)
-                tp1_price = round(entry_price * (1.0 + (sl_dist_pct * 1.5) / 100.0), 4)
-                tp2_price = round(entry_price * (1.0 + (sl_dist_pct * 2.5) / 100.0), 4)
+                # Dynamic volatility-adjusted SL: Memes and high-beta alts need 1.0% - 2.8% breathing room
+                raw_dist = ((entry_price - swing_low) / entry_price) * 100
+                max_sl = 2.8 if entry_price < 10 else 1.5
+                min_sl = 0.8 if entry_price < 10 else 0.5
+                sl_dist_pct = min(max_sl, max(min_sl, raw_dist))
+                p_dec = 8 if entry_price < 0.01 else (4 if entry_price < 100 else 2)
+                sl_price = round(entry_price * (1.0 - sl_dist_pct / 100.0), p_dec)
+                tp1_price = round(entry_price * (1.0 + (sl_dist_pct * 1.5) / 100.0), p_dec)
+                tp2_price = round(entry_price * (1.0 + (sl_dist_pct * 2.5) / 100.0), p_dec)
 
                 outcome = None
                 exit_price = entry_price
@@ -940,10 +946,14 @@ class BacktestEngine:
             elif is_short:
                 entry_price = curr_p
                 swing_high = float(np.max(highs[max(0, i-5):i+1]))
-                sl_dist_pct = min(1.2, max(0.5, ((swing_high - entry_price) / entry_price) * 100))
-                sl_price = round(entry_price * (1.0 + sl_dist_pct / 100.0), 4)
-                tp1_price = round(entry_price * (1.0 - (sl_dist_pct * 1.5) / 100.0), 4)
-                tp2_price = round(entry_price * (1.0 - (sl_dist_pct * 2.5) / 100.0), 4)
+                raw_dist = ((swing_high - entry_price) / entry_price) * 100
+                max_sl = 2.8 if entry_price < 10 else 1.5
+                min_sl = 0.8 if entry_price < 10 else 0.5
+                sl_dist_pct = min(max_sl, max(min_sl, raw_dist))
+                p_dec = 8 if entry_price < 0.01 else (4 if entry_price < 100 else 2)
+                sl_price = round(entry_price * (1.0 + sl_dist_pct / 100.0), p_dec)
+                tp1_price = round(entry_price * (1.0 - (sl_dist_pct * 1.5) / 100.0), p_dec)
+                tp2_price = round(entry_price * (1.0 - (sl_dist_pct * 2.5) / 100.0), p_dec)
 
                 outcome = None
                 exit_price = entry_price
