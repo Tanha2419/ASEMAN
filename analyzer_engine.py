@@ -2188,18 +2188,41 @@ class AgentAdvisor:
                 forex_re = inline_re.get("forex", {})
                 crypto_re = inline_re.get("crypto", {})
                 
-                # Check if specific question asks about Gold, Crypto or Forex
-                gold_section = ""
-                if any(w in q for w in ["طلا", "انس", "xau", "پیپ"]):
-                    high_re = target_ev.get("reaction_higher", {}).get("gold", {})
-                    low_re = target_ev.get("reaction_lower", {}).get("gold", {})
-                    gold_section = (
-                        f"\n\n🥇 **پیش‌بینی تخصصی نوسان انس طلا (XAU/USD):**\n"
-                        f"• **میزان نوسان تخمینی:** {vol_fa}\n"
-                        f"• **جهت در سناریوی اعلام همسو با پیش‌بینی:** {gold_re.get('arrow', '⬆️')} {gold_re.get('dir', 'صعودی')} — {gold_re.get('desc', '')}\n"
-                        f"• **در صورت اعلام تورم پایین‌تر از پیش‌بینی (سوپر صعودی):** {low_re.get('arrow', '⬆️')} {low_re.get('dir', 'پرواز طلا')}\n"
-                        f"• **در صورت اعلام تورم بالاتر از انتظار (شوک منفی):** {high_re.get('arrow', '⬇️')} {high_re.get('dir', 'ریزش شدید طلا')}\n"
+                # Multi-Asset Reaction & Surprise Probability Synthesis
+                high_gold = target_ev.get("reaction_higher", {}).get("gold", {})
+                low_gold = target_ev.get("reaction_lower", {}).get("gold", {})
+                crypto_pred = target_ev.get("crypto_prediction", {})
+
+                # Dynamic Surprise Direction Analysis:
+                # If surprise risk > 50%, the danger of unexpected data is HIGH
+                surprise_favored_dir = ""
+                consensus_prob = max(10, 100 - s_risk)
+                if s_risk >= 50:
+                    surprise_favored_dir = (
+                        f"\n\n💥 **کالبدشکافی رادار غافلگیری (%{s_risk} ریسک تله وال‌استریت):**\n"
+                        f"• **احتمال غافلگیری یا تله:** **%{s_risk}** (در برابر فقط %{consensus_prob} احتمال تحقق آرام اجماع بازار)\n"
+                        f"• **جهت دارایی‌ها در شوک غافلگیری:**\n"
+                        f"  - **🥇 انس جهانی طلا (XAU/USD):** {high_gold.get('arrow', '⬇️')} **{high_gold.get('dir', 'نزولی و شوک ریزش')}** (پیش‌بینی شوک نوسانی: **{vol_fa}**)\n"
+                        f"  - **⚡ ارز دیجیتال (BTC):** 🔴 **{crypto_pred.get('down_scenario', 'ریزش و هانت لانگ‌ها')}**\n"
+                        f"  - **💵 شاخص دلار آمریکا (DXY):** ⬆️ جهش ناگهانی و تقویت تقاضای نقدی دلار\n"
+                        f"• **جهت در سناریوی خلاف غافلگیری (تحقق آرام عدد اجماع - %{consensus_prob} شانس):**\n"
+                        f"  - **🥇 طلا:** {gold_re.get('arrow', '⬆️')} {gold_re.get('dir', 'صعودی')} | **⚡ کریپتو:** {crypto_re.get('arrow', '⬆️')} {crypto_re.get('dir', 'پامپ')}\n"
                     )
+                else:
+                    surprise_favored_dir = (
+                        f"\n\n📊 **توزیع احتمالات جهت حرکت بازار:**\n"
+                        f"• **احتمال همسویی آرام با بازار:** **%{consensus_prob}** (ریسک غافلگیری تنها %{s_risk} است)\n"
+                        f"• **جهت مورد انتظار طلا (XAU/USD):** {gold_re.get('arrow', '⬆️')} **{gold_re.get('dir', 'صعودی')}** ({vol_fa})\n"
+                        f"• **جهت مورد انتظار بیت‌کوین (BTC):** {crypto_re.get('arrow', '⬆️')} **{crypto_re.get('dir', 'صعودی')}**\n"
+                    )
+
+                # Final Countdown & Entry Protocol (Roadmap to the zero hour)
+                roadmap_section = (
+                    f"\n🚦 **نقشه راه اخذ نظر قطعی ورود با نزدیک شدن به موعد خبر:**\n"
+                    f"1. **تا ۲۴ ساعت قبل از خبر (ارزیابی بنیادین):** جهت وزنی روی {('سناریوی غافلگیری' if s_risk >= 50 else 'سناریوی رشد ارگانیک')} است، اما هیچ اردر لوریج‌داری نباید باز باشد.\n"
+                    f"2. **۴ الی ۶ ساعت قبل از انتشار:** ایجنت جریان نقدینگی آپشن‌ها و جریان اوراق ۱۰ ساله (US10Y) را می‌سنجد.\n"
+                    f"3. **۱۵ دقیقه قبل از موعد (حکم قطعی ورود):** با پرسش مجدد در چت یا چک کردن تقویم کلان، **جهت قطعی (Action Verdict: LONG یا SHORT)، محدوده ورود به پیپ/دلار و حد ضرر محافظتی** نهایی صادر می‌شود."
+                )
 
                 return (
                     f"### 🏛️ کالبدشکافی اختصاصی ایجنت از رویداد کلان **{ev_title}**\n\n"
@@ -2209,8 +2232,9 @@ class AgentAdvisor:
                     f"🔬 **راستی‌آزمایی داده‌های زیرپوستی ایجنت (Data Cross-Check):**\n{crosscheck}\n\n"
                     f"⚖️ **حکم و موضع نهایی هوش آسمان:**\n**{verdict}**\n{details}\n\n"
                     f"🎯 **تارگت‌های پیش‌بینی شوک قیمتی در لحظه انتشار:**\n{shock}"
-                    f"{gold_section}\n\n"
-                    f"🛡️ **دستورالعمل مدیریت فیوز:** از ۴۵ دقیقه قبل تا ۳۰ دقیقه بعد از خبر، تمام معاملات اهرم‌دار پرریسک را متوقف کنید."
+                    f"{surprise_favored_dir}"
+                    f"{roadmap_section}\n\n"
+                    f"🛡️ **دستورالعمل فیوز کلان:** از ۴۵ دقیقه قبل تا ۳۰ دقیقه بعد از خبر، تمام معاملات اهرم‌دار پرریسک را متوقف کنید."
                 )
             except Exception:
                 pass
