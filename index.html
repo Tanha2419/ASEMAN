@@ -2860,7 +2860,8 @@
               </div>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-              <select id="liqTerminalSymbolSelect" onchange="fetchLiquidityTerminalSuite(this.value)" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255, 145, 0, 0.5); padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+              <!-- 1. Original 8 Coin Dropdown (Kept exactly as requested) -->
+              <select id="liqTerminalSymbolSelect" onchange="handleLiqSelectChange(this.value)" style="background: #1e293b; color: #f8fafc; border: 1px solid rgba(255, 145, 0, 0.5); padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
                 <option value="BTC" selected>₿ Bitcoin (BTCUSDT)</option>
                 <option value="ETH">Ξ Ethereum (ETHUSDT)</option>
                 <option value="SOL">◎ Solana (SOLUSDT)</option>
@@ -2870,7 +2871,16 @@
                 <option value="SUI">💧 Sui (SUIUSDT)</option>
                 <option value="PEPE">🐸 Pepe (PEPEUSDT)</option>
               </select>
-              <button onclick="fetchLiquidityTerminalSuite()" class="copy-btn" style="padding: 7px 16px; font-size: 0.82rem; background: rgba(255, 145, 0, 0.2); border-color: rgba(255, 145, 0, 0.6); color: #ffb74d;">
+
+              <!-- 2. New Custom Coin Search Box for Any Cryptocurrency -->
+              <div style="display: flex; align-items: center; background: rgba(15, 23, 42, 0.9); border: 1px solid #38bdf8; border-radius: 8px; padding: 2px 4px;">
+                <input type="text" id="liqCustomSymbolInput" placeholder="ارز دلخواه (مثلاً ADA, AVAX)..." style="background: transparent; border: none; color: #fff; padding: 6px 10px; font-size: 0.82rem; font-weight: 700; width: 145px; outline: none; text-transform: uppercase;" onkeydown="if(event.key==='Enter'){handleLiqCustomSearch(); event.preventDefault();}" />
+                <button type="button" onclick="handleLiqCustomSearch()" style="background: linear-gradient(135deg, #00d2ff, #0077b6); color: #000; font-weight: 800; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">
+                  🔍 بررسی
+                </button>
+              </div>
+
+              <button onclick="fetchLiquidityTerminalSuite()" class="copy-btn" style="padding: 8px 16px; font-size: 0.82rem; background: rgba(255, 145, 0, 0.2); border-color: rgba(255, 145, 0, 0.6); color: #ffb74d;">
                 🔄 بازخوانی زنده ترمینال
               </button>
             </div>
@@ -6447,6 +6457,40 @@
     }
 
     // --- Institutional Liquidity & Arkham Suite Engine ---
+    
+    // --- Liquidity Terminal Symbol Selection & Custom Search Handlers ---
+    function handleLiqSelectChange(val) {
+      const customInp = document.getElementById("liqCustomSymbolInput");
+      if (customInp) customInp.value = "";
+      fetchLiquidityTerminalSuite(val);
+    }
+
+    function handleLiqCustomSearch() {
+      const customInp = document.getElementById("liqCustomSymbolInput");
+      if (!customInp) return;
+      let val = customInp.value.trim().toUpperCase();
+      if (!val) {
+        showToast("لطفاً نام نماد ارز مورد نظر را وارد کنید (مانند NEAR یا AVAX)");
+        return;
+      }
+      val = val.replace("USDT", "").replace("USD", "").trim();
+
+      // Check if it already exists in the 8-coin dropdown, else add as active option
+      const selectEl = document.getElementById("liqTerminalSymbolSelect");
+      if (selectEl) {
+        let optExists = Array.from(selectEl.options).some(o => o.value === val);
+        if (!optExists) {
+          const newOpt = document.createElement("option");
+          newOpt.value = val;
+          newOpt.innerText = `💎 ${val} (${val}USDT)`;
+          selectEl.appendChild(newOpt);
+        }
+        selectEl.value = val;
+      }
+
+      fetchLiquidityTerminalSuite(val);
+    }
+
     async function fetchLiquidityTerminalSuite(symbol) {
       const sym = symbol || (document.getElementById("liqTerminalSymbolSelect") ? document.getElementById("liqTerminalSymbolSelect").value : "BTC") || "BTC";
       showToast(`در حال تحلیل و بازخوانی ترمینال نقدینگی و شناسنامه نهنگ‌ها (${sym})...`);
