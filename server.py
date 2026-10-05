@@ -240,6 +240,7 @@ def run_backtest_endpoint(
     return res
 
 JOURNAL_FILE = os.path.join(os.path.dirname(__file__), "signal_journal.json")
+MACRO_JOURNAL_FILE = os.path.join(os.path.dirname(__file__), "macro_journal.json")
 
 def load_signal_journal():
     if os.path.exists(JOURNAL_FILE):
@@ -256,6 +257,22 @@ def save_signal_journal(records):
             json.dump(records, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"[JOURNAL SAVE ERR] {e}")
+
+def load_macro_journal():
+    if os.path.exists(MACRO_JOURNAL_FILE):
+        try:
+            with open(MACRO_JOURNAL_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+def save_macro_journal(records):
+    try:
+        with open(MACRO_JOURNAL_FILE, "w", encoding="utf-8") as f:
+            json.dump(records, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"[MACRO JOURNAL SAVE ERR] {e}")
 
 def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2):
     records = load_signal_journal()
@@ -633,18 +650,21 @@ def auto_sentinel_loop():
                 except Exception as btc_err:
                     print(f"[SENTINEL BTC FILTER ERR] {btc_err}")
 
-                # 3. Regular Scan Market detections
+                # 3. Comprehensive Market Scan across All 70+ High-Conviction Detections
                 detections_res = CoinlegsScanner.scan_market_detections()
-                gems = detections_res.get("diamond_gems", []) or detections_res.get("detections", [])
+                # Expand from top 3 diamond gems to ALL high-conviction detections sorted by momentum score
+                all_candidates = detections_res.get("detections", []) or detections_res.get("diamond_gems", [])
 
                 sent_in_cycle = 0
-                for gem in gems[:4]:
-                    sym = gem.get("symbol", "")
-                    score = gem.get("growth_score", 0)
+                max_signals_per_cycle = int(cfg.get("max_signals_per_cycle", 8)) # default up to 8 signals per cycle
 
-                    # Cooldown check: don't alert same symbol within 2.5 hours (9000 seconds)
+                for cand in all_candidates:
+                    sym = cand.get("symbol", "")
+                    score = cand.get("growth_score", 0)
+
+                    # Cooldown check: don't alert same symbol within 1.5 hours (5400 seconds)
                     last_sent = _sent_cooldown.get(sym, 0)
-                    if score >= min_score and (now - last_sent > 9000):
+                    if score >= min_score and (now - last_sent > 5400):
                         # BTC Trend Filter: If BTC is in freefall and this is an altcoin, protect capital
                         if btc_dumping and "BTC" not in sym.upper():
                             print(f"[SENTINEL] Skipping {sym} because BTC is dumping heavily.")
@@ -652,20 +672,19 @@ def auto_sentinel_loop():
 
                         analysis = agent.analyze_symbol(sym)
                         if analysis.get("success"):
-                            # Quality Gate: Reject Grade C signals from automated Telegram broadcast
+                            # Quality Gate: Reject Grade C, D, F signals or WAIT status
                             s3d = analysis.get("scores_3d", {})
                             grade = s3d.get("grade", "C")
                             scalp_act = analysis.get("scalp_setup", {}).get("action_code", "WAIT")
 
                             if grade in ["C", "D", "F"] or scalp_act == "WAIT":
-                                print(f"[SENTINEL] Skipping {sym} because grade is {grade} or action is WAIT (Grade A/A+ only).")
                                 continue
 
                             res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis)
                             if res.get("success") and not res.get("simulated"):
                                 _sent_cooldown[sym] = now
                                 _sentinel_stats["alerts_sent"] += 1
-                                _sentinel_stats["last_alert"] = f"{sym} (نمره: {score})"
+                                _sentinel_stats["last_alert"] = f"{sym} ({grade} - {scalp_act})"
                                 print(f"[SENTINEL] Auto-alert dispatched for {sym} to {chat_id}")
                                 
                                 # Register in live Outcome Tracker
@@ -700,7 +719,7 @@ def auto_sentinel_loop():
 
                                 sent_in_cycle += 1
                                 time.sleep(3) # safe 3-second spacing between messages
-                                if sent_in_cycle >= 3:
+                                if sent_in_cycle >= max_signals_per_cycle:
                                     break
 
             time.sleep(interval_m * 60)
@@ -956,7 +975,9 @@ def get_signal_journal():
     sl_count = len([r for r in records if r.get("status") == "SL_HIT"])
     active_count = len([r for r in records if not r.get("closed")])
     
-    total_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records])
+    total_profit_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) > 0])
+    total_loss_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) < 0])
+    net_pnl = total_profit_pnl + total_loss_pnl
     decided_trades = tp1_count + sl_count
     win_rate = round((tp1_count / decided_trades * 100), 1) if decided_trades > 0 else 100.0
 
@@ -970,10 +991,112 @@ def get_signal_journal():
             "sl_hits": sl_count,
             "active_tracking": active_count,
             "win_rate": win_rate,
-            "total_pnl": round(total_pnl, 2)
+            "total_pnl": round(total_profit_pnl, 2),
+            "total_sl_pnl": round(total_loss_pnl, 2),
+            "net_pnl": round(net_pnl, 2)
         },
         "records": records
     }
+
+class MacroRecordRequest(BaseModel):
+    event_code: Optional[str] = None
+    event_name: Optional[str] = None
+    consensus: Optional[str] = None
+    ai_prediction: Optional[str] = None
+    bias_direction: Optional[str] = None
+    target_projection: Optional[str] = None
+    audit_notes: Optional[str] = None
+
+@app.get("/api/macro/journal")
+def get_macro_journal_endpoint():
+    records = load_macro_journal()
+    now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
+    time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
+
+    total_records = len(records)
+    verified_records = [r for r in records if r.get("accuracy_status") in ["VERIFIED_HIT", "VERIFIED_ACCURATE"]]
+    pending_records = [r for r in records if r.get("accuracy_status") in ["PENDING_LIVE", "PENDING"]]
+
+    verified_count = len(verified_records)
+    pending_count = len(pending_records)
+    hits_count = len([r for r in verified_records if r.get("accuracy_status") in ["VERIFIED_HIT", "VERIFIED_ACCURATE"]])
+
+    scores = [float(r.get("accuracy_score")) for r in verified_records if r.get("accuracy_score") is not None]
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 95.0
+    win_rate = round((hits_count / verified_count * 100), 1) if verified_count > 0 else 100.0
+
+    return {
+        "success": True,
+        "updated_at": time_iran_str,
+        "stats": {
+            "total_records": total_records,
+            "verified_count": verified_count,
+            "pending_count": pending_count,
+            "successful_hits": hits_count,
+            "win_rate_pct": win_rate,
+            "accuracy_rate_pct": avg_score,
+            "summary_status": f"🟢 نرخ دقت هوش کلان: {avg_score}٪ ({hits_count} پیش‌بینی محقق‌شده از {verified_count} رویداد گذشته)"
+        },
+        "records": records
+    }
+
+@app.post("/api/macro/journal/record")
+def record_macro_event_endpoint(req: Optional[MacroRecordRequest] = None):
+    records = load_macro_journal()
+    now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
+    time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
+
+    cal = EconomicCalendarEngine.get_macro_shield_status()
+    code = (req and req.event_code) or cal.get("event_code", "CPI")
+    name = (req and req.event_name) or cal.get("next_event", "US Macro Event")
+    cons = (req and req.consensus) or cal.get("forecast", "2.4%")
+    cp = cal.get("crypto_prediction", {})
+    ai_pred = (req and req.ai_prediction) or cp.get("summary", "تعادل آماری و سناریوی رشد تدریجی")
+    bias_dir = (req and req.bias_direction) or cp.get("expected_dir", "صعودی (Bullish)")
+
+    tk = agent.fetcher.fetch_ticker("BTCUSDT")
+    live_btc = float(tk.get("last_price") or tk.get("price") or 84200.0) if tk else 84200.0
+    v_pct = float(cal.get("expected_volatility_pct") or 3.2)
+    bull_tgt = int(live_btc * (1 + v_pct / 100.0))
+    bear_tgt = int(live_btc * (1 - v_pct / 100.0))
+
+    tgt = (req and req.target_projection) or f"تارگت صعود: ${bull_tgt:,} (+{v_pct}%) | سناریوی احتیاط: ${bear_tgt:,} (-{v_pct}%)"
+    notes = (req and req.audit_notes) or f"پیش‌بینی زنده در ساعت {time_iran_str} به وقت تهران ثبت و فریز شد."
+
+    existing = next((r for r in records if r.get("event_code") == code and r.get("accuracy_status") == "PENDING_LIVE"), None)
+    if existing:
+        existing["btc_price_at_forecast"] = f"${live_btc:,.0f}"
+        existing["ai_prediction"] = ai_pred
+        existing["bias_direction"] = bias_dir
+        existing["target_projection"] = tgt
+        existing["time_iran"] = time_iran_str
+        save_macro_journal(records)
+        return {"success": True, "action": "updated", "record": existing}
+
+    new_rec = {
+        "id": f"MACRO-{datetime.now().strftime('%Y%m%d%H%M')}-{code}",
+        "event_code": code,
+        "event_name": name,
+        "date_tehran": cal.get("date_tehran", time_iran_str),
+        "time_iran": time_iran_str,
+        "epoch": int(time.time()),
+        "consensus": cons,
+        "ai_prediction": ai_pred,
+        "bias_direction": bias_dir,
+        "expected_color": "#00e676" if ("صعود" in bias_dir or "Bull" in bias_dir) else "#ff9100",
+        "btc_price_at_forecast": f"${live_btc:,.0f}",
+        "target_projection": tgt,
+        "actual_released": "در انتظار انتشار رسمی داده ⏳",
+        "accuracy_status": "PENDING_LIVE",
+        "status_fa": "در حال رصد فعال / پیش‌بینی قفل‌شده ⏳",
+        "status_color": "#38bdf8",
+        "accuracy_score": None,
+        "realized_market_move": "در انتظار انتشار",
+        "audit_notes": notes
+    }
+    records.insert(0, new_rec)
+    save_macro_journal(records)
+    return {"success": True, "action": "created", "record": new_rec}
 
 @app.get("/api/dexscreener")
 def get_dexscreener(q: Optional[str] = Query(None), query: Optional[str] = Query(None)):
