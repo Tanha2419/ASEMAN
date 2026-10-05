@@ -7718,6 +7718,80 @@
                 </div>
               </div>
 
+              <!-- Collapsible Surprise Risk Breakdown Drawer (نمودار کشویی کالبدشکافی غافلگیری) -->
+              <details style="background: rgba(0,0,0,0.4); border: 1px solid ${sColor}; border-radius: 8px; margin-bottom: 12px; overflow: hidden;" ${sRisk >= 50 ? 'open' : ''}>
+                <summary style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; cursor: pointer; user-select: none; background: rgba(255,255,255,0.03); transition: background 0.2s;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.15rem;">📊</span>
+                    <strong style="color: ${sColor}; font-size: 0.86rem;">
+                      کالبدشکافی رادار غافلگیری (${sRisk}% ریسک تله وال‌استریت): چرا این عدد و در شوک چه می‌شود؟
+                    </strong>
+                  </div>
+                  <span style="font-size: 0.74rem; color: #cbd5e1; background: rgba(255,255,255,0.08); padding: 3px 8px; border-radius: 4px;">
+                    کلیک برای باز/بستن کشو ▾
+                  </span>
+                </summary>
+                
+                <div style="padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.82rem; line-height: 1.75; color: #cbd5e1;">
+                  <!-- Dual Comparative Progress Meter Bar -->
+                  <div style="margin-bottom: 12px; background: rgba(255,255,255,0.04); border-radius: 6px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.06);">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.74rem; margin-bottom: 5px; font-weight: 700;">
+                      <span style="color: ${sColor};">⚠️ احتمال غافلگیری یا تله: ${sRisk}%</span>
+                      <span style="color: #00e676;">🟢 احتمال تحقق آرام اجماع بازار: ${100 - sRisk}%</span>
+                    </div>
+                    <div style="height: 10px; background: rgba(0, 230, 118, 0.25); border-radius: 5px; overflow: hidden; display: flex;">
+                      <div style="width: ${sRisk}%; height: 100%; background: ${sColor}; transition: width 0.5s;"></div>
+                      <div style="width: ${100 - sRisk}%; height: 100%; background: #00e676; transition: width 0.5s;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Point 1 -->
+                  <div style="margin-bottom: 10px; background: rgba(0,0,0,0.25); padding: 10px 12px; border-radius: 6px; border-right: 3px solid ${sColor};">
+                    <strong style="color: #fff; font-size: 0.85rem; display: block; margin-bottom: 4px;">
+                      ۱. عدد ${sRisk}٪ ریسک تله از کجا آمده و چرا معتبر است؟
+                    </strong>
+                    <div>
+                      سیستم برای پیش‌بینی اخبار، فقط به ادعاها و شایعات وال‌استریت گوش نمی‌دهد؛ بلکه داده‌های زیرپوستی را تطبیق می‌دهد:
+                    </div>
+                    <ul style="margin: 6px 18px 0 0; padding: 0; color: #e2e8f0; font-size: 0.8rem;">
+                      <li><strong>قیمت نفت بالای ۹۰ دلار مانده است:</strong> وقتی نفت و انرژی گران است، هزینه تولید و حمل‌ونقل کالا بالا می‌رود، پس تورم به این راحتی پایین نمی‌آید (چسبندگی تورم).</li>
+                      <li><strong>بازدهی اوراق ۱۰ ساله آمریکا (US10Y) روی ۵.۲۷٪ قفل شده:</strong> اگر وال‌استریت واقعاً مطمئن بود تورم افت کرده، بهره اوراق باید پایین می‌ریخت؛ اما نریخته است!</li>
+                    </ul>
+                    <div style="color: ${sColor}; margin-top: 5px; font-size: 0.78rem; font-weight: 600;">
+                      👈 به همین دلیل هوش مصنوعی کشف کرده که بازار بیش از حد خوش‌بین شده (${sRisk}% ریسک تله) و احتمال اعلام داده متفاوت از انتظار بسیار بالاست.
+                    </div>
+                  </div>
+
+                  <!-- Point 2 -->
+                  <div style="margin-bottom: 10px; background: rgba(0,0,0,0.25); padding: 10px 12px; border-radius: 6px; border-right: 3px solid #ff3366;">
+                    <strong style="color: #fff; font-size: 0.85rem; display: block; margin-bottom: 4px;">
+                      ۲. چرا در صورت غافلگیری، طلا و بیت‌کوین می‌ریزند و دلار بالا می‌رود؟
+                    </strong>
+                    <div>
+                      رابطه این سه دارایی در زمان خبر یک قانون فیزیکی در بازار است:
+                    </div>
+                    <ul style="margin: 6px 18px 0 0; padding: 0; color: #e2e8f0; font-size: 0.8rem;">
+                      <li><strong>شاخص دلار (DXY) ⬆️ جهش می‌کند:</strong> چون ترس از بالا ماندن نرخ بهره باعث می‌شود سود بانکی دلار افزایش یابد و تقاضای نقدی دلار تقویت شود.</li>
+                      <li><strong>انس طلا (Gold) ⬇️ افت شدید (۱۵۰+ الی ۲۵۰ پیپ):</strong> وقتی سود بدون ریسک بانکی دلار بالا می‌رود، نگهداری شمش طلا که سود ماهیانه ندارد موقتاً جذابیتش را از دست می‌دهد و فروشنده‌ها فعال می‌شوند.</li>
+                      <li><strong>بیت‌کوین (BTC) ⬇️ افت ۳.۵٪ تا ۴.۵٪:</strong> بازارهای مالی پرریسک به دلیل ترس از کمبود نقدینگی و بسته شدن اهرم‌های لانگ، با موج فروش و اصلاح عمیق قیمت مواجه می‌شوند.</li>
+                    </ul>
+                  </div>
+
+                  <!-- Point 3 -->
+                  <div style="background: rgba(0,0,0,0.25); padding: 10px 12px; border-radius: 6px; border-right: 3px solid #ffd700;">
+                    <strong style="color: #ffd700; font-size: 0.85rem; display: block; margin-bottom: 4px;">
+                      ۳. منظور از «هانت لانگ‌ها و تله وال‌استریت» چیست؟ چطور فریب نخوریم؟
+                    </strong>
+                    <div style="font-size: 0.8rem; color: #cbd5e1;">
+                      وقتی جو بازار قبل از خبر بیش از حد صعودی است، تریدرهای خرد زیادی دکمه خرید با اهرم بالا می‌زنند. نهنگ‌های وال‌استریت قبل از جهت‌گیری اصلی، یک شدوی شارپ نزولی می‌زنند تا تمام استاپ‌لاس‌های این افراد را درو کنند (Stop Hunt)؛ سپس با قیمت‌های بسیار ارزان خرید اصلی خودشان را انجام می‌دهند.
+                    </div>
+                    <div style="color: #00e676; margin-top: 4px; font-weight: 700; font-size: 0.78rem;">
+                      🛡️ راهکار محافظت: قبل از ساعت انتشار خبر هیچ پوزیشن لوریج‌دار باز نگذارید و تا ۱۰ دقیقه پس از انتشار منتظر تخلیه هیجان اولیه بمانید.
+                    </div>
+                  </div>
+                </div>
+              </details>
+
               <!-- Beginner Friendly Explanation Box -->
               ${ag.beginner_explanation ? `
               <div style="background: rgba(0, 210, 255, 0.08); border-right: 4px solid #00d2ff; padding: 12px 14px; border-radius: 6px; margin-bottom: 12px;">
