@@ -2852,7 +2852,7 @@
         </div>
 
         <!-- Institutional Consensus Flag Banner -->
-        <div id="instConsensusBanner" style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.35); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; backdrop-filter: blur(8px);">
+        <div id="instConsensusBanner" style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.35); border-radius: 10px; padding: 14px 18px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; backdrop-filter: blur(8px);">
           <div style="display: flex; align-items: center; gap: 12px;">
             <div style="font-size: 1.8rem;" id="instConsensusIcon">🟢</div>
             <div>
@@ -2867,6 +2867,162 @@
           </div>
           <div style="font-family: var(--font-mono); font-size: 0.8rem; color: #ffd700; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,215,0,0.25);" id="instConsensusStats">
             احتمال موفقیت سازمانی: 88%
+          </div>
+        </div>
+
+        <!-- Direct Heatmap Action Command Center (اتاق فرمان و دستور مستقیم ترید با هیت‌مپ) -->
+        <div id="liqDirectActionCenter" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(26, 32, 53, 0.95)); border: 2px solid #ffd700; border-radius: var(--radius); padding: 22px; margin-bottom: 22px; box-shadow: 0 12px 35px rgba(0,0,0,0.6);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 2rem;">🎮</span>
+              <div>
+                <div style="font-size: 1.15rem; font-weight: 900; color: #ffd700; display: flex; align-items: center; gap: 8px;">
+                  اتاق فرمان مستقیم: طبق این هیت‌مپ دقیقاً چه معامله‌ای باز کنم؟
+                </div>
+                <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 3px;">
+                  بدون نیاز به تحلیل پیچیده؛ نقشه راه ۴ مرحله‌ای خرید، فروش، حد ضرر و تارگت سود بر اساس تله‌های نقدینگی
+                </div>
+              </div>
+            </div>
+            <!-- Giant Action Status Badge -->
+            <div id="liqMainActionBadge" style="font-size: 1rem; font-weight: 900; padding: 8px 18px; border-radius: 8px; background: #00e676; color: #000; box-shadow: 0 0 15px rgba(0, 230, 118, 0.4); text-align: center;">
+              در حال ارزیابی...
+            </div>
+          </div>
+
+          <!-- 4 Concrete Steps Cards -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px;">
+            <!-- Step 1: Entry -->
+            <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 14px;">
+              <div style="font-size: 0.76rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">۱. در چه قیمتی وارد شویم؟ (Entry)</div>
+              <div id="liqCmdEntry" style="font-size: 1.2rem; font-weight: 900; color: #38bdf8; font-family: var(--font-mono);">-</div>
+              <div id="liqCmdEntryNote" style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">محدوده امن ورود در پولبک</div>
+            </div>
+
+            <!-- Step 2: Stop Loss -->
+            <div style="background: rgba(255, 51, 102, 0.08); border: 1px solid rgba(255, 51, 102, 0.35); border-radius: 10px; padding: 14px;">
+              <div style="font-size: 0.76rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">۲. حد ضرر قطعی کجاست؟ (Stop Loss)</div>
+              <div id="liqCmdSl" style="font-size: 1.2rem; font-weight: 900; color: #ff3366; font-family: var(--font-mono);">-</div>
+              <div id="liqCmdSlNote" style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">پشت سنگر نقدینگی نهنگ‌ها</div>
+            </div>
+
+            <!-- Step 3: Take Profit -->
+            <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.35); border-radius: 10px; padding: 14px;">
+              <div style="font-size: 0.76rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">۳. کجا سود را برداریم؟ (Take Profit)</div>
+              <div id="liqCmdTp" style="font-size: 1.2rem; font-weight: 900; color: #00e676; font-family: var(--font-mono);">-</div>
+              <div id="liqCmdTpNote" style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">دقیقاً در نقطه آهنربای نقدینگی</div>
+            </div>
+
+            <!-- Step 4: Win Probability -->
+            <div style="background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.35); border-radius: 10px; padding: 14px;">
+              <div style="font-size: 0.76rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">۴. جهت مغناطیسی قیمت</div>
+              <div id="liqCmdDirection" style="font-size: 1.15rem; font-weight: 900; color: #ffd700;">-</div>
+              <div id="liqCmdRr" style="font-size: 0.72rem; color: #64748b; margin-top: 3px;">نسبت سود به زیان: حداقل ۱ به ۲</div>
+            </div>
+          </div>
+
+          <!-- The #1 Fatal Mistake to Avoid (قانون طلایی دو کلمه‌ای) -->
+          <div id="liqCmdFatalMistake" style="background: rgba(255, 51, 102, 0.12); border: 1px solid rgba(255, 51, 102, 0.35); border-radius: 8px; padding: 12px 16px; font-size: 0.82rem; color: #fca5a5; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.4rem;">⚠️</span>
+            <div id="liqCmdFatalMistakeText">
+              <strong>قانون دو کلمه‌ای نجات حساب:</strong> در حال محاسبه خطای ممنوعه بر اساس اردر فلو...
+            </div>
+          </div>
+        </div>
+
+        <!-- Plain-Language AI Interpreter & Human Guide (مترجم هوشمند نهنگ‌ها به زبان ساده) -->
+        <div id="liqPlainLanguageBox" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); border: 1px solid rgba(255, 215, 0, 0.45); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.45);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.4rem;">🗣️</span>
+              <div>
+                <strong style="font-size: 1.05rem; color: #ffd700;">تحلیل داستان بازار: پشت پرده این اعداد چیست؟</strong>
+                <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">توضیحات تکمیلی برای کسانی که می‌خواهند دلیل حرکت نهنگ‌ها را بدانند</div>
+              </div>
+            </div>
+            <span style="background: rgba(255, 215, 0, 0.15); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.3); font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; font-weight: 800;">
+              روایت بازار
+            </span>
+          </div>
+
+          <!-- 3 Plain Language Insight Cards -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+            <!-- Story Card -->
+            <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 14px;">
+              <div style="font-weight: 800; color: #38bdf8; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>🎯</span> داستان لحظه‌ای نقدینگی و آهنربا:
+              </div>
+              <div id="liqPlainStory" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
+                در حال فراخوانی مختصات استخرهای نقدینگی...
+              </div>
+            </div>
+
+            <!-- Whale Shield Card -->
+            <div style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 12px 14px;">
+              <div style="font-weight: 800; color: #c084fc; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>🛡️</span> سنگر نهنگ‌ها و دیواره‌های اردر بوک:
+              </div>
+              <div id="liqPlainWhaleShield" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
+                در حال بررسی قیمت میانگین خرید وال‌ها و دیوارهای پنهان عمق بازار...
+              </div>
+            </div>
+
+            <!-- Action Verdict Card -->
+            <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 8px; padding: 12px 14px;">
+              <div style="font-weight: 800; color: #00e676; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>🚦</span> دستور عملیاتی شفاف (الان چه کنیم؟):
+              </div>
+              <div id="liqPlainAction" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
+                در حال تولید دستور معاملاتی انضباطی بر اساس اردر فلو...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsible Decoder / Cheat-Sheet Drawer (رمزگشایی اصطلاحات به زبان آدمیزاد) -->
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; margin-bottom: 22px; overflow: hidden;">
+          <div onclick="toggleLiqDecoderDrawer()" style="padding: 12px 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: rgba(56, 189, 248, 0.06); user-select: none;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span id="liqDecoderIcon" style="font-size: 0.95rem; color: #38bdf8; transition: transform 0.3s; display: inline-block;">▼</span>
+              <strong style="color: #38bdf8; font-size: 0.88rem;">💡 چطور مثل یک نهنگ این نقشه را بخوانیم؟ (راهنمای سریع رمزگشایی ۴ مفهوم کلیدی به زبان ساده)</strong>
+            </div>
+            <span style="font-size: 0.74rem; color: #94a3b8;">برای باز/بستن کلیک کنید</span>
+          </div>
+
+          <div id="liqDecoderBody" style="padding: 16px 18px; display: block; border-top: 1px solid rgba(255,255,255,0.06);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; font-size: 0.8rem; line-height: 1.65;">
+              <div style="background: rgba(0,0,0,0.3); border-right: 3px solid #ffd700; padding: 10px 14px; border-radius: 4px;">
+                <strong style="color: #ffd700;">🧲 ۱. آهنربای قیمت (Magnet Price):</strong>
+                <div style="color: #cbd5e1; margin-top: 4px;">
+                  قیمت به سمت خطوط تحلیل تکنیکال نمی‌رود؛ به سمتی می‌رود که <strong>بیشترین استاپ‌لاس و پول بی‌پناه</strong> جمع شده است! صرافی قیمت را مثل جاروبرقی به این سطح می‌کشد تا پول‌ها را ببلعد، سپس برمی‌گردد.
+                  <br><span style="color: #86efac; font-weight: 700;">قانون طلایی:</span> هرگز برخلاف جهت آهنربا پوزیشن باز نکنید!
+                </div>
+              </div>
+
+              <div style="background: rgba(0,0,0,0.3); border-right: 3px solid #c084fc; padding: 10px 14px; border-radius: 4px;">
+                <strong style="color: #c084fc;">🏷️ ۲. خط دفاعی نهنگ‌ها (Arkham Cost Basis):</strong>
+                <div style="color: #cbd5e1; margin-top: 4px;">
+                  میانگین خرید کیف‌پول‌های سازمانی و صندوق‌هاست. نهنگ اجازه نمی‌دهد سرمایه‌اش بسوزد؛ وقتی قیمت به این خط می‌رسد، اردرهای خرید سنگین می‌گذارد و اجازه افت بیشتر نمی‌دهد.
+                  <br><span style="color: #86efac; font-weight: 700;">قانون طلایی:</span> ورود نزدیک به این خط، امن‌ترین و کم‌ریسک‌ترین معامله است.
+                </div>
+              </div>
+
+              <div style="background: rgba(0,0,0,0.3); border-right: 3px solid #00e676; padding: 10px 14px; border-radius: 4px;">
+                <strong style="color: #00e676;">🍔 ۳. جذب سفارشات (Order Absorption):</strong>
+                <div style="color: #cbd5e1; margin-top: 4px;">
+                  وقتی مردم عادی با ترس دکمه فروش مارکت را می‌زنند، اما قیمت ذره‌ای پایین نمی‌ریزد! چرا؟ چون نهنگ یک دیواره خرید عظیم گذاشته و تمام فروش‌ها را بلعیده است.
+                  <br><span style="color: #86efac; font-weight: 700;">قانون طلایی:</span> جذب فروش در کف = آغاز پامپ پرقدرت صعودی.
+                </div>
+              </div>
+
+              <div style="background: rgba(0,0,0,0.3); border-right: 3px solid #ff3366; padding: 10px 14px; border-radius: 4px;">
+                <strong style="color: #ff3366;">⚡ ۴. خوشه‌های اهرم ۱۰۰x و ۵۰x:</strong>
+                <div style="color: #cbd5e1; margin-top: 4px;">
+                  نقاط زرد و قرمز روی نقشه، قبرستان طمع‌کاران اهرم‌دار است. با یک نوسان ۰.۸٪ پولشان صفر می‌شود و همین استاپ‌ها، سوخت موتور نهنگ‌ها برای پرتاب قیمت به بالا یا پایین است.
+                  <br><span style="color: #86efac; font-weight: 700;">قانون طلایی:</span> همیشه منتظر بمانید تا استاپ‌های اهرم‌دارها زده شود، بعد وارد شوید.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -6529,6 +6685,19 @@
     let _currentRawLiqData = null;
     let _currentLiqFilter = 'ALL';
 
+    function toggleLiqDecoderDrawer() {
+      const body = document.getElementById('liqDecoderBody');
+      const icon = document.getElementById('liqDecoderIcon');
+      if (!body) return;
+      if (body.style.display === 'none') {
+        body.style.display = 'block';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      } else {
+        body.style.display = 'none';
+        if (icon) icon.style.transform = 'rotate(-90deg)';
+      }
+    }
+
     function setLiqLeverageFilter(mode) {
       _currentLiqFilter = mode;
       const bAll = document.getElementById("liqLevFilterAll");
@@ -6895,6 +7064,121 @@
 
         const duelVerdEl = document.getElementById("duelVerdictText");
         if (duelVerdEl) duelVerdEl.innerText = abs.action_verdict || abs.description || "-";
+
+        // --- Populate Direct Action Command Center (اتاق فرمان و دستور مستقیم ترید) ---
+        const mainBadgeEl = document.getElementById("liqMainActionBadge");
+        const cmdEntryEl = document.getElementById("liqCmdEntry");
+        const cmdEntryNoteEl = document.getElementById("liqCmdEntryNote");
+        const cmdSlEl = document.getElementById("liqCmdSl");
+        const cmdSlNoteEl = document.getElementById("liqCmdSlNote");
+        const cmdTpEl = document.getElementById("liqCmdTp");
+        const cmdTpNoteEl = document.getElementById("liqCmdTpNote");
+        const cmdDirEl = document.getElementById("liqCmdDirection");
+        const cmdRrEl = document.getElementById("liqCmdRr");
+        const cmdFatalTextEl = document.getElementById("liqCmdFatalMistakeText");
+
+        const cPrice = Number(data.current_price || 0);
+        const mPrice = Number(liq.magnet_price || cPrice);
+        const wCost = Number(whales.whale_avg_cost_basis || cPrice);
+        const bPrice = Number(bWall.price || (cPrice * 0.985));
+        const aPrice = Number(aWall.price || (cPrice * 1.015));
+
+        if (isBullishMagnet) {
+          if (mainBadgeEl) {
+            mainBadgeEl.innerText = "🟢 دستور صریح: پوزیشن خرید (LONG)";
+            mainBadgeEl.style.background = "#00e676";
+            mainBadgeEl.style.color = "#000";
+            mainBadgeEl.style.boxShadow = "0 0 16px rgba(0, 230, 118, 0.4)";
+          }
+          const eLow = Math.min(cPrice, Math.max(wCost, bPrice));
+          const eHigh = cPrice;
+          const slCalc = Math.min(bPrice * 0.992, cPrice * 0.982);
+          const riskDist = Math.max(1, Math.abs(cPrice - slCalc));
+          const rewDist = Math.max(1, Math.abs(mPrice - cPrice));
+          const rrCalc = (rewDist / riskDist).toFixed(1);
+
+          if (cmdEntryEl) cmdEntryEl.innerText = `$${Number(eLow).toLocaleString(undefined, {maximumFractionDigits: pDecimals})} - $${Number(eHigh).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
+          if (cmdEntryNoteEl) cmdEntryNoteEl.innerText = "ورود مطمئن در پولبک به میانگین یا قیمت جاری";
+
+          if (cmdSlEl) cmdSlEl.innerText = `$${Number(slCalc).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
+          if (cmdSlNoteEl) cmdSlNoteEl.innerText = "زیر دیواره خرید نهنگ (خروج قطعی در صورت شکست)";
+
+          if (cmdTpEl) cmdTpEl.innerText = `$${Number(mPrice).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
+          if (cmdTpNoteEl) cmdTpNoteEl.innerText = "دقیقاً روی خط آهنربا؛ جایی که استاپ شورت‌ها سوخته می‌شود";
+
+          if (cmdDirEl) cmdDirEl.innerText = "🟢 مگنت صعودی (کشش به بالا)";
+          if (cmdRrEl) cmdRrEl.innerText = `نسبت ریوارد به ریسک: ۱ به ${rrCalc}`;
+
+          if (cmdFatalTextEl) {
+            cmdFatalTextEl.innerHTML = `<strong>قانون دو کلمه‌ای نجات حساب:</strong> تا وقتی قیمت به <strong>${magPriceFmt}</strong> نرسیده، هرگز پوزیشن فروش (شورت) نگیرید! مارکت‌میکر در حال جارو کردن استاپ شورت‌هاست.`;
+          }
+        } else {
+          if (mainBadgeEl) {
+            mainBadgeEl.innerText = "🔴 دستور صریح: پوزیشن فروش (SHORT / HEDGE)";
+            mainBadgeEl.style.background = "#ff3366";
+            mainBadgeEl.style.color = "#fff";
+            mainBadgeEl.style.boxShadow = "0 0 16px rgba(255, 51, 102, 0.4)";
+          }
+          const eLow = cPrice;
+          const eHigh = Math.max(cPrice, Math.min(wCost, aPrice));
+          const slCalc = Math.max(aPrice * 1.008, cPrice * 1.018);
+          const riskDist = Math.max(1, Math.abs(slCalc - cPrice));
+          const rewDist = Math.max(1, Math.abs(cPrice - mPrice));
+          const rrCalc = (rewDist / riskDist).toFixed(1);
+
+          if (cmdEntryEl) cmdEntryEl.innerText = `$${Number(eLow).toLocaleString(undefined, {maximumFractionDigits: pDecimals})} - $${Number(eHigh).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
+          if (cmdEntryNoteEl) cmdEntryNoteEl.innerText = "ورود در پولبک به سمت مقاومت یا قیمت جاری";
+
+          if (cmdSlEl) cmdSlEl.innerText = `$${Number(slCalc).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
+          if (cmdSlNoteEl) cmdSlNoteEl.innerText = "بالای دیواره فروش اردر بوک (خروج اضطراری)";
+
+          if (cmdTpEl) cmdTpEl.innerText = `$${Number(mPrice).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
+          if (cmdTpNoteEl) cmdTpNoteEl.innerText = "دقیقاً در استخر کف؛ جایی که استاپ لانگ‌ها شکار می‌شود";
+
+          if (cmdDirEl) cmdDirEl.innerText = "🔴 مگنت نزولی (کشش به پایین)";
+          if (cmdRrEl) cmdRrEl.innerText = `نسبت ریوارد به ریسک: ۱ به ${rrCalc}`;
+
+          if (cmdFatalTextEl) {
+            cmdFatalTextEl.innerHTML = `<strong>قانون دو کلمه‌ای نجات حساب:</strong> قبل از اینکه قیمت به استخر کف <strong>${magPriceFmt}</strong> نرسد، با اهرم بالا دکمه خرید را نزنید! صرافی اول خریداران اهرم‌دار را تصفیه می‌کند.`;
+          }
+        }
+
+        // --- Populate Plain-Language AI Interpreter (مترجم هوشمند نهنگ‌ها به زبان ساده) ---
+        const plainStoryEl = document.getElementById("liqPlainStory");
+        const plainWhaleShieldEl = document.getElementById("liqPlainWhaleShield");
+        const plainActionEl = document.getElementById("liqPlainAction");
+
+        const curPriceFmt = `$${Number(data.current_price || 0).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}`;
+        const magPriceFmt = liq.magnet_price ? `$${Number(liq.magnet_price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}` : "-";
+        const whaleAvgFmt = whales.whale_avg_cost_basis_fmt || "-";
+
+        if (plainStoryEl) {
+          if (isBullishMagnet) {
+            plainStoryEl.innerHTML = `قیمت فعلی <strong>${curPriceFmt}</strong> است. مارکت‌میکر مثل آهنربا قیمت را به سمت سقف و استخر شورت‌ها در <strong>${magPriceFmt}</strong> می‌کشد تا حدود <strong>${liq.total_short_liq_fmt || "میلیون‌ها دلار"}</strong> استاپ‌لاس و پوزیشن‌های فروش اهرم‌دار را بسوزاند (Short Squeeze). شتاب عمومی رو به بالاست.`;
+          } else {
+            plainStoryEl.innerHTML = `قیمت فعلی <strong>${curPriceFmt}</strong> است و استخرهای پرپشت استاپ خریداران در کف <strong>${magPriceFmt}</strong> انباشته شده است (حدود <strong>${liq.total_long_liq_fmt || "میلیون‌ها دلار"}</strong>). صرافی‌ها تمایل دارند با یک شدوی نزولی، پوزیشن‌های لانگ خوش‌خیال را تصفیه کنند (Long Flush).`;
+          }
+        }
+
+        if (plainWhaleShieldEl) {
+          const wDist = parseFloat(whales.distance_from_whale_entry_pct || 0);
+          const bWallPriceFmt = bWall.price ? `$${Number(bWall.price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}` : "-";
+          if (wDist >= 0) {
+            plainWhaleShieldEl.innerHTML = `کیف‌پول‌های بزرگ و صندوق‌ها به طور میانگین در قیمت <strong>${whaleAvgFmt}</strong> خریده‌اند و اکنون در <strong>${wDist.toFixed(1)}٪ سود</strong> هستند. دیواره خرید فعال در تراز <strong>${bWallPriceFmt}</strong> به عنوان سنگر مستحکم وال‌ها مانع از ریزش شارپ می‌شود.`;
+          } else {
+            plainWhaleShieldEl.innerHTML = `نهنگ‌ها در قیمت <strong>${whaleAvgFmt}</strong> خریده‌اند و اکنون در <strong>${Math.abs(wDist).toFixed(1)}٪ زیان</strong> هستند. آن‌ها برای حفظ سرمایه با اردرهای جذب سنگین تلاش می‌کنند اجازه افت بیشتر قیمت از این محدوده را ندهند.`;
+          }
+        }
+
+        if (plainActionEl) {
+          if (isBullishMagnet && abs.directional_bias === "LONG") {
+            plainActionEl.innerHTML = `🟢 <strong>توصیه صریح:</strong> قدرت دست خریداران است. از شورت کردن زودهنگام اکیداً خودداری کنید؛ صبر کنید تا قیمت به تراز آهنربای <strong>${magPriceFmt}</strong> برسد. ورود لانگ در پولبک به نزدیکی میانگین نهنگ‌ها (<strong>${whaleAvgFmt}</strong>) بهترین نسبت سود به ریسک را دارد.`;
+          } else if (!isBullishMagnet && abs.directional_bias !== "LONG") {
+            plainActionEl.innerHTML = `🔴 <strong>توصیه صریح:</strong> خطر هانت استاپ‌های خریداران در کف بالاست. از ورودهای شتاب‌زده لانگ با اهرم سنگین بپرهیزید. اجازه دهید استاپ‌های کف در <strong>${magPriceFmt}</strong> پاکسازی شوند، سپس با تاییدیه دیواره خرید وارد شوید.`;
+          } else {
+            plainActionEl.innerHTML = `⚖️ <strong>توصیه صریح:</strong> نبرد شدید بین اردرهای صرافی و وال‌ها در جریان است. معامله در این ناحیه نیازمند استاپ ساختاری دقیق پشت سنگر <strong>${whaleAvgFmt}</strong> است و استفاده از اهرم‌های بالای ۵x مطلقاً ممنوع است.`;
+          }
+        }
 
         showToast(`ترمینال نقدینگی و شناسنامه نهنگ‌ها برای ${sym} به‌روزرسانی شد.`, 2500);
       } catch (err) {
