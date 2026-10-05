@@ -1741,9 +1741,11 @@ class CryptoTradingAgent:
         is_short_covering_trap = (deriv_regime == "LONG_ACCUMULATION" and "Short Covering" in str(derivatives_matrix.get("regime", "")))
         is_long_liquidation_trap = (deriv_regime == "SHORT_ACCUMULATION" and "Long Liquidation" in str(derivatives_matrix.get("regime", "")))
 
-        # --- GATE 2: Multi-Timeframe (MTF) Alignment ---
-        bullish_mtf = (bias_4h != "BEARISH_STRONG" and bias_15m != "BEARISH_STRONG")
-        bearish_mtf = (bias_4h != "BULLISH_STRONG" and bias_15m != "BULLISH_STRONG")
+        # --- GATE 2: Multi-Timeframe (MTF) Alignment (Strict Institutional Trend Gate) ---
+        # Never go LONG if 4H trend is in active BEARISH mode (avoid catching falling knives)
+        # Never go SHORT if 4H trend is in active BULLISH mode
+        bullish_mtf = (bias_4h in ["BULLISH", "BULLISH_STRONG", "NEUTRAL"] and bias_15m != "BEARISH_STRONG")
+        bearish_mtf = (bias_4h in ["BEARISH", "BEARISH_STRONG", "NEUTRAL"] and bias_15m != "BULLISH_STRONG")
 
         # 5-Layer Confluence Gates for M1/M5 Scalping (Institutional Quality Gate)
         bullish_aligned = (
@@ -1775,47 +1777,57 @@ class CryptoTradingAgent:
             direction = "LONG"
             
             fvg = smc.get("nearest_fvg")
+            retest_price = self._round_val(price - (0.4 * atr))
             if fvg and fvg.get("type") == "BULLISH_FVG" and fvg.get("top") < price:
                 entry_low = self._round_val(fvg["bottom"])
                 entry_high = self._round_val(min(price, fvg["top"]))
             else:
-                entry_low = self._round_val(min(price, ema20))
+                entry_low = self._round_val(min(retest_price, ema20))
                 entry_high = self._round_val(price)
                 
-            entry_str = f"{entry_low} - {entry_high}"
+            entry_str = f"{entry_low} - {entry_high} (ورود در پولبک)"
             
             # --- INSTITUTIONAL STRUCTURAL STOP LOSS (BULLISH) ---
             # Stop loss sits safely BELOW structural support & order block bottom,
             # fortified by a true ATR volatility buffer to eliminate micro-wick sweep outs.
-            sl_structural = nearest_sup * 0.995  # 0.5% below support
-            sl_volatility = price - max(1.8 * atr, price * 0.012) # minimum 1.2% distance
+            # Anti-Noise Wick Shield: minimum 1.8% distance so normal 5M/15M wicks never trigger SL
+            sl_structural = nearest_sup * 0.992  # 0.8% below structural support
+            sl_volatility = price - max(2.2 * atr, price * 0.018) # minimum 1.8% distance
             sl_raw = min(sl_structural, sl_volatility)
             
-            # Bound risk between 1.0% (anti-wick shield) and 3.2% (capital preservation)
+            # Bound risk between 1.8% (anti-wick shield) and 3.5% (capital preservation)
             risk = price - sl_raw
-            if risk < price * 0.010:
-                sl_raw = price * 0.990
+            if risk < price * 0.018:
+                sl_raw = price * 0.982
                 risk = price - sl_raw
-            elif risk > price * 0.032:
-                sl_raw = price * 0.968
+            elif risk > price * 0.035:
+                sl_raw = price * 0.965
                 risk = price - sl_raw
             sl = self._round_val(sl_raw)
             
-            # GATE 4: Dynamic Minimum Risk-to-Reward (R:R >= 1:2.0 on Target 2)
-            tp1 = self._round_val(price + 1.50 * risk)
-            tp2 = self._round_val(price + 2.50 * risk)
-            tp3 = self._round_val(max(price + 3.80 * risk, smc.get("bsl_pool_target", price * 1.035)))
+            # GATE 4: High-Winrate Staged Targets (TP1 Quick Bank + Breakeven Lock)
+            # TP1 (+0.8% to +1.2%): reached in 80%+ of momentum pushes -> Banks 50% profit & moves SL to entry
+            tp1_dist = max(price * 0.009, 0.65 * risk)
+            tp1 = self._round_val(price + tp1_dist)
+
+            # TP2 (+2.0% to +2.8%): structural extension
+            tp2_dist = max(price * 0.020, 1.80 * risk)
+            tp2 = self._round_val(price + tp2_dist)
+
+            # TP3 (+3.8% to +5.5%): liquidity pool hunt
+            tp3_dist = max(price * 0.038, 3.20 * risk)
+            tp3 = self._round_val(max(price + tp3_dist, smc.get("bsl_pool_target", price * 1.038)))
             
             rr_val = round((tp2 - price) / risk, 1) if risk > 0 else 2.5
             confidence = "92%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "88%"
             
             triggers = [
                 f"تاییدیه همسویی ساختاری نهادی (MTF 4H صعودی + عمق خرید {ob_ratio:.2f}x + فقدان دیوار فروش)",
-                "حد ضرر ساختاری امن پشت سنگر اردر بلاک (مصون از شدوهای نقدینگی)",
-                "سیو سود ۵۰٪ در تارگت ۱ و انتقال فوری حد ضرر به نقطه ورود (Risk-Free Breakeven)",
-                "شکار استخر نقدینگی سقف (BSL Liquidity Pool) با نسبت سود به ریسک بالای ۲.۵"
+                "حد ضرر ساختاری امن پشت سنگر اردر بلاک با فاصله تنفس ۱.۸٪ (مصون از شدوهای نقدینگی)",
+                "سیو سود ۵۰٪ در تارگت ۱ (+۱٪) و انتقال فوری حد ضرر به نقطه ورود (Risk-Free Breakeven)",
+                "شکار استخر نقدینگی سقف (BSL Liquidity Pool) با نسبت سود به ریسک بالای ۲.۲"
             ]
-            warning = "پس از تاچ تارگت ۱، بلافاصله حد ضرر را روی نقطه ورود بگذارید تا معامله کاملاً بدون ریسک شود."
+            warning = "پس از تاچ تارگت ۱ (+۱٪)، بلافاصله ۵۰٪ حجم را ببندید و حد ضرر را روی نقطه ورود بگذارید تا معامله کاملاً بدون ریسک شود."
 
         # Bearish M1/M5 Scalp Setup
         elif bearish_aligned:
@@ -1824,45 +1836,51 @@ class CryptoTradingAgent:
             direction = "SHORT"
             
             fvg = smc.get("nearest_fvg")
+            retest_price = self._round_val(price + (0.4 * atr))
             if fvg and fvg.get("type") == "BEARISH_FVG" and fvg.get("bottom") > price:
                 entry_low = self._round_val(max(price, fvg["bottom"]))
                 entry_high = self._round_val(fvg["top"])
             else:
                 entry_low = self._round_val(price)
-                entry_high = self._round_val(max(price, ema20))
+                entry_high = self._round_val(max(retest_price, ema20))
                 
-            entry_str = f"{entry_low} - {entry_high}"
+            entry_str = f"{entry_low} - {entry_high} (ورود در پولبک)"
             
             # --- INSTITUTIONAL STRUCTURAL STOP LOSS (BEARISH) ---
             # Stop loss sits safely ABOVE structural resistance & order block top,
             # fortified by a true ATR volatility buffer to eliminate micro-wick sweep outs.
-            sl_structural = nearest_res * 1.005  # 0.5% above resistance
-            sl_volatility = price + max(1.8 * atr, price * 0.012) # minimum 1.2% distance
+            sl_structural = nearest_res * 1.008  # 0.8% above resistance
+            sl_volatility = price + max(2.2 * atr, price * 0.018) # minimum 1.8% distance
             sl_raw = max(sl_structural, sl_volatility)
             
-            # Bound risk between 1.0% (anti-wick shield) and 3.2% (capital preservation)
+            # Bound risk between 1.8% (anti-wick shield) and 3.5% (capital preservation)
             risk = sl_raw - price
-            if risk < price * 0.010:
-                sl_raw = price * 1.010
+            if risk < price * 0.018:
+                sl_raw = price * 1.018
                 risk = sl_raw - price
-            elif risk > price * 0.032:
-                sl_raw = price * 1.032
+            elif risk > price * 0.035:
+                sl_raw = price * 1.035
                 risk = sl_raw - price
             sl = self._round_val(sl_raw)
             
-            # GATE 4: Dynamic Minimum Risk-to-Reward (R:R >= 1:2.0 on Target 2)
-            tp1 = self._round_val(price - 1.50 * risk)
-            tp2 = self._round_val(price - 2.50 * risk)
-            tp3 = self._round_val(min(price - 3.80 * risk, smc.get("ssl_pool_target", price * 0.965)))
+            # GATE 4: High-Winrate Staged Targets (TP1 Quick Bank + Breakeven Lock)
+            tp1_dist = max(price * 0.009, 0.65 * risk)
+            tp1 = self._round_val(price - tp1_dist)
+
+            tp2_dist = max(price * 0.020, 1.80 * risk)
+            tp2 = self._round_val(price - tp2_dist)
+
+            tp3_dist = max(price * 0.038, 3.20 * risk)
+            tp3 = self._round_val(min(price - tp3_dist, smc.get("ssl_pool_target", price * 0.962)))
             
             rr_val = round((price - tp2) / risk, 1) if risk > 0 else 2.5
             confidence = "90%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "86%"
             
             triggers = [
                 f"تاییدیه همسویی ساختاری نهادی (MTF 4H نزولی + فشار فروش اردر بوک + فاقد دیوار خرید)",
-                "حد ضرر ساختاری امن بالای سقف سوئینگ (مصون از فیک‌پامپ‌های مقطعی)",
+                "حد ضرر ساختاری امن بالای سقف سوئینگ با حاشیه تنفس ۱.۸٪ (مصون از فیک‌پامپ‌های مقطعی)",
                 "سیو سود ۵۰٪ در تارگت ۱ و ریسک‌فری کردن باقی‌مانده حجم (SL به نقطه ورود)",
-                "رویت کندل زیر میانگین VWAP و شتاب به سمت استخر کف (SSL) با R:R بالای ۲.۵"
+                "رویت کندل زیر میانگین VWAP و شتاب به سمت استخر کف (SSL) با R:R بالای ۲.۲"
             ]
             warning = "در معاملات شورت پس از لمس تارگت ۱ پوزیشن را بلافاصله ریسک‌فری کنید."
 

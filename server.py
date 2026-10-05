@@ -739,6 +739,22 @@ def auto_sentinel_loop():
                                     print(f"[SENTINEL] Skipping {sym} because Altcoin Shield is in DANGER mode.")
                                     continue
 
+                                # MTF 4H Anti-Trend Shield: Never buy into 4H downtrends
+                                tf_map = analysis.get("timeframes", {})
+                                bias_4h = tf_map.get("4h", {}).get("bias", "NEUTRAL")
+                                if scalp_act == "BUY" and bias_4h in ["BEARISH", "BEARISH_STRONG"]:
+                                    print(f"[SENTINEL] Skipping {sym} because 4H trend is bearish ({bias_4h}).")
+                                    continue
+                                if scalp_act == "SELL" and bias_4h in ["BULLISH", "BULLISH_STRONG"]:
+                                    print(f"[SENTINEL] Skipping {sym} because 4H trend is bullish ({bias_4h}).")
+                                    continue
+
+                                # Order book depth check
+                                ob_ratio = float(analysis.get("order_book", {}).get("ratio", 1.0))
+                                if scalp_act == "BUY" and ob_ratio < 1.02:
+                                    print(f"[SENTINEL] Skipping {sym} because order book lacks buy pressure ({ob_ratio:.2f}x).")
+                                    continue
+
                                 # Minimum 1:1.8 Risk-to-Reward ratio
                                 if rr_ratio < 1.8:
                                     continue
@@ -1210,13 +1226,18 @@ def get_liquidity_suite(symbol: str = Query("BTC")):
     if not oi_usd or oi_usd <= 0:
         oi_usd = max(20_000_000, price * 150_000)
 
-    # Parallel gather of Liquidation Heatmap, Whale Identity, and Footprint Absorption
+    # Parallel gather of Liquidation Heatmap, Whale Identity, Footprint Absorption, and Unified Multi-Timeframe Analysis
     import fastfetch as FF
     suite_data = FF.gather({
         "liquidations": lambda: LiquidationHeatmapEngine.calculate_clusters(sym_full, price, h24, l24, open_interest_usd=oi_usd),
         "whales": lambda: WhaleFlowEngine.get_whale_metrics(clean_sym),
-        "absorption": lambda: OrderFlowAbsorptionEngine.analyze_absorption(clean_sym)
-    }, timeout=4.5)
+        "absorption": lambda: OrderFlowAbsorptionEngine.analyze_absorption(clean_sym),
+        "analysis": lambda: agent.analyze_symbol(sym_full)
+    }, timeout=6.0)
+
+    analysis_result = suite_data.get("analysis", {})
+    scalp = analysis_result.get("scalp_setup", {})
+    scores_3d = analysis_result.get("scores_3d", {})
 
     return {
         "success": True,
@@ -1226,6 +1247,9 @@ def get_liquidity_suite(symbol: str = Query("BTC")):
         "liquidations": suite_data.get("liquidations", {}),
         "whales": suite_data.get("whales", {}),
         "absorption": suite_data.get("absorption", {}),
+        "scalp_setup": scalp,
+        "scores_3d": scores_3d,
+        "analysis": analysis_result,
         "updated_at": time.strftime("%H:%M:%S UTC", time.gmtime())
     }
 

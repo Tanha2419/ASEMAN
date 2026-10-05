@@ -7317,23 +7317,35 @@
         const whaleDist = parseFloat(whales.distance_pct || whales.distance_from_whale_entry_pct || 0);
         const hasAbsBuy = abs.bid_wall_total > 0;
         
-        if (isBullishMagnet && whaleDist >= -2.0) {
+        const scalpStance = data.scalp_setup ? (data.scalp_setup.action_code || "WAIT") : "WAIT";
+
+        if (scalpStance === "WAIT") {
+          if (conBanner) {
+            conBanner.style.borderColor = "rgba(255, 215, 0, 0.4)";
+            conBanner.style.background = "rgba(255, 215, 0, 0.08)";
+          }
+          if (conIcon) conIcon.innerText = "⚖️";
+          if (conBadge) { conBadge.innerText = "PATIENCE / NO SETUP"; conBadge.style.background = "#ffd700"; conBadge.style.color = "#000"; }
+          if (conTitle) conTitle.innerText = `اجماع نهادی برای ${sym}: وضعیت رنج / صبر برای شکست معتبر (WAIT)`;
+          if (conDesc) conDesc.innerText = `روندهای چندتایم‌فریمی یا دفتر سفارشات هنوز تاییدیه صریح نداده‌اند • ورود در این ناحیه ریسک فعال‌شدن حد ضرر را بالا می‌برد.`;
+          if (conStats) conStats.innerText = "موضع هوشمند: صیانت از سرمایه (WAIT)";
+        } else if (isBullishMagnet && whaleDist >= -2.0 && scalpStance === "BUY") {
           if (conBanner) {
             conBanner.style.borderColor = "rgba(0, 230, 118, 0.4)";
             conBanner.style.background = "rgba(0, 230, 118, 0.08)";
           }
           if (conIcon) conIcon.innerText = "🟢";
-          if (conBadge) { conBadge.innerText = "BULLISH CONFLUENCE"; conBadge.style.background = "#00e676"; }
+          if (conBadge) { conBadge.innerText = "BULLISH CONFLUENCE"; conBadge.style.background = "#00e676"; conBadge.style.color = "#000"; }
           if (conTitle) conTitle.innerText = `اجماع صعودی نهادی برای ${sym}: پول هوشمند و نقدینگی هم‌راستا`;
           if (conDesc) conDesc.innerText = `نهنگ‌ها بالاتر از میانگین خرید خود دفاع می‌کنند (+${whaleDist}%) • نقدینگی بالای چارت را هدف قرار داده است • جذب فروشندگان در جریان است.`;
           if (conStats) conStats.innerText = "شاخص اعتماد سازمانی: ۹۱٪";
-        } else if (!isBullishMagnet && whaleDist < -3.0) {
+        } else if (!isBullishMagnet && whaleDist < -3.0 && scalpStance === "SELL") {
           if (conBanner) {
             conBanner.style.borderColor = "rgba(255, 51, 102, 0.4)";
             conBanner.style.background = "rgba(255, 51, 102, 0.08)";
           }
           if (conIcon) conIcon.innerText = "🔴";
-          if (conBadge) { conBadge.innerText = "BEARISH PRESSURE"; conBadge.style.background = "#ff3366"; }
+          if (conBadge) { conBadge.innerText = "BEARISH PRESSURE"; conBadge.style.background = "#ff3366"; conBadge.style.color = "#fff"; }
           if (conTitle) conTitle.innerText = `فشار نزولی نهادی برای ${sym}: خطر هانت استاپ‌های پایین`;
           if (conDesc) conDesc.innerText = `قیمت زیر میانگین ورود نهنگ‌ها تثبیت شده (${whaleDist}%) • نقدینگی لانگ‌های پایین تحت ریسک اسکوئیز است.`;
           if (conStats) conStats.innerText = "شاخص ریسک آبشاری: ۷۹٪";
@@ -7343,7 +7355,7 @@
             conBanner.style.background = "rgba(255, 215, 0, 0.08)";
           }
           if (conIcon) conIcon.innerText = "⚖️";
-          if (conBadge) { conBadge.innerText = "BALANCED TUG-OF-WAR"; conBadge.style.background = "#ffd700"; }
+          if (conBadge) { conBadge.innerText = "BALANCED TUG-OF-WAR"; conBadge.style.background = "#ffd700"; conBadge.style.color = "#000"; }
           if (conTitle) conTitle.innerText = `وضعیت نبرد متعادل برای ${sym}: بازار در فاز تراکم و جذب`;
           if (conDesc) conDesc.innerText = `تعادل بین دیوارهای خرید و فروش • منتظر شکستن یکی از دو استخر نقدینگی باشید.`;
           if (conStats) conStats.innerText = "ضریب اطمینان: ۷۲٪ (رنج)";
@@ -7509,7 +7521,7 @@
         const duelVerdEl = document.getElementById("duelVerdictText");
         if (duelVerdEl) duelVerdEl.innerText = abs.action_verdict || abs.description || "-";
 
-        // --- Populate Direct Action Command Center (اتاق فرمان و دستور مستقیم ترید) ---
+        // --- Populate Direct Action Command Center (اتاق فرمان و دستور مستقیم ترید - همگام ۱۰۰٪ با سیگنال نهادی) ---
         const mainBadgeEl = document.getElementById("liqMainActionBadge");
         const cmdEntryEl = document.getElementById("liqCmdEntry");
         const cmdEntryNoteEl = document.getElementById("liqCmdEntryNote");
@@ -7523,71 +7535,94 @@
 
         const cPrice = Number(data.current_price || 0);
         const mPrice = Number(liq.magnet_price || cPrice);
-        const wCost = Number(whales.whale_avg_cost_basis || cPrice);
-        const bPrice = Number(bWall.price || (cPrice * 0.985));
-        const aPrice = Number(aWall.price || (cPrice * 1.015));
-
         const curPriceFmt = `$${Number(data.current_price || 0).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}`;
         const magPriceFmt = liq.magnet_price ? `$${Number(liq.magnet_price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}` : "-";
         const whaleAvgFmt = whales.whale_avg_cost_basis_fmt || "-";
 
-        if (isBullishMagnet) {
+        // Unified Single Source of Truth from Institutional Agent
+        const scalp = data.scalp_setup || {};
+        const scalpAct = scalp.action_code || ((scalp.action && scalp.action.includes("BUY")) ? "BUY" : ((scalp.action && scalp.action.includes("SELL")) ? "SELL" : "WAIT"));
+        const slVal = scalp.stop_loss ? Number(scalp.stop_loss) : 0;
+        const tp1Val = scalp.tp1 ? Number(scalp.tp1) : 0;
+        const tp2Val = scalp.tp2 ? Number(scalp.tp2) : (mPrice || 0);
+        const slPct = scalp.stop_loss_pct || 2.1;
+        const tp1Pct = scalp.tp1_pct || 1.1;
+        const tp2Pct = scalp.tp2_pct || 2.8;
+
+        if (scalpAct === "BUY") {
           if (mainBadgeEl) {
-            mainBadgeEl.innerText = "🟢 دستور صریح: پوزیشن خرید (LONG)";
+            mainBadgeEl.innerText = "🟢 همگرایی کامل: ستاپ خرید (LONG) تاییدشده";
             mainBadgeEl.style.background = "#00e676";
             mainBadgeEl.style.color = "#000";
             mainBadgeEl.style.boxShadow = "0 0 16px rgba(0, 230, 118, 0.4)";
           }
-          const eLow = Math.min(cPrice, Math.max(wCost, bPrice));
-          const eHigh = cPrice;
-          const slCalc = Math.min(bPrice * 0.992, cPrice * 0.982);
-          const riskDist = Math.max(1, Math.abs(cPrice - slCalc));
-          const rewDist = Math.max(1, Math.abs(mPrice - cPrice));
-          const rrCalc = (rewDist / riskDist).toFixed(1);
+          if (cmdEntryEl) cmdEntryEl.innerText = scalp.entry_zone ? scalp.entry_zone : `${curPriceFmt} (ورود در پولبک)`;
+          if (cmdEntryNoteEl) cmdEntryNoteEl.innerText = "کاشت اردر لیمیت در پولبک به FVG یا میانگین وال‌ها به جای خرید در سقف";
 
-          if (cmdEntryEl) cmdEntryEl.innerText = `$${Number(eLow).toLocaleString(undefined, {maximumFractionDigits: pDecimals})} - $${Number(eHigh).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
-          if (cmdEntryNoteEl) cmdEntryNoteEl.innerText = "ورود مطمئن در پولبک به میانگین یا قیمت جاری";
+          if (cmdSlEl) cmdSlEl.innerText = slVal ? `$${slVal.toLocaleString(undefined, {maximumFractionDigits: pDecimals})}` : `$${(cPrice * 0.98).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
+          if (cmdSlNoteEl) cmdSlNoteEl.innerText = `سنگر امن زیر اردر بلاک و خارج از دسترسی شدوهای صرافی (-${slPct}%)`;
 
-          if (cmdSlEl) cmdSlEl.innerText = `$${Number(slCalc).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
-          if (cmdSlNoteEl) cmdSlNoteEl.innerText = "زیر دیواره خرید نهنگ (خروج قطعی در صورت شکست)";
+          if (cmdTpEl) {
+            const tp1Str = tp1Val ? `$${tp1Val.toLocaleString(undefined, {maximumFractionDigits: pDecimals})}` : "";
+            const tp2Str = tp2Val ? `$${tp2Val.toLocaleString(undefined, {maximumFractionDigits: pDecimals})}` : magPriceFmt;
+            cmdTpEl.innerText = `تارگت ۱: ${tp1Str} (+${tp1Pct}%) | تارگت ۲ (مگنت): ${tp2Str}`;
+          }
+          if (cmdTpNoteEl) cmdTpNoteEl.innerText = "تارگت ۱: سیو سود ۵۰٪ و انتقال فوری SL به ورود (ریسک‌فری) | تارگت ۲: تخلیه استخر شورت‌ها";
 
-          if (cmdTpEl) cmdTpEl.innerText = `$${Number(mPrice).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
-          if (cmdTpNoteEl) cmdTpNoteEl.innerText = "دقیقاً روی خط آهنربا؛ جایی که استاپ شورت‌ها سوخته می‌شود";
-
-          if (cmdDirEl) cmdDirEl.innerText = "🟢 مگنت صعودی (کشش به بالا)";
-          if (cmdRrEl) cmdRrEl.innerText = `نسبت ریوارد به ریسک: ۱ به ${rrCalc}`;
+          if (cmdDirEl) cmdDirEl.innerText = "🟢 همسویی جهت سیگنال نهادی و آهنربای صعودی";
+          if (cmdRrEl) cmdRrEl.innerText = `نسبت ریوارد به ریسک: ${scalp.risk_reward || '1:2.2'}`;
 
           if (cmdFatalTextEl) {
-            cmdFatalTextEl.innerHTML = `<strong>قانون دو کلمه‌ای نجات حساب:</strong> تا وقتی قیمت به <strong>${magPriceFmt}</strong> نرسیده، هرگز پوزیشن فروش (شورت) نگیرید! مارکت‌میکر در حال جارو کردن استاپ شورت‌هاست.`;
+            cmdFatalTextEl.innerHTML = `<strong>قانون نجات حساب:</strong> تا وقتی قیمت به تارگت اول نرسیده، حجم را افزایش ندهید. به محض لمس تارگت اول (+${tp1Pct}%)، ۵۰٪ حجم را ببندید و حد ضرر را روی نقطه ورود بگذارید تا تحت هیچ شرایطی معامله با ضرر بسته نشود.`;
           }
-        } else {
+        } else if (scalpAct === "SELL") {
           if (mainBadgeEl) {
-            mainBadgeEl.innerText = "🔴 دستور صریح: پوزیشن فروش (SHORT / HEDGE)";
+            mainBadgeEl.innerText = "🔴 همگرایی کامل: ستاپ فروش (SHORT) تاییدشده";
             mainBadgeEl.style.background = "#ff3366";
             mainBadgeEl.style.color = "#fff";
             mainBadgeEl.style.boxShadow = "0 0 16px rgba(255, 51, 102, 0.4)";
           }
-          const eLow = cPrice;
-          const eHigh = Math.max(cPrice, Math.min(wCost, aPrice));
-          const slCalc = Math.max(aPrice * 1.008, cPrice * 1.018);
-          const riskDist = Math.max(1, Math.abs(slCalc - cPrice));
-          const rewDist = Math.max(1, Math.abs(cPrice - mPrice));
-          const rrCalc = (rewDist / riskDist).toFixed(1);
+          if (cmdEntryEl) cmdEntryEl.innerText = scalp.entry_zone ? scalp.entry_zone : `${curPriceFmt} (ورود در پولبک)`;
+          if (cmdEntryNoteEl) cmdEntryNoteEl.innerText = "ورود لیمیت در پولبک به مقاومت یا FVG نزولی";
 
-          if (cmdEntryEl) cmdEntryEl.innerText = `$${Number(eLow).toLocaleString(undefined, {maximumFractionDigits: pDecimals})} - $${Number(eHigh).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
-          if (cmdEntryNoteEl) cmdEntryNoteEl.innerText = "ورود در پولبک به سمت مقاومت یا قیمت جاری";
+          if (cmdSlEl) cmdSlEl.innerText = slVal ? `$${slVal.toLocaleString(undefined, {maximumFractionDigits: pDecimals})}` : `$${(cPrice * 1.02).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
+          if (cmdSlNoteEl) cmdSlNoteEl.innerText = `بالای سقف اردر بلاک و مصون از فیک‌پامپ‌های مقطعی (+${slPct}%)`;
 
-          if (cmdSlEl) cmdSlEl.innerText = `$${Number(slCalc).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
-          if (cmdSlNoteEl) cmdSlNoteEl.innerText = "بالای دیواره فروش اردر بوک (خروج اضطراری)";
+          if (cmdTpEl) {
+            const tp1Str = tp1Val ? `$${tp1Val.toLocaleString(undefined, {maximumFractionDigits: pDecimals})}` : "";
+            const tp2Str = tp2Val ? `$${tp2Val.toLocaleString(undefined, {maximumFractionDigits: pDecimals})}` : magPriceFmt;
+            cmdTpEl.innerText = `تارگت ۱: ${tp1Str} (-${tp1Pct}%) | تارگت ۲ (مگنت): ${tp2Str}`;
+          }
+          if (cmdTpNoteEl) cmdTpNoteEl.innerText = "تارگت ۱: ۵۰٪ خروج و ریسک‌فری | تارگت ۲: شکار استاپ لانگ‌های اهرم‌دار کف";
 
-          if (cmdTpEl) cmdTpEl.innerText = `$${Number(mPrice).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
-          if (cmdTpNoteEl) cmdTpNoteEl.innerText = "دقیقاً در استخر کف؛ جایی که استاپ لانگ‌ها شکار می‌شود";
-
-          if (cmdDirEl) cmdDirEl.innerText = "🔴 مگنت نزولی (کشش به پایین)";
-          if (cmdRrEl) cmdRrEl.innerText = `نسبت ریوارد به ریسک: ۱ به ${rrCalc}`;
+          if (cmdDirEl) cmdDirEl.innerText = "🔴 همسویی جهت شورت با آهنربای نزولی نقدینگی";
+          if (cmdRrEl) cmdRrEl.innerText = `نسبت ریوارد به ریسک: ${scalp.risk_reward || '1:2.2'}`;
 
           if (cmdFatalTextEl) {
-            cmdFatalTextEl.innerHTML = `<strong>قانون دو کلمه‌ای نجات حساب:</strong> قبل از اینکه قیمت به استخر کف <strong>${magPriceFmt}</strong> نرسد، با اهرم بالا دکمه خرید را نزنید! صرافی اول خریداران اهرم‌دار را تصفیه می‌کند.`;
+            cmdFatalTextEl.innerHTML = `<strong>قانون نجات حساب:</strong> در معاملات شورت، پس از رسیدن قیمت به تارگت اول بلافاصله پوزیشن را ریسک‌فری کنید تا اسکوئیزهای ناگهانی نهنگ‌ها سود شما را تهدید نکند.`;
+          }
+        } else {
+          // Unified WAIT (رنج یا ریسک نامتعادل)
+          if (mainBadgeEl) {
+            mainBadgeEl.innerText = "⚖️ موضع واحد سیستم: صبر / بازار فاقد ستاپ معتبر (WAIT)";
+            mainBadgeEl.style.background = "#ffd700";
+            mainBadgeEl.style.color = "#000";
+            mainBadgeEl.style.boxShadow = "0 0 16px rgba(255, 215, 0, 0.4)";
+          }
+          if (cmdEntryEl) cmdEntryEl.innerText = scalp.entry_zone || "فاقد نقطه ورود ایمن در شرایط فعلی";
+          if (cmdEntryNoteEl) cmdEntryNoteEl.innerText = "سیستم به دلیل نوسان رنج یا عدم همسویی روندهای ۴H، ورود هیجانی را مسدود کرده است";
+
+          if (cmdSlEl) cmdSlEl.innerText = "تعیین نشده (ممنوعیت ورود)";
+          if (cmdSlNoteEl) cmdSlNoteEl.innerText = "ورود بدون ستاپ معتبر یعنی تقدیم سرمایه به مارکت‌میکر";
+
+          if (cmdTpEl) cmdTpEl.innerText = `استخر رصد مگنت: ${magPriceFmt}`;
+          if (cmdTpNoteEl) cmdTpNoteEl.innerText = "نقدینگی در این سطح متمرکز است ولی تا تاییدیه ساختار صادر نشود ورود نکنید";
+
+          if (cmdDirEl) cmdDirEl.innerText = "⚪ رنج و فشردگی / تضاد روندهای کلان";
+          if (cmdRrEl) cmdRrEl.innerText = "توصیه اکید: حفظ سرمایه و صبر برای شکست معتبر";
+
+          if (cmdFatalTextEl) {
+            cmdFatalTextEl.innerHTML = `<strong>قانون صیانت از سرمایه (درس مهم معاملات اخیر):</strong> سیگنال نهادی و هیت‌مپ در وضعیت WAIT قرار دارند. ورودهای عجولانه در این بازارهای رنج و بدون تاییدیه ۴H، دلیل اصلی ۷ حد ضرر قبلی بوده است! اجازه دهید ستاپ تک‌تیراندازی Grade A تایید شود و سپس با اطمینان کامل وارد شوید.`;
           }
         }
 
