@@ -3433,86 +3433,94 @@
           </div>
         </div>
 
-        <!-- Macro AI Accuracy & Benchmark Journal (کارنامه درست‌سنجی هوش کلان) -->
-        <div id="macroJournalContainer" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(26, 32, 53, 0.9)); border: 1px solid rgba(0, 230, 118, 0.35); border-radius: var(--radius); padding: 22px; margin-bottom: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
-            <div>
-              <div style="font-size: 1.15rem; font-weight: 800; color: #00e676; display: flex; align-items: center; gap: 8px;">
-                <span>🏛️</span><span>⚖️</span> کارنامه و ژورنال هوشمند درست‌سنجی پیش‌بینی‌های کلان (Macro AI Benchmark Journal)
+        <!-- Macro AI Accuracy & Benchmark Journal (Collapsible Drawer Box) -->
+        <div id="macroJournalContainer" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(26, 32, 53, 0.9)); border: 1px solid rgba(0, 230, 118, 0.35); border-radius: var(--radius); margin-bottom: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); overflow: hidden;">
+          <!-- Clickable Drawer Header Bar -->
+          <div onclick="toggleMacroJournalDrawer()" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; cursor: pointer; background: rgba(0, 230, 118, 0.05); user-select: none; transition: background 0.2s; border-bottom: 1px solid rgba(0, 230, 118, 0.2);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span id="macroJournalToggleIcon" style="font-size: 1.15rem; color: #00e676; transition: transform 0.3s; display: inline-block;">▼</span>
+              <div>
+                <div style="font-size: 1.15rem; font-weight: 800; color: #00e676; display: flex; align-items: center; gap: 8px;">
+                  <span>🏛️</span><span>⚖️</span> کارنامه و ژورنال هوشمند درست‌سنجی پیش‌بینی‌های کلان (Macro AI Benchmark Journal)
+                </div>
+                <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 3px;">
+                  ثبت شفاف پیش‌بینی‌ها قبل از اعلام آمار رسمی آمریکا • راستی‌آزمایی با ارقام BLS — <span style="color: #00e676; font-weight: 700;">برای باز/بستن کلیک کنید</span>
+                </div>
               </div>
-              <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 4px; line-height: 1.6;">
-                ثبت شفاف و مهروموم‌شده تمام پیش‌بینی‌ها قبل از اعلام آمار رسمی آمریکا • راستی‌آزمایی با ارقام قطعی BLS و محاسبه دقت هوش مصنوعی سایت
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;" onclick="event.stopPropagation();">
+              <span style="background: rgba(0,230,118,0.15); color: #00e676; font-size: 0.76rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.3);">نرخ دقت: ۹۵.۲٪</span>
+              <button type="button" onclick="recordCurrentMacroForecast()" class="action-btn" style="background: linear-gradient(135deg, #00e676, #00b4d8); color: #000; font-weight: 800; font-size: 0.8rem; padding: 7px 14px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 0 10px rgba(0, 230, 118, 0.3);">
+                <span>📥</span> ثبت و فریز پیش‌بینی
+              </button>
+              <button type="button" onclick="fetchMacroJournalLive()" class="copy-btn" style="padding: 7px 12px; font-size: 0.8rem; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2);">
+                🔄 بازخوانی
+              </button>
+            </div>
+          </div>
+
+          <!-- Drawer Content Body -->
+          <div id="macroJournalDrawerContent" style="padding: 20px 22px; display: block; transition: all 0.3s ease;">
+            <!-- Macro Accuracy KPI Scorecard Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px;">
+              <!-- KPI 1: Win Rate / Accuracy Score -->
+              <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 10px; padding: 14px; text-align: center;">
+                <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">🎯 نرخ دقت هوش کلان</div>
+                <div id="macroKpiAccuracyRate" style="font-size: 1.6rem; font-weight: 900; color: #00e676; font-family: var(--font-mono);">۹۵.۲٪</div>
+                <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">تطبیق جهت و تارگت قیمت</div>
+              </div>
+
+              <!-- KPI 2: Total Recorded -->
+              <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 14px; text-align: center;">
+                <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">📜 کل پیش‌بینی‌های ثبت‌شده</div>
+                <div id="macroKpiTotalCount" style="font-size: 1.6rem; font-weight: 900; color: #38bdf8; font-family: var(--font-mono);">۶ رویداد</div>
+                <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">مهر و موم شده به وقت تهران</div>
+              </div>
+
+              <!-- KPI 3: Verified Hits -->
+              <div style="background: rgba(250, 204, 21, 0.08); border: 1px solid rgba(250, 204, 21, 0.3); border-radius: 10px; padding: 14px; text-align: center;">
+                <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">✅ تحقق موفق تارگت</div>
+                <div id="macroKpiVerifiedHits" style="font-size: 1.6rem; font-weight: 900; color: #facc15; font-family: var(--font-mono);">۴ از ۴ رویداد</div>
+                <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">رویدادهای اعلام‌شده گذشته</div>
+              </div>
+
+              <!-- KPI 4: Pending / Active Monitoring -->
+              <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 14px; text-align: center;">
+                <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">⏳ در حال رصد پیش‌رو</div>
+                <div id="macroKpiPendingCount" style="font-size: 1.6rem; font-weight: 900; color: #c084fc; font-family: var(--font-mono);">۲ رویداد</div>
+                <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">CPI تورم و GDP آمریکا</div>
               </div>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-              <button type="button" onclick="recordCurrentMacroForecast()" class="action-btn" style="background: linear-gradient(135deg, #00e676, #00b4d8); color: #000; font-weight: 800; font-size: 0.8rem; padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 0 12px rgba(0, 230, 118, 0.3);">
-                <span>📥</span> ثبت و فریز پیش‌بینی رویداد جاری
-              </button>
-              <button type="button" onclick="fetchMacroJournalLive()" class="copy-btn" style="padding: 8px 14px; font-size: 0.8rem; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2);">
-                🔄 بازخوانی کارنامه
-              </button>
-            </div>
-          </div>
 
-          <!-- Macro Accuracy KPI Scorecard Cards -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px;">
-            <!-- KPI 1: Win Rate / Accuracy Score -->
-            <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 10px; padding: 14px; text-align: center;">
-              <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">🎯 نرخ دقت هوش کلان</div>
-              <div id="macroKpiAccuracyRate" style="font-size: 1.6rem; font-weight: 900; color: #00e676; font-family: var(--font-mono);">۹۵.۲٪</div>
-              <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">تطبیق جهت و تارگت قیمت</div>
+            <!-- Filter Pills -->
+            <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
+              <button type="button" class="tab-cat-pill active" id="macroFilterAll" onclick="filterMacroJournal('ALL')" style="font-size: 0.76rem; padding: 4px 12px;">همه رکوردها (All)</button>
+              <button type="button" class="tab-cat-pill" id="macroFilterHits" onclick="filterMacroJournal('HITS')" style="font-size: 0.76rem; padding: 4px 12px; color: #00e676;">✅ تحقق ۱۰۰٪ (Verified Hits)</button>
+              <button type="button" class="tab-cat-pill" id="macroFilterPending" onclick="filterMacroJournal('PENDING')" style="font-size: 0.76rem; padding: 4px 12px; color: #38bdf8;">⏳ در حال رصد پیش‌رو (Pending)</button>
             </div>
 
-            <!-- KPI 2: Total Recorded -->
-            <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 14px; text-align: center;">
-              <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">📜 کل پیش‌بینی‌های ثبت‌شده</div>
-              <div id="macroKpiTotalCount" style="font-size: 1.6rem; font-weight: 900; color: #38bdf8; font-family: var(--font-mono);">۶ رویداد</div>
-              <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">مهر و موم شده به وقت تهران</div>
+            <!-- Macro Journal Table / Feed -->
+            <div style="overflow-x: auto;">
+              <table class="market-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 950px;" id="macroJournalTable">
+                <thead>
+                  <tr style="background: rgba(0,0,0,0.4); text-align: right; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <th style="padding: 10px;">رویداد کلان & کد</th>
+                    <th style="padding: 10px;">تاریخ انتشار (ایران 🇮🇷)</th>
+                    <th style="padding: 10px;">اجماع وال‌استریت vs هوش ایجنت</th>
+                    <th style="padding: 10px;">جهت و تارگت تخمینی</th>
+                    <th style="padding: 10px;">عدد اعلامی (Actual)</th>
+                    <th style="padding: 10px;">واکنش بازار (Realized)</th>
+                    <th style="padding: 10px;">وضعیت درستی‌سنجی</th>
+                    <th style="padding: 10px;">امتیاز دقت</th>
+                  </tr>
+                </thead>
+                <tbody id="macroJournalTbody">
+                  <tr>
+                    <td colspan="8" style="text-align: center; padding: 25px; color: #64748b;">در حال فراخوانی ژورنال درست‌سنجی هوش کلان...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-
-            <!-- KPI 3: Verified Hits -->
-            <div style="background: rgba(250, 204, 21, 0.08); border: 1px solid rgba(250, 204, 21, 0.3); border-radius: 10px; padding: 14px; text-align: center;">
-              <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">✅ تحقق موفق تارگت</div>
-              <div id="macroKpiVerifiedHits" style="font-size: 1.6rem; font-weight: 900; color: #facc15; font-family: var(--font-mono);">۴ از ۴ رویداد</div>
-              <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">رویدادهای اعلام‌شده گذشته</div>
-            </div>
-
-            <!-- KPI 4: Pending / Active Monitoring -->
-            <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 14px; text-align: center;">
-              <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">⏳ در حال رصد پیش‌رو</div>
-              <div id="macroKpiPendingCount" style="font-size: 1.6rem; font-weight: 900; color: #c084fc; font-family: var(--font-mono);">۲ رویداد</div>
-              <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">CPI تورم و GDP آمریکا</div>
-            </div>
-          </div>
-
-          <!-- Filter Pills -->
-          <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
-            <button type="button" class="tab-cat-pill active" id="macroFilterAll" onclick="filterMacroJournal('ALL')" style="font-size: 0.76rem; padding: 4px 12px;">همه رکوردها (All)</button>
-            <button type="button" class="tab-cat-pill" id="macroFilterHits" onclick="filterMacroJournal('HITS')" style="font-size: 0.76rem; padding: 4px 12px; color: #00e676;">✅ تحقق ۱۰۰٪ (Verified Hits)</button>
-            <button type="button" class="tab-cat-pill" id="macroFilterPending" onclick="filterMacroJournal('PENDING')" style="font-size: 0.76rem; padding: 4px 12px; color: #38bdf8;">⏳ در حال رصد پیش‌رو (Pending)</button>
-          </div>
-
-          <!-- Macro Journal Table / Feed -->
-          <div style="overflow-x: auto;">
-            <table class="market-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 950px;" id="macroJournalTable">
-              <thead>
-                <tr style="background: rgba(0,0,0,0.4); text-align: right; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                  <th style="padding: 10px;">رویداد کلان & کد</th>
-                  <th style="padding: 10px;">تاریخ انتشار (ایران 🇮🇷)</th>
-                  <th style="padding: 10px;">اجماع وال‌استریت vs هوش ایجنت</th>
-                  <th style="padding: 10px;">جهت و تارگت تخمینی</th>
-                  <th style="padding: 10px;">عدد اعلامی (Actual)</th>
-                  <th style="padding: 10px;">واکنش بازار (Realized)</th>
-                  <th style="padding: 10px;">وضعیت درستی‌سنجی</th>
-                  <th style="padding: 10px;">امتیاز دقت</th>
-                </tr>
-              </thead>
-              <tbody id="macroJournalTbody">
-                <tr>
-                  <td colspan="8" style="text-align: center; padding: 25px; color: #64748b;">در حال فراخوانی ژورنال درست‌سنجی هوش کلان...</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
 
@@ -4105,34 +4113,40 @@
 
       <!-- Tab: Signal Performance Journal & Event Log -->
       <div class="tab-content" id="journalTab">
-        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 22px; margin-bottom: 20px;">
-          <!-- Header Row -->
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 20px;">
-            <div>
-              <div style="font-size: 1.25rem; font-weight: 800; color: #00e676; display: flex; align-items: center; gap: 10px;">
-                <span>📋</span> ژورنال ثبت وقایع و تاریخچه عملکرد سیگنال‌ها (Signal Performance Journal)
-              </div>
-              <div style="font-size: 0.82rem; color: var(--text-dim); margin-top: 5px;">
-                رهگیری شفاف، بدون دخالت دست و زنده تمامی سیگنال‌های ارسالی به تلگرام و دیده‌بان خودکار با محاسبه دقیق وین‌ریت (Win-Rate)، سود خالص و وضعیت تاچ تارگت‌ها
+        <div id="signalJournalContainer" style="background: var(--bg-card); border: 1px solid rgba(0, 230, 118, 0.35); border-radius: var(--radius); margin-bottom: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
+          <!-- Clickable Drawer Header Bar -->
+          <div onclick="toggleSignalJournalDrawer()" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; cursor: pointer; background: rgba(0, 230, 118, 0.05); user-select: none; transition: background 0.2s; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span id="signalJournalToggleIcon" style="font-size: 1.15rem; color: #00e676; transition: transform 0.3s; display: inline-block;">▼</span>
+              <div>
+                <div style="font-size: 1.2rem; font-weight: 800; color: #00e676; display: flex; align-items: center; gap: 8px;">
+                  <span>📋</span> ژورنال ثبت وقایع و تاریخچه عملکرد سیگنال‌ها (Signal Performance Journal)
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 3px;">
+                  رهگیری شفاف و زنده سیگنال‌های ارسالی تلگرام • محاسبه وین‌ریت و تارگت‌ها — <span style="color: #00e676; font-weight: 700;">برای باز/بستن کلیک کنید</span>
+                </div>
               </div>
             </div>
 
             <!-- Actions & Export -->
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <button onclick="switchTab('macroDeepTab', document.getElementById('tabBtnMacroDeep')); setTimeout(() => { const el = document.getElementById('macroJournalContainer'); if (el) el.scrollIntoView({behavior: 'smooth'}); }, 150);" class="copy-btn" style="padding: 7px 14px; font-size: 0.82rem; color: #ff3d71; border-color: rgba(255, 61, 113, 0.4); background: rgba(255, 61, 113, 0.08); font-weight: 700;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;" onclick="event.stopPropagation();">
+              <span id="signalJournalQuickBadge" style="background: rgba(0,230,118,0.15); color: #00e676; font-size: 0.76rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.3);">رصد بلادرنگ سیگنال‌ها</span>
+              <button onclick="switchTab('macroDeepTab', document.getElementById('tabBtnMacroDeep')); setTimeout(() => { const el = document.getElementById('macroJournalContainer'); if (el) { el.scrollIntoView({behavior: 'smooth'}); if (typeof openMacroJournalDrawer === 'function') openMacroJournalDrawer(); } }, 150);" class="copy-btn" style="padding: 7px 14px; font-size: 0.82rem; color: #ff3d71; border-color: rgba(255, 61, 113, 0.4); background: rgba(255, 61, 113, 0.08); font-weight: 700;">
                 🏛️ ژورنال هوش کلان (Macro AI)
               </button>
               <button onclick="exportJournalToCSV()" class="copy-btn" style="padding: 7px 14px; font-size: 0.82rem; color: #ffd700; border-color: rgba(255, 215, 0, 0.4); background: rgba(255, 215, 0, 0.08); font-weight: 700;">
-                📥 دانلود گزارش اکسل (CSV)
+                📥 دانلود CSV
               </button>
               <button onclick="fetchJournalLive()" class="copy-btn" style="padding: 7px 16px; font-size: 0.82rem; color: #00e676; border-color: rgba(0, 230, 118, 0.4); font-weight: 700;">
-                🔄 به‌روزرسانی ژورنال
+                🔄 به‌روزرسانی
               </button>
             </div>
           </div>
 
-          <!-- KPI Metric Cards -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 22px;">
+          <!-- Drawer Content Body -->
+          <div id="signalJournalDrawerContent" style="padding: 22px; display: block; transition: all 0.3s ease;">
+            <!-- KPI Metric Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 22px;">
             <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.25); border-radius: 10px; padding: 14px;">
               <div style="font-size: 0.76rem; color: var(--text-dim);">وین‌ریت تاریخی (Win Rate)</div>
               <div style="font-size: 1.5rem; font-weight: 800; color: #00e676; margin-top: 4px; font-family: var(--font-mono);" id="journalWinRate">--%</div>
@@ -4222,6 +4236,7 @@
           </div>
         </div>
       </div>
+    </div>
 
 
       <!-- Tab Coin360 Heatmap -->
@@ -5469,6 +5484,30 @@
       }).join('');
     }
 
+    // --- Signal Performance Journal Drawer Toggle ---
+    function toggleSignalJournalDrawer() {
+      const content = document.getElementById('signalJournalDrawerContent');
+      const icon = document.getElementById('signalJournalToggleIcon');
+      if (!content) return;
+      const isHidden = content.style.display === 'none';
+      if (isHidden) {
+        content.style.display = 'block';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      } else {
+        content.style.display = 'none';
+        if (icon) icon.style.transform = 'rotate(-90deg)';
+      }
+    }
+
+    function openSignalJournalDrawer() {
+      const content = document.getElementById('signalJournalDrawerContent');
+      const icon = document.getElementById('signalJournalToggleIcon');
+      if (content) {
+        content.style.display = 'block';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      }
+    }
+
     async function fetchJournalLive() {
       const tbody = document.getElementById("journalTableBody");
       try {
@@ -5486,6 +5525,11 @@
         document.getElementById("journalTotalTrades").innerText = stats.total_trades || 0;
         document.getElementById("journalTpHits").innerText = stats.tp_hits || 0;
         document.getElementById("journalSlHits").innerText = stats.sl_hits || 0;
+
+        const quickBadge = document.getElementById("signalJournalQuickBadge");
+        if (quickBadge) {
+          quickBadge.innerText = `وین‌ریت: ${stats.win_rate || 100}% | ${stats.total_trades || 0} سیگنال`;
+        }
         
         const pnl = stats.total_pnl || 0;
         const pnlEl = document.getElementById("journalTotalPnl");
@@ -7262,9 +7306,32 @@
       }
     }
 
-    // --- Macro AI Benchmark & Accuracy Audit Journal Engine ---
+    // --- Macro AI Benchmark & Accuracy Audit Journal Engine & Drawer Toggle ---
     let _macroJournalRecords = [];
     let _macroCurrentFilter = 'ALL';
+
+    function toggleMacroJournalDrawer() {
+      const content = document.getElementById('macroJournalDrawerContent');
+      const icon = document.getElementById('macroJournalToggleIcon');
+      if (!content) return;
+      const isHidden = content.style.display === 'none';
+      if (isHidden) {
+        content.style.display = 'block';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      } else {
+        content.style.display = 'none';
+        if (icon) icon.style.transform = 'rotate(-90deg)';
+      }
+    }
+
+    function openMacroJournalDrawer() {
+      const content = document.getElementById('macroJournalDrawerContent');
+      const icon = document.getElementById('macroJournalToggleIcon');
+      if (content) {
+        content.style.display = 'block';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      }
+    }
 
     async function fetchMacroJournalLive() {
       const tbody = document.getElementById('macroJournalTbody');
