@@ -1254,7 +1254,12 @@ def chat_consultant(req: ChatRequest):
         # Default fallback to BTC
         analysis = agent.analyze_symbol("BTC")
         
-    reply = AgentAdvisor.answer_question(req.question, analysis)
+    chat_context = {
+        "macro_journal": load_macro_journal(),
+        "signal_journal": load_signal_journal(),
+        "sentinel_stats": _sentinel_stats,
+    }
+    reply = AgentAdvisor.answer_question(req.question, analysis, context=chat_context, agent_instance=agent)
     return {"reply": reply}
 
 @app.get("/api/exchange/cross-compare")
