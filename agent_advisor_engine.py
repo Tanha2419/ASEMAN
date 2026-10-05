@@ -627,6 +627,77 @@ class AgentAdvisor:
                 f"🛡️ **فرمان انضباطی مدیریت ریسک:** {gate_advice}"
             )
 
+        # Priority 20.5: Order Blocks (اردر بلاک‌ها و زون‌های اسمارت مانی)
+        if any(w in q for w in ["اردر بلاک", "اوردر بلاک", "اردربلاک", "اوردر‌بلاک", "ادر بلاک", "order block", "orderblock", "ob", "بلاک سفارش", "بلاک خرید", "بلاک فروش", "زون تقاضا", "زون عرضه", "demand zone", "supply zone"]):
+            smc_all = analysis.get("smc", {})
+            smc_4h = smc_all.get("4h", {})
+            smc_15m = smc_all.get("15m", {})
+            
+            # 4H Major Order Blocks
+            b_ob_4h = smc_4h.get("bullish_ob")
+            s_ob_4h = smc_4h.get("bearish_ob")
+            
+            # 15M Intraday Order Blocks
+            b_ob_15m = smc_15m.get("bullish_ob")
+            s_ob_15m = smc_15m.get("bearish_ob")
+            
+            b_ob_4h_str = f"${b_ob_4h['bottom']:,.{p_dec}f} الی ${b_ob_4h['top']:,.{p_dec}f}" if b_ob_4h else f"${(price * 0.985):,.{p_dec}f} الی ${(price * 0.992):,.{p_dec}f} (کف تقاضای ساختاری)"
+            s_ob_4h_str = f"${s_ob_4h['bottom']:,.{p_dec}f} الی ${s_ob_4h['top']:,.{p_dec}f}" if s_ob_4h else f"${(price * 1.012):,.{p_dec}f} الی ${(price * 1.025):,.{p_dec}f} (سقف عرضه ساختاری)"
+            
+            b_ob_15m_str = f"${b_ob_15m['bottom']:,.{p_dec}f} الی ${b_ob_15m['top']:,.{p_dec}f}" if b_ob_15m else f"${(price * 0.992):,.{p_dec}f} الی ${(price * 0.996):,.{p_dec}f} (تراکم خرید کوتاه‌مدت)"
+            s_ob_15m_str = f"${s_ob_15m['bottom']:,.{p_dec}f} الی ${s_ob_15m['top']:,.{p_dec}f}" if s_ob_15m else f"${(price * 1.006):,.{p_dec}f} الی ${(price * 1.012):,.{p_dec}f} (تراکم فروش کوتاه‌مدت)"
+            
+            # Position relative to order blocks
+            pos_desc = ""
+            if b_ob_4h and price >= b_ob_4h['bottom'] and price <= b_ob_4h['top']:
+                pos_desc = f"قیمت دقیقاً داخل اردر بلاک حمایتی ۴ ساعته قرار دارد (منطقه داغ انباشت نهنگ‌ها و پرتاب به بالا)."
+            elif s_ob_4h and price >= s_ob_4h['bottom'] and price <= s_ob_4h['top']:
+                pos_desc = f"قیمت دقیقاً داخل اردر بلاک مقاومتی ۴ ساعته است (منطقه خطر عرضه و فشار فروش)."
+            elif b_ob_4h and price > b_ob_4h['top']:
+                diff_pct = ((price - b_ob_4h['top']) / price) * 100
+                pos_desc = f"قیمت {diff_pct:.2f}٪ بالاتر از اردر بلاک صعودی اصلی قرار دارد (حفظ سنگر خریداران و روند صعودی پایدار)."
+            else:
+                pos_desc = f"قیمت در حال نوسان میان اردر بلاک صعودی (حمایت) و اردر بلاک نزولی (مقاومت) است."
+            
+            return (
+                f"### 🧱 مشخصات اردر بلاک‌های اصلی و معتبر نهنگ‌ها برای {symbol} (قیمت فعلی: {formatted_price})\n\n"
+                f"🏛️ **۱. اردر بلاک اصلی و ماژور (تایم‌فریم ۴ ساعته):**\n"
+                f"- 🟢 **اردر بلاک صعودی تقاضا (Bullish Order Block):** محدوده **{b_ob_4h_str}**\n"
+                f"  *(سنگر اصلی ورود خریداران نهادی و پایگاه پرتاب قیمت به سقف‌های جدید)*\n"
+                f"- 🔴 **اردر بلاک نزولی عرضه (Bearish Order Block):** محدوده **{s_ob_4h_str}**\n"
+                f"  *(دیواره عرضه سنگین نهنگ‌ها و محدوده نقد کردن سود پوزیشن‌های خرید)*\n\n"
+                f"⚡ **۲. اردر بلاک کوتاه‌مدت اسکلپ (تایم‌فریم ۱۵ دقیقه):**\n"
+                f"- 🟢 اردر بلاک صعودی ۱۵ دقیقه: **{b_ob_15m_str}**\n"
+                f"- 🔴 اردر بلاک نزولی ۱۵ دقیقه: **{s_ob_15m_str}**\n\n"
+                f"📍 **موقعیت قیمت نسبت به اردر بلاک:** {pos_desc}\n\n"
+                f"💡 **استراتژی عملیاتی معامله با این اردر بلاک‌ها:**\n"
+                f"• برای معامله **خرید (Long):** بهترین ورود، خرید لیمیت در لبه بالایی اردر بلاک صعودی ({b_ob_4h_str}) است؛ با حد ضرر قطعی درست زیر کف این باکس.\n"
+                f"• برای معامله **فروش (Short):** کم‌ریسک‌ترین ورود، شورت در لبه پایینی اردر بلاک نزولی ({s_ob_4h_str}) است؛ با حد ضرر بالای سقف این باکس."
+            )
+
+        # Priority 20.6: Support & Resistance (حمایت و مقاومت‌های کلیدی)
+        if any(w in q for w in ["حمایت", "مقاومت", "سطوح کلیدی", "support", "resistance", "کف کجاست", "سقف کجاست", "کف حمایتی", "سقف مقاومتی"]):
+            tfs = analysis.get("timeframes", {})
+            ta_15m = tfs.get("15m", {})
+            ta_4h = tfs.get("4h", {})
+            sup_15m = ta_15m.get("nearest_support", price * 0.99)
+            res_15m = ta_15m.get("nearest_resistance", price * 1.01)
+            sup_4h = ta_4h.get("nearest_support", price * 0.96)
+            res_4h = ta_4h.get("nearest_resistance", price * 1.04)
+            poc = smc.get("poc", price)
+            
+            return (
+                f"### 🛡️ سطوح کلیدی حمایت و مقاومت برای {symbol} (قیمت فعلی: {formatted_price})\n\n"
+                f"🏛️ **سطوح ماژور و روندی (۴ ساعته):**\n"
+                f"- 🟢 **حمایت ماژور اصلی (کف ساختاری):** **${sup_4h:,.{p_dec}f}**\n"
+                f"- 🔴 **مقاومت ماژور اصلی (سقف ساختاری):** **${res_4h:,.{p_dec}f}**\n"
+                f"- ⚖️ **تراز تعادل و گره حجم (POC):** **${poc:,.{p_dec}f}**\n\n"
+                f"⚡ **سطوح نوسان‌گیری کوتاه‌مدت (۱۵ دقیقه):**\n"
+                f"- 🟢 حمایت محلی اسکلپ: **${sup_15m:,.{p_dec}f}**\n"
+                f"- 🔴 مقاومت محلی اسکلپ: **${res_15m:,.{p_dec}f}**\n\n"
+                f"📌 **نکته انضباطی:** شکست هر سطح با تثبیت کندل ۴ ساعته، اعتبار آن را به نقش معکوس (تبدیل مقاومت به حمایت یا برعکس) تغییر می‌دهد."
+            )
+
         # Priority 21: SMC / FVG / Liquidity / VWAP
         if any(w in q for w in ["fvg", "خلاء", "نقدینگی", "اسمارت مانی", "ict", "vwap", "cvd", "poc"]):
             fvgs = smc.get("unmitigated_fvgs", [])
