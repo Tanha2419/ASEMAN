@@ -2616,6 +2616,62 @@
 
       <!-- Tab Institutional Signal Matrix -->
       <div class="tab-content active" id="instTab">
+        <!-- Collapsible Plain-Language Decision Drawer (اتاق فرمان و ترجمه سیگنال در یک نگاه به زبان خودمانی) -->
+        <details id="instPlainDrawer" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92)); border: 2px solid #00d2ff; border-radius: var(--radius); margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.45); overflow: hidden;" open>
+          <summary style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; cursor: pointer; user-select: none; background: rgba(0, 210, 255, 0.08); transition: background 0.2s;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.35rem;">🎯</span>
+              <div>
+                <strong style="color: #00d2ff; font-size: 0.95rem;">اتاق فرمان سیگنال نهادی: خلاصه تصمیم‌گیری به زبان ساده (نماد <span id="instPlainSym">BTC</span>)</strong>
+                <div style="font-size: 0.76rem; color: #cbd5e1; margin-top: 2px;">پاسخ سریع به ۳ سوال: وال‌ها دارن می‌خرن یا می‌فروشن؟ قیمت گرونه یا مفته؟ و تکلیف ما چیه؟</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="instPlainVerdictBadge" style="font-size: 0.78rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; background: #00e676; color: #000;">ورود لانگ مجاز است</span>
+              <span style="font-size: 0.72rem; color: #cbd5e1; background: rgba(255,255,255,0.08); padding: 3px 8px; border-radius: 4px;">کلیک برای جمع/باز کردن ▾</span>
+            </div>
+          </summary>
+
+          <div style="padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.82rem; line-height: 1.7;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 12px;">
+              <!-- Point 1 -->
+              <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.25); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-weight: 800; color: #00e676; font-size: 0.84rem; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <span>🐋</span> ۱. وال‌ها الان در چه فازی هستند؟
+                </div>
+                <div id="instPlainWhalePhase" style="color: #f1f5f9; font-size: 0.8rem;">
+                  جریان خرید تهاجمی (Aggressor Buy) در اردربوک فعال است و نهنگ‌ها در حال انباشت پوزیشن‌های لانگ هستند.
+                </div>
+              </div>
+
+              <!-- Point 2 -->
+              <div style="background: rgba(0, 210, 255, 0.06); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-weight: 800; color: #00d2ff; font-size: 0.84rem; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <span>🏷️</span> ۲. قیمت الان مفته یا گرون؟ (ارزش منصفانه):
+                </div>
+                <div id="instPlainFairValue" style="color: #f1f5f9; font-size: 0.8rem;">
+                  قیمت بالای خط میانگین وزنی روزانه (VWAP) معامله می‌شود که نشانه تمایل خریداران سازمانی برای خرید در قیمت‌های بالاتر است.
+                </div>
+              </div>
+
+              <!-- Point 3 -->
+              <div style="background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.25); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-weight: 800; color: #ffd700; font-size: 0.84rem; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                  <span>🎯</span> ۳. دستور اجرایی و تکلیف معامله‌گر:
+                </div>
+                <div id="instPlainActionPlan" style="color: #f1f5f9; font-size: 0.8rem;">
+                  ورود در پولبک به حمایت‌ها با حد ضرر مشخص مجاز است؛ سیو سود ۵۰٪ روی تارگت ۱ را فراموش نکنید.
+                </div>
+              </div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.3); padding: 8px 14px; border-radius: 6px; font-size: 0.76rem; color: #94a3b8; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <span>💡 <strong>نکته طلایی برای افراد تازه‌کار:</strong> اعداد و نمودارهای تخصصی زیر جزئیات تکنیکال هستند؛ تصمیم کلی ورود و خروج شما بر مبنای همین ۳ نکته بالاست.</span>
+              <span style="color: #00d2ff; font-weight: 700;">برای بستن این کادر روی نوار بالا کلیک کنید</span>
+            </div>
+          </div>
+        </details>
+
         <!-- 3 Highlights Cards for VWAP, CVD, Derivatives Matrix -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px;">
           <!-- Card 1: VWAP & Value Area -->
@@ -3763,6 +3819,38 @@
             </div>
           </div>
 
+          <!-- Collapsible Backtest Plain-Language Explainer -->
+          <details id="backtestPlainDrawer" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9)); border: 1px solid #00b4d8; border-radius: 8px; margin-bottom: 18px; overflow: hidden;">
+            <summary style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; cursor: pointer; user-select: none; background: rgba(0, 180, 216, 0.08); transition: background 0.2s;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.15rem;">💡</span>
+                <strong style="color: #00b4d8; font-size: 0.88rem;">
+                  راهنمای کشویی: معنی این اعداد ریاضی برای جیب ما چیه؟ (به زبان ساده)
+                </strong>
+              </div>
+              <span style="font-size: 0.72rem; color: #cbd5e1; background: rgba(255,255,255,0.08); padding: 3px 8px; border-radius: 4px;">
+                کلیک برای باز/بستن کشو ▾
+              </span>
+            </summary>
+
+            <div style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.82rem; line-height: 1.7; color: #cbd5e1;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
+                <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border-right: 3px solid #00e676;">
+                  <strong style="color: #00e676;">۱. نرخ برد (Win Rate):</strong>
+                  مثلاً ۶۸٪ یعنی در ۳۰۰ معامله گذشته، از هر ۱۰ معامله تقریباً ۷ معامله با سود قطعی به تارگت رسیده‌اند.
+                </div>
+                <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border-right: 3px solid #00b4d8;">
+                  <strong style="color: #00d2ff;">۲. فاکتور سود (Profit Factor):</strong>
+                  مثلاً ۲.۵ یعنی به ازای هر ۱ دلار ضرر در معاملات ناموفق، ۲.۵ دلار سود در معاملات برنده ساخته شده است (بالای ۱.۵ عالی است).
+                </div>
+                <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border-right: 3px solid #ff3366;">
+                  <strong style="color: #ff3366;">۳. حداکثر افت (Max Drawdown):</strong>
+                  یعنی در بدترین دوره متوالی ضرر، حساب شما چقدر افت کرده؛ زیر ۱۰٪ نشان‌دهنده امنیت فوق‌العاده بالاست.
+                </div>
+              </div>
+            </div>
+          </details>
+
           <!-- Backtest Stat Cards -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px;">
             <div class="metric-pill" style="border-right: 3px solid #00e676;">
@@ -4054,49 +4142,54 @@
       <!-- Tab 0: Smart Money / ICT Hub (NEW) -->
       <div class="tab-content" id="smcTab">
         <!-- Plain-Language SMC Command Center (اتاق تحلیل اسمارت مانی به زبان ساده) -->
-        <div id="smcPlainCommandBox" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); border: 2px solid #00d2ff; border-radius: var(--radius); padding: 20px; margin-bottom: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
+        <details id="smcPlainCommandBox" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); border: 2px solid #00d2ff; border-radius: var(--radius); margin-bottom: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden;" open>
+          <summary style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 14px 18px; cursor: pointer; user-select: none; background: rgba(0, 210, 255, 0.08); transition: background 0.2s;">
             <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 1.8rem;">🧠</span>
+              <span style="font-size: 1.5rem;">🧠</span>
               <div>
-                <strong style="font-size: 1.1rem; color: #00d2ff;">پیام اسمارت مانی و نقشه نهنگ‌ها به زبان خیلی ساده</strong>
-                <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">پاسخ به ۳ سوال کلیدی: الان وال‌ها در چه فازی هستند؟ کجا سفارش خرید/فروش بگذاریم؟ و کجا تله است؟</div>
+                <strong style="font-size: 1.05rem; color: #00d2ff;">پیام اسمارت مانی و نقشه نهنگ‌ها به زبان خیلی ساده</strong>
+                <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 2px;">پاسخ به ۳ سوال کلیدی: الان وال‌ها در چه فازی هستند؟ کجا سفارش خرید/فروش بگذاریم؟ و کجا تله است؟</div>
               </div>
             </div>
-            <span id="smcPlainTrendBadge" style="font-size: 0.85rem; font-weight: 800; padding: 6px 14px; border-radius: 6px; background: #00e676; color: #000; box-shadow: 0 0 12px rgba(0, 230, 118, 0.35);">
-              ساختار صعودی معتبر
-            </span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="smcPlainTrendBadge" style="font-size: 0.8rem; font-weight: 800; padding: 5px 12px; border-radius: 6px; background: #00e676; color: #000; box-shadow: 0 0 12px rgba(0, 230, 118, 0.35);">
+                ساختار صعودی معتبر (Bullish BOS)
+              </span>
+              <span style="font-size: 0.72rem; color: #cbd5e1; background: rgba(255,255,255,0.08); padding: 3px 8px; border-radius: 4px;">کلیک برای باز/بستن کشو ▾</span>
+            </div>
+          </summary>
+
+          <div style="padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 8px;">
+              <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-weight: 800; color: #00e676; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>🟢</span> ۱. وضعیت فعلی روند بازار (روند دست کیست؟):
+                </div>
+                <div id="smcPlainTrendDesc" style="font-size: 0.82rem; color: #e2e8f0; line-height: 1.7;">
+                  روند اصلی دست خریداران نهادی است! سقف‌های قیمتی متوالی با شکست ساختار صعودی (Bullish BOS) شکسته شده و نهنگ‌ها در کف‌های قیمتی اجازه ریزش نمی‌دهند؛ معامله در جهت خرید (لانگ) دارای بالاترین احتمال برد است.
+                </div>
+              </div>
+
+              <div style="background: rgba(0, 210, 255, 0.06); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-weight: 800; color: #00d2ff; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>🎯</span> ۲. کجا سفارش لیمیت بکاریم؟ (FVG و اردر بلاک):
+                </div>
+                <div id="smcPlainEntryZone" style="font-size: 0.82rem; color: #e2e8f0; line-height: 1.7;">
+                  بهترین محدوده کاشت سفارش لیمیت، در شکاف ارزش منصفانه دست‌نخورده (Unmitigated FVG) و بلوک سفارشات حمایتی است. هرگز در سقف قیمت وارد نشوید؛ اجازه دهید قیمت پولبک بزند تا با کمترین استاپ‌لاس سوار موج شوید.
+                </div>
+              </div>
+
+              <div style="background: rgba(255, 51, 102, 0.06); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-weight: 800; color: #ff3366; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>⚠️</span> ۳. تله‌های نقدینگی و استاپ‌هانت (کجا فریب نخوریم؟):
+                </div>
+                <div id="smcPlainTrapWarning" style="font-size: 0.82rem; color: #e2e8f0; line-height: 1.7;">
+                  مراقب شدوهای شکار نقدینگی (Liquidity Sweep) پشت کف‌ها و سقف‌های تابلو باشید! وال‌ها با پرتاب ناگهانی قیمت، استاپ‌لاس معامله‌گران خرد را فعال می‌کنند؛ استاپ خود را با فاصله امن ATR قرار دهید.
+                </div>
+              </div>
+            </div>
           </div>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
-            <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 8px; padding: 12px 14px;">
-              <div style="font-weight: 800; color: #00e676; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                <span>🟢</span> ۱. وضعیت فعلی روند بازار (روند دست کیست؟):
-              </div>
-              <div id="smcPlainTrendDesc" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
-                در حال ارزیابی ساختار سقف‌ها و کف‌ها...
-              </div>
-            </div>
-
-            <div style="background: rgba(0, 210, 255, 0.06); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 8px; padding: 12px 14px;">
-              <div style="font-weight: 800; color: #00d2ff; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                <span>🎯</span> ۲. کجا سفارش لیمیت بکاریم؟ (FVG و اردر بلاک):
-              </div>
-              <div id="smcPlainEntryZone" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
-                در حال شناسایی نزدیک‌ترین خلاء نقدینگی و بلوک سفارشات نهادی...
-              </div>
-            </div>
-
-            <div style="background: rgba(255, 51, 102, 0.06); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: 8px; padding: 12px 14px;">
-              <div style="font-weight: 800; color: #ff3366; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                <span>⚠️</span> ۳. تله‌های نقدینگی و استاپ‌هانت (کجا فریب نخوریم؟):
-              </div>
-              <div id="smcPlainTrapWarning" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
-                در حال رصد فیک‌بریک‌اوت‌ها و شدوهای شکار استاپ...
-              </div>
-            </div>
-          </div>
-        </div>
+        </details>
 
         <div class="smc-grid">
           <!-- Active Unmitigated FVGs -->
@@ -4558,6 +4651,38 @@
               <span style="font-size: 0.74rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; padding: 2px 8px; border-radius: 4px; font-weight: 700;">● فقط سیگنال‌های پرقدرت و تاییدشده</span>
             </div>
           </div>
+
+          <!-- Collapsible Diamond Gems Plain-Language Explainer -->
+          <details id="coinlegsPlainDrawer" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9)); border: 1px solid #ff9800; border-radius: 8px; margin-bottom: 20px; overflow: hidden;">
+            <summary style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; cursor: pointer; user-select: none; background: rgba(255, 152, 0, 0.08); transition: background 0.2s;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">🚀</span>
+                <strong style="color: #ff9800; font-size: 0.88rem;">
+                  راهنمای کشویی: چرا این ۳ ارز الماس‌های پرواز هستند؟ (توضیح به زبان ساده)
+                </strong>
+              </div>
+              <span style="font-size: 0.72rem; color: #cbd5e1; background: rgba(255,255,255,0.08); padding: 3px 8px; border-radius: 4px;">
+                کلیک برای باز/بستن کشو ▾
+              </span>
+            </summary>
+
+            <div style="padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.82rem; line-height: 1.7; color: #cbd5e1;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+                <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-radius: 6px; border-right: 3px solid #ffd700;">
+                  <strong style="color: #ffd700; display: block; margin-bottom: 3px;">۱. حالت فنر فشرده (Bollinger Squeeze):</strong>
+                  نوسانات قیمت به شدت فشرده و کم شده است. در بازار مالی، فشردگی طولانی نوسان همیشه به انفجار قیمتی قدرتمند ختم می‌شود.
+                </div>
+                <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-radius: 6px; border-right: 3px solid #00e676;">
+                  <strong style="color: #00e676; display: block; margin-bottom: 3px;">۲. ورود بی‌صدای پول هوشمند:</strong>
+                  نهنگ‌ها حجم‌های مخفی خرید ثبت کرده‌اند اما اجازه رشد زودهنگام نداده‌اند تا بار خود را در قیمت‌های پایین تکمیل کنند.
+                </div>
+                <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-radius: 6px; border-right: 3px solid #00d2ff;">
+                  <strong style="color: #00d2ff; display: block; margin-bottom: 3px;">۳. استراتژی معامله‌گر:</strong>
+                  خرید پله‌ای در کف این باکس‌های نوسانی یا ورود بلافاصله پس از شکست اولین مقاومت با تارگت‌های ۱۵٪ الی ۳۵٪.
+                </div>
+              </div>
+            </div>
+          </details>
 
           <!-- Top 3 Diamond Gems Spotlight Section -->
           <div style="margin-bottom: 24px;">
@@ -5599,6 +5724,38 @@
               <div style="font-size: 0.72rem; color: #00e676;">100% Noise-Free Edge</div>
             </div>
           </div>
+
+          <!-- Collapsible Golden 6 Plain-Language Drawer -->
+          <details id="goldenPlainDrawer" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9)); border: 1px solid #ffd700; border-radius: 8px; margin-bottom: 22px; overflow: hidden;" open>
+            <summary style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; cursor: pointer; user-select: none; background: rgba(255, 215, 0, 0.08); transition: background 0.2s;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">⭐</span>
+                <strong style="color: #ffd700; font-size: 0.9rem;">
+                  ترجمه وضعیت ۶ شرط به زبان خیلی ساده (تترها آماده خریدن یا وال‌ها دارن می‌ریزن تو صرافی؟)
+                </strong>
+              </div>
+              <span style="font-size: 0.72rem; color: #cbd5e1; background: rgba(255,255,255,0.08); padding: 3px 8px; border-radius: 4px;">
+                کلیک برای باز/بستن کشو ▾
+              </span>
+            </summary>
+
+            <div style="padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.82rem; line-height: 1.7; color: #cbd5e1;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 6px;">
+                <div style="background: rgba(0, 230, 118, 0.06); padding: 10px 12px; border-radius: 6px; border-right: 3px solid #00e676;">
+                  <strong style="color: #00e676; display: block; margin-bottom: 3px;">۱. ورود و خروج به صرافی‌ها (Exchange Flow):</strong>
+                  بیت‌کوین‌ها از صرافی خارج شده و به کیف‌پول‌های سرد می‌روند؛ یعنی وال‌ها قصد فروش ندارند و فشار عرضه سبک است.
+                </div>
+                <div style="background: rgba(0, 210, 255, 0.06); padding: 10px 12px; border-radius: 6px; border-right: 3px solid #00d2ff;">
+                  <strong style="color: #00d2ff; display: block; margin-bottom: 3px;">۲. انبار باروت تتر (Stablecoin Supply):</strong>
+                  میلیاردها دلار تتر و استیبل‌کوین در صرافی‌ها پارک شده و هر زمان اراده کنند بازار را پامپ می‌کنند.
+                </div>
+                <div style="background: rgba(255, 215, 0, 0.06); padding: 10px 12px; border-radius: 6px; border-right: 3px solid #ffd700;">
+                  <strong style="color: #ffd700; display: block; margin-bottom: 3px;">۳. تب لوریج‌ها (Funding Rate):</strong>
+                  فاندینگ ریت در محدوده نرمال است؛ قماربازها زیاد اهرم نزده‌اند و خطر ریزش آبشاری وجود ندارد.
+                </div>
+              </div>
+            </div>
+          </details>
 
           <!-- 6 Grid Filter Cards -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 26px;" id="goldenCardsGrid">
@@ -9066,6 +9223,69 @@
         if (mOichg) mOichg.innerText = matrix.oi_change || '0%';
       }
 
+      // Update Plain-Language Command Drawer
+      try {
+        const pSym = document.getElementById('instPlainSym');
+        if (pSym) pSym.innerText = data.symbol || currentSymbol || 'BTC';
+
+        const pBadge = document.getElementById('instPlainVerdictBadge');
+        const pWhale = document.getElementById('instPlainWhalePhase');
+        const pFair = document.getElementById('instPlainFairValue');
+        const pAction = document.getElementById('instPlainActionPlan');
+
+        const isLong = (data.action || '').includes('BUY') || (data.action || '').includes('LONG') || (scalp && (scalp.action_code === 'BUY'));
+        const isShort = (data.action || '').includes('SELL') || (data.action || '').includes('SHORT') || (scalp && (scalp.action_code === 'SELL'));
+
+        if (pBadge) {
+          if (isLong) {
+            pBadge.style.background = '#00e676';
+            pBadge.style.color = '#000';
+            pBadge.innerText = '🟢 ورود لانگ مجاز است';
+          } else if (isShort) {
+            pBadge.style.background = '#ff3366';
+            pBadge.style.color = '#fff';
+            pBadge.innerText = '🔴 ستاپ شورت / فروش فعال';
+          } else {
+            pBadge.style.background = '#ffd700';
+            pBadge.style.color = '#000';
+            pBadge.innerText = '🟡 فاز احتیاط / انتظار برای تایید';
+          }
+        }
+
+        if (pWhale) {
+          if (isLong) {
+            pWhale.innerHTML = `جریان خرید تهاجمی (Aggressor Buy) در اردربوک فعال است و نهنگ‌ها در حال انباشت پوزیشن‌های لانگ در کف هستند.`;
+          } else if (isShort) {
+            pWhale.innerHTML = `فشار فروش و دیواره‌های سنگین اردرهای فروش دیده می‌شود و نهنگ‌ها در حال توزیع و تخلیه هستند.`;
+          } else {
+            pWhale.innerHTML = `تعادل نسبی بین خریدار و فروشنده وجود دارد و وال‌ها هنوز جهت قطعی را مشخص نکرده‌اند.`;
+          }
+        }
+
+        if (pFair) {
+          const vpos = (vwap && vwap.vwap_position) ? vwap.vwap_position : 'نرمال';
+          if (vpos.includes('بالای')) {
+            pFair.innerHTML = `قیمت بالای خط ارزش منصفانه (VWAP) معامله می‌شود؛ خریداران مایل به خرید در قیمت‌های بالاترند (قدرت روند).`;
+          } else if (vpos.includes('پایین')) {
+            pFair.innerHTML = `قیمت در محدوده تخفیف و زیر میانگین وزنی (VWAP) قرار دارد؛ جذاب برای شکار نوسان برگشتی.`;
+          } else {
+            pFair.innerHTML = `قیمت دقیقاً در تعادل ارزش منصفانه معامله می‌شود.`;
+          }
+        }
+
+        if (pAction) {
+          if (isLong) {
+            pAction.innerHTML = `ورود در پولبک به محدوده <strong>${scalp ? (scalp.entry_zone || 'حمایت') : 'حمایت'}</strong> با حد ضرر معین؛ سیو سود ۵۰٪ روی تارگت ۱ فراموش نشود.`;
+          } else if (isShort) {
+            pAction.innerHTML = `ورود فروش در تست مقاومت‌ها با استاپ فشرده؛ بستن نیمی از حجم در تارگت اول الزامی است.`;
+          } else {
+            pAction.innerHTML = `از ورود هیجانی خودداری کرده و منتظر تشکیل کندل تاییدیه در حمایت یا مقاومت بمانید.`;
+          }
+        }
+      } catch (err) {
+        console.error('Error updating inst plain drawer:', err);
+      }
+
       // Table Rows
       const tbody = document.getElementById('instSignalTableBody');
       if (tbody && instTable.length > 0) {
@@ -9688,6 +9908,56 @@ ${s3d.action_advice || ''}
             📌 معامله‌گران سبک آسا و LIT معتقدند قیمت ابتدا این سطح را هانت می‌کند تا نقدینگی لازم را برای حرکت به سمت اوردر بلاک اصلی تامین کند.
           </div>
         `;
+      }
+
+      // Update Plain-Language SMC Command Center
+      try {
+        const trendBadge = document.getElementById('smcPlainTrendBadge');
+        const trendDesc = document.getElementById('smcPlainTrendDesc');
+        const entryZone = document.getElementById('smcPlainEntryZone');
+        const trapWarn = document.getElementById('smcPlainTrapWarning');
+
+        const s = smc.latest_structure || {};
+        const isBullishStruct = s.type ? s.type.includes('BULLISH') : true;
+        const sweeps = smc.sweeps || [];
+        const fvgs = smc.unmitigated_fvgs || [];
+        const sym = (window.currentAnalysis && window.currentAnalysis.symbol) ? window.currentAnalysis.symbol : (currentSymbol || 'ارز انتخابی');
+
+        if (trendBadge && trendDesc) {
+          if (isBullishStruct) {
+            trendBadge.style.background = '#00e676';
+            trendBadge.style.color = '#000';
+            trendBadge.innerText = '🟢 ساختار صعودی معتبر (Bullish BOS)';
+            trendDesc.innerHTML = `روند ${sym} دست خریداران است! سقف قبلی در تراز <strong style="color:#00e676;">${s.broken_level ? formatPrice(s.broken_level) : 'ماژور'}</strong> شکسته شده و نهنگ‌ها کف‌های بالاتری می‌سازند. تا حفظ این ساختار، معاملات خرید (لانگ) دارای برتری قطعی آماری هستند.`;
+          } else {
+            trendBadge.style.background = '#ff3366';
+            trendBadge.style.color = '#fff';
+            trendBadge.innerText = '🔴 ساختار نزولی یا اصلاحی (Bearish)';
+            trendDesc.innerHTML = `فروشندگان کنترل موقت مارکت ${sym} را در دست دارند و کف قیمتی در تراز <strong style="color:#ff3366;">${s.broken_level ? formatPrice(s.broken_level) : 'ساختاری'}</strong> شکسته شده است. از خریدهای هیجانی در میانه راه خودداری کنید و منتظر تشکیل تاییدیه برگشت بمانید.`;
+          }
+        }
+
+        if (entryZone) {
+          if (fvgs.length > 0) {
+            const nearFvg = fvgs[0];
+            entryZone.innerHTML = `بهترین محدوده پولبک و کاشت سفارش لیمیت بین <strong style="color:#ffd700;">${formatPrice(nearFvg.bottom)}</strong> تا <strong style="color:#ffd700;">${formatPrice(nearFvg.top)}</strong> است (خلاء نقدینگی FVG دست‌نخورده). به جای خرید هیجانی در سقف، اجازه دهید قیمت این شکاف را لمس کند تا با کمترین ریسک وارد شوید.`;
+          } else if (window.currentAnalysis && window.currentAnalysis.scalp_setup && window.currentAnalysis.scalp_setup.entry_zone) {
+            entryZone.innerHTML = `بهترین محدوده ورود در اصلاح قیمت بین <strong style="color:#00d2ff;">${window.currentAnalysis.scalp_setup.entry_zone}</strong> است. ورود در این تراز بالاترین نسبت سود به ریسک را فراهم می‌کند.`;
+          } else {
+            entryZone.innerHTML = `در حال حاضر خلاء پرنشده بزرگی نزدیک قیمت نیست. سفارشات خود را در محدوده اردر بلاک حمایتی یا کف کانال قرار دهید.`;
+          }
+        }
+
+        if (trapWarn) {
+          if (sweeps.length > 0) {
+            const lastSweep = sweeps[0];
+            trapWarn.innerHTML = `⚠️ <strong>هشدار شکار استاپ!</strong> در تراز <strong style="color:#ff9100;">${formatPrice(lastSweep.level_swept)}</strong> یک شدوی استاپ‌هانت رخ داده است (${lastSweep.title}). استاپ‌لاس خود را دقیقاً پشت این تراز نگذارید، بلکه با مقداری فاصله امن ATR قرار دهید تا شکار وال‌ها نشوید.`;
+          } else {
+            trapWarn.innerHTML = `در کندل‌های اخیر شدوی مشکوک به استاپ‌هانت ثبت نشده است؛ مراقب شکست‌های جعلی سقف و کف‌های قبلی قبل از انتشار اخبار اقتصادی باشید.`;
+          }
+        }
+      } catch (e) {
+        console.error('Error rendering smc plain box:', e);
       }
     }
 
