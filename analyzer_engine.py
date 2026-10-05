@@ -1745,11 +1745,12 @@ class CryptoTradingAgent:
         bullish_mtf = (bias_4h != "BEARISH_STRONG" and bias_15m != "BEARISH_STRONG")
         bearish_mtf = (bias_4h != "BULLISH_STRONG" and bias_15m != "BULLISH_STRONG")
 
-        # 5-Layer Confluence Gates for M1/M5 Scalping
+        # 5-Layer Confluence Gates for M1/M5 Scalping (Institutional Quality Gate)
         bullish_aligned = (
             ("BULLISH" in bias_5m or "BULLISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP"))
             and bullish_mtf
-            and (36 <= rsi_5m <= 68)
+            and (36 <= rsi_5m <= 65)
+            and ob_ratio >= 1.02
             and not has_sell_wall
             and not is_short_covering_trap
             and fake_badge != "BULL_TRAP"
@@ -1759,7 +1760,8 @@ class CryptoTradingAgent:
         bearish_aligned = (
             ("BEARISH" in bias_5m or "BEARISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP"))
             and bearish_mtf
-            and (32 <= rsi_5m <= 64)
+            and (35 <= rsi_5m <= 64)
+            and ob_ratio <= 0.98
             and not has_buy_wall
             and not is_long_liquidation_trap
             and fake_badge != "BEAR_TRAP"
@@ -1782,27 +1784,38 @@ class CryptoTradingAgent:
                 
             entry_str = f"{entry_low} - {entry_high}"
             
-            # Tight 1m/5m scalp stop loss
-            sl_distance = max(1.15 * atr, price * 0.0035)
-            sl = self._round_val(max(nearest_sup * 0.999, price - sl_distance))
-            risk = price - sl
-            if risk <= 0: risk = price * 0.005; sl = self._round_val(price - risk)
+            # --- INSTITUTIONAL STRUCTURAL STOP LOSS (BULLISH) ---
+            # Stop loss sits safely BELOW structural support & order block bottom,
+            # fortified by a true ATR volatility buffer to eliminate micro-wick sweep outs.
+            sl_structural = nearest_sup * 0.995  # 0.5% below support
+            sl_volatility = price - max(1.8 * atr, price * 0.012) # minimum 1.2% distance
+            sl_raw = min(sl_structural, sl_volatility)
+            
+            # Bound risk between 1.0% (anti-wick shield) and 3.2% (capital preservation)
+            risk = price - sl_raw
+            if risk < price * 0.010:
+                sl_raw = price * 0.990
+                risk = price - sl_raw
+            elif risk > price * 0.032:
+                sl_raw = price * 0.968
+                risk = price - sl_raw
+            sl = self._round_val(sl_raw)
             
             # GATE 4: Dynamic Minimum Risk-to-Reward (R:R >= 1:2.0 on Target 2)
-            tp1 = self._round_val(price + 1.25 * risk)
-            tp2 = self._round_val(price + 2.35 * risk)
-            tp3 = self._round_val(max(price + 3.4 * risk, smc.get("bsl_pool_target", price * 1.025)))
+            tp1 = self._round_val(price + 1.50 * risk)
+            tp2 = self._round_val(price + 2.50 * risk)
+            tp3 = self._round_val(max(price + 3.80 * risk, smc.get("bsl_pool_target", price * 1.035)))
             
-            rr_val = round((tp2 - price) / risk, 1) if risk > 0 else 2.3
-            confidence = "92%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "86%"
+            rr_val = round((tp2 - price) / risk, 1) if risk > 0 else 2.5
+            confidence = "92%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "88%"
             
             triggers = [
-                f"تاییدیه همسویی ۵ لایه (MTF 4H صعودی + عمق خرید {ob_ratio:.2f}x + فقدان دیوار فروش)",
-                "ورود فوق‌سریع در تایم‌فریم ۱ و ۵ دقیقه با تاییدیه پرتاب اردر بوک",
-                "سیو سود ۵۰٪ در تارگت ۱ و انتقال فوری حد ضرر به نقطه ورود (Breakeven)",
-                "شکار استخر نقدینگی سقف (BSL Liquidity Pool)"
+                f"تاییدیه همسویی ساختاری نهادی (MTF 4H صعودی + عمق خرید {ob_ratio:.2f}x + فقدان دیوار فروش)",
+                "حد ضرر ساختاری امن پشت سنگر اردر بلاک (مصون از شدوهای نقدینگی)",
+                "سیو سود ۵۰٪ در تارگت ۱ و انتقال فوری حد ضرر به نقطه ورود (Risk-Free Breakeven)",
+                "شکار استخر نقدینگی سقف (BSL Liquidity Pool) با نسبت سود به ریسک بالای ۲.۵"
             ]
-            warning = "در معاملات ۱ و ۵ دقیقه، سرعت عمل و پایبندی به حد ضرر حیاتی است."
+            warning = "پس از تاچ تارگت ۱، بلافاصله حد ضرر را روی نقطه ورود بگذارید تا معامله کاملاً بدون ریسک شود."
 
         # Bearish M1/M5 Scalp Setup
         elif bearish_aligned:
@@ -1820,26 +1833,38 @@ class CryptoTradingAgent:
                 
             entry_str = f"{entry_low} - {entry_high}"
             
-            sl_distance = max(1.15 * atr, price * 0.0035)
-            sl = self._round_val(min(nearest_res * 1.001, price + sl_distance))
-            risk = sl - price
-            if risk <= 0: risk = price * 0.005; sl = self._round_val(price + risk)
+            # --- INSTITUTIONAL STRUCTURAL STOP LOSS (BEARISH) ---
+            # Stop loss sits safely ABOVE structural resistance & order block top,
+            # fortified by a true ATR volatility buffer to eliminate micro-wick sweep outs.
+            sl_structural = nearest_res * 1.005  # 0.5% above resistance
+            sl_volatility = price + max(1.8 * atr, price * 0.012) # minimum 1.2% distance
+            sl_raw = max(sl_structural, sl_volatility)
+            
+            # Bound risk between 1.0% (anti-wick shield) and 3.2% (capital preservation)
+            risk = sl_raw - price
+            if risk < price * 0.010:
+                sl_raw = price * 1.010
+                risk = sl_raw - price
+            elif risk > price * 0.032:
+                sl_raw = price * 1.032
+                risk = sl_raw - price
+            sl = self._round_val(sl_raw)
             
             # GATE 4: Dynamic Minimum Risk-to-Reward (R:R >= 1:2.0 on Target 2)
-            tp1 = self._round_val(price - 1.25 * risk)
-            tp2 = self._round_val(price - 2.35 * risk)
-            tp3 = self._round_val(min(price - 3.4 * risk, smc.get("ssl_pool_target", price * 0.975)))
+            tp1 = self._round_val(price - 1.50 * risk)
+            tp2 = self._round_val(price - 2.50 * risk)
+            tp3 = self._round_val(min(price - 3.80 * risk, smc.get("ssl_pool_target", price * 0.965)))
             
-            rr_val = round((price - tp2) / risk, 1) if risk > 0 else 2.3
-            confidence = "90%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "84%"
+            rr_val = round((price - tp2) / risk, 1) if risk > 0 else 2.5
+            confidence = "90%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "86%"
             
             triggers = [
-                f"تاییدیه همسویی ۵ لایه (MTF 4H نزولی + فشار فروش اردر بوک + فاقد دیوار خرید زیر قیمت)",
-                "ورود شورت ۱ و ۵ دقیقه پس از ریجکت سقف و خروج اردرهای خرید هیجانی",
-                "سیو سود ۵۰٪ در تارگت ۱ و ریسک‌فری کردن باقی‌مانده حجم (SL به Breakeven)",
-                "رویت کندل زیر میانگین VWAP و شتاب به سمت استخر کف (SSL)"
+                f"تاییدیه همسویی ساختاری نهادی (MTF 4H نزولی + فشار فروش اردر بوک + فاقد دیوار خرید)",
+                "حد ضرر ساختاری امن بالای سقف سوئینگ (مصون از فیک‌پامپ‌های مقطعی)",
+                "سیو سود ۵۰٪ در تارگت ۱ و ریسک‌فری کردن باقی‌مانده حجم (SL به نقطه ورود)",
+                "رویت کندل زیر میانگین VWAP و شتاب به سمت استخر کف (SSL) با R:R بالای ۲.۵"
             ]
-            warning = "در معاملات شورت مراقب پامپ‌های ناشی از دستکاری الگوریتمی HFT باشید."
+            warning = "در معاملات شورت پس از لمس تارگت ۱ پوزیشن را بلافاصله ریسک‌فری کنید."
 
         else:
             action = "WAIT / NO SCALP (صبر برای شفافیت روند)"

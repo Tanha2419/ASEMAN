@@ -436,6 +436,28 @@ def signal_outcome_tracker_loop():
                         except Exception as e:
                             print(f"[OUTCOME TRACKER ERR] {e}")
 
+                # Check Breakeven / Risk-Free exit (if TP1 was already hit, remaining 50% exits safely at entry without loss)
+                if tr.get("tp1_hit") and not tr.get("tp2_hit") and not tr.get("closed"):
+                    hit_be = (current_price <= entry) if is_long else (current_price >= entry)
+                    if hit_be:
+                        tr["closed"] = True
+                        update_signal_in_journal(sym, "BREAKEVEN_CLOSED", 0.0)
+                        msg_be = f"""
+🛡️ <b>بسته‌شدن بدون ریسک باقی‌مانده پوزیشن (Risk-Free Breakeven)</b>
+━━━━━━━━━━━━━━━━━━━━
+💎 <b>نماد:</b> #{sym}
+💰 <b>قیمت خروج:</b> ${current_price:,.4f}
+✨ <b>وضعیت:</b> ۵۰٪ سود در تارگت ۱ ذخیره شد و مابقی پوزیشن در نقطه ورود بدون ضرر بسته شد.
+⏰ <b>زمان (ایران 🇮🇷):</b> <code>ساعت {iran_time}</code>
+━━━━━━━━━━━━━━━━━━━━
+🤖 <i>CryptoAgent Signal Outcome Sentinel</i>
+"""
+                        try:
+                            TelegramDispatcher.send_raw_text(bot_tok, chat_id, msg_be.strip())
+                            print(f"[OUTCOME TRACKER] Breakeven exit alert sent for {sym}")
+                        except Exception as e:
+                            print(f"[OUTCOME TRACKER ERR] {e}")
+
                 # Check SL (only if TP1 wasn't hit yet)
                 if not tr.get("tp1_hit"):
                     hit_sl = (current_price <= sl) if is_long else (current_price >= sl)
@@ -672,12 +694,31 @@ def auto_sentinel_loop():
 
                         analysis = agent.analyze_symbol(sym)
                         if analysis.get("success"):
-                            # Quality Gate: Reject Grade C, D, F signals or WAIT status
+                            # Institutional Elite Sniper Quality Gate:
+                            # 1. Strictly Grade A or A+ only (Strictly reject B, C, D, F)
                             s3d = analysis.get("scores_3d", {})
                             grade = s3d.get("grade", "C")
-                            scalp_act = analysis.get("scalp_setup", {}).get("action_code", "WAIT")
+                            comp_score = float(s3d.get("composite_confidence", 0) or s3d.get("composite_score", 0) or s3d.get("score", 0) or score)
+                            scalp_data = analysis.get("scalp_setup", {})
+                            scalp_act = scalp_data.get("action_code", "WAIT")
+                            rr_ratio = float(scalp_data.get("risk_reward", 2.0) or 2.0)
+                            shield_status = analysis.get("altcoin_shield", {}).get("status", "NORMAL")
 
-                            if grade in ["C", "D", "F"] or scalp_act == "WAIT":
+                            # Reject non-elite grades or WAIT signals
+                            if grade not in ["A+", "A"] or scalp_act == "WAIT":
+                                continue
+
+                            # Reject low conviction / low composite score
+                            if comp_score < 78 and score < 82:
+                                continue
+
+                            # Altcoin macro danger shield
+                            if scalp_act == "BUY" and shield_status == "DANGER":
+                                print(f"[SENTINEL] Skipping {sym} because Altcoin Shield is in DANGER mode.")
+                                continue
+
+                            # Minimum 1:1.8 Risk-to-Reward ratio
+                            if rr_ratio < 1.8:
                                 continue
 
                             res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis)
@@ -688,7 +729,6 @@ def auto_sentinel_loop():
                                 print(f"[SENTINEL] Auto-alert dispatched for {sym} to {chat_id}")
                                 
                                 # Register in live Outcome Tracker
-                                scalp_data = analysis.get("scalp_setup", {})
                                 if scalp_data.get("tp1") and scalp_data.get("stop_loss"):
                                     with _trackers_lock:
                                         _active_signal_trackers.append({
