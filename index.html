@@ -2932,48 +2932,52 @@
 
         <!-- Plain-Language AI Interpreter & Human Guide (مترجم هوشمند نهنگ‌ها به زبان ساده) -->
         <div id="liqPlainLanguageBox" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); border: 1px solid rgba(255, 215, 0, 0.45); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.45);">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+          <!-- Clickable Header Accordion -->
+          <div onclick="toggleLiqStoryDrawer()" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; cursor: pointer; user-select: none;">
             <div style="display: flex; align-items: center; gap: 10px;">
+              <span id="liqStoryToggleIcon" style="font-size: 1.15rem; color: #ffd700; transition: transform 0.3s; display: inline-block;">▼</span>
               <span style="font-size: 1.4rem;">🗣️</span>
               <div>
                 <strong style="font-size: 1.05rem; color: #ffd700;">تحلیل داستان بازار: پشت پرده این اعداد چیست؟</strong>
-                <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">توضیحات تکمیلی برای کسانی که می‌خواهند دلیل حرکت نهنگ‌ها را بدانند</div>
+                <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">توضیحات تکمیلی برای کسانی که می‌خواهند دلیل حرکت نهنگ‌ها را بدانند — <span style="color: #ffd700; font-weight: 700;">برای باز/بستن کلیک کنید</span></div>
               </div>
             </div>
-            <span style="background: rgba(255, 215, 0, 0.15); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.3); font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; font-weight: 800;">
-              روایت بازار
-            </span>
+            <button type="button" class="copy-btn" style="background: rgba(255, 215, 0, 0.15); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.4); font-size: 0.76rem; padding: 6px 14px; border-radius: 6px; font-weight: 800; cursor: pointer;">
+              📖 باز / بستن روایت بازار
+            </button>
           </div>
 
-          <!-- 3 Plain Language Insight Cards -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
-            <!-- Story Card -->
-            <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 14px;">
-              <div style="font-weight: 800; color: #38bdf8; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                <span>🎯</span> داستان لحظه‌ای نقدینگی و آهنربا:
+          <!-- 3 Plain Language Insight Cards Body -->
+          <div id="liqStoryBody" style="display: block; margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+              <!-- Story Card -->
+              <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-weight: 800; color: #38bdf8; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>🎯</span> داستان لحظه‌ای نقدینگی و آهنربا:
+                </div>
+                <div id="liqPlainStory" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
+                  در حال فراخوانی مختصات استخرهای نقدینگی...
+                </div>
               </div>
-              <div id="liqPlainStory" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
-                در حال فراخوانی مختصات استخرهای نقدینگی...
-              </div>
-            </div>
 
-            <!-- Whale Shield Card -->
-            <div style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 12px 14px;">
-              <div style="font-weight: 800; color: #c084fc; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                <span>🛡️</span> سنگر نهنگ‌ها و دیواره‌های اردر بوک:
+              <!-- Whale Shield Card -->
+              <div style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-weight: 800; color: #c084fc; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>🛡️</span> سنگر نهنگ‌ها و دیواره‌های اردر بوک:
+                </div>
+                <div id="liqPlainWhaleShield" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
+                  در حال بررسی قیمت میانگین خرید وال‌ها و دیوارهای پنهان عمق بازار...
+                </div>
               </div>
-              <div id="liqPlainWhaleShield" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
-                در حال بررسی قیمت میانگین خرید وال‌ها و دیوارهای پنهان عمق بازار...
-              </div>
-            </div>
 
-            <!-- Action Verdict Card -->
-            <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 8px; padding: 12px 14px;">
-              <div style="font-weight: 800; color: #00e676; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                <span>🚦</span> دستور عملیاتی شفاف (الان چه کنیم؟):
-              </div>
-              <div id="liqPlainAction" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
-                در حال تولید دستور معاملاتی انضباطی بر اساس اردر فلو...
+              <!-- Action Verdict Card -->
+              <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-weight: 800; color: #00e676; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>🚦</span> دستور عملیاتی شفاف (الان چه کنیم؟):
+                </div>
+                <div id="liqPlainAction" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
+                  در حال تولید دستور معاملاتی انضباطی بر اساس اردر فلو...
+                </div>
               </div>
             </div>
           </div>
@@ -6698,6 +6702,19 @@
       }
     }
 
+    function toggleLiqStoryDrawer() {
+      const body = document.getElementById('liqStoryBody');
+      const icon = document.getElementById('liqStoryToggleIcon');
+      if (!body) return;
+      if (body.style.display === 'none') {
+        body.style.display = 'block';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      } else {
+        body.style.display = 'none';
+        if (icon) icon.style.transform = 'rotate(-90deg)';
+      }
+    }
+
     function setLiqLeverageFilter(mode) {
       _currentLiqFilter = mode;
       const bAll = document.getElementById("liqLevFilterAll");
@@ -7083,6 +7100,10 @@
         const bPrice = Number(bWall.price || (cPrice * 0.985));
         const aPrice = Number(aWall.price || (cPrice * 1.015));
 
+        const curPriceFmt = `$${Number(data.current_price || 0).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}`;
+        const magPriceFmt = liq.magnet_price ? `$${Number(liq.magnet_price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}` : "-";
+        const whaleAvgFmt = whales.whale_avg_cost_basis_fmt || "-";
+
         if (isBullishMagnet) {
           if (mainBadgeEl) {
             mainBadgeEl.innerText = "🟢 دستور صریح: پوزیشن خرید (LONG)";
@@ -7147,10 +7168,6 @@
         const plainStoryEl = document.getElementById("liqPlainStory");
         const plainWhaleShieldEl = document.getElementById("liqPlainWhaleShield");
         const plainActionEl = document.getElementById("liqPlainAction");
-
-        const curPriceFmt = `$${Number(data.current_price || 0).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}`;
-        const magPriceFmt = liq.magnet_price ? `$${Number(liq.magnet_price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}` : "-";
-        const whaleAvgFmt = whales.whale_avg_cost_basis_fmt || "-";
 
         if (plainStoryEl) {
           if (isBullishMagnet) {
