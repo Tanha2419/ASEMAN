@@ -6472,15 +6472,23 @@
                       </div>
                     </div>
 
-                    <!-- Strategy Targets -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 8px 12px; margin-bottom: 14px; font-size: 0.74rem;">
-                      <div>
-                        <span style="color: #94a3b8;">حد ضرر امن:</span>
-                        <strong style="color: #ff3366; font-family: var(--font-mono); margin-right: 4px;">${formatPrice(g.sl_price)}</strong>
+                    <!-- Strategy Targets (High-Winrate Staged Targets) -->
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.74rem;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #94a3b8;">📥 محدوده ورود بهینه:</span>
+                        <strong style="color: #38bdf8; font-family: var(--font-mono);">${g.entry_zone || ('$' + formatPrice(g.price))}</strong>
                       </div>
-                      <div>
-                        <span style="color: #94a3b8;">تارگت رشد:</span>
-                        <strong style="color: #00e676; font-family: var(--font-mono); margin-right: 4px;">${formatPrice(g.tp2_price)} (+${g.tp_potential_pct}%)</strong>
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #94a3b8;">🎯 تارگت ۱ (سیو ۵۰٪ + ریسک‌فری):</span>
+                        <strong style="color: #00e676; font-family: var(--font-mono);">${formatPrice(g.tp1_price)} (+1.1%)</strong>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #94a3b8;">👑 تارگت ۲ (سوئینگ):</span>
+                        <strong style="color: #ffd700; font-family: var(--font-mono);">${formatPrice(g.tp2_price)} (+${g.tp_potential_pct}%)</strong>
+                      </div>
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #94a3b8;">🛑 حد ضرر ساختاری (SL):</span>
+                        <strong style="color: #ff3366; font-family: var(--font-mono);">${formatPrice(g.sl_price)} (-2.3%)</strong>
                       </div>
                     </div>
                   </div>
@@ -6537,6 +6545,12 @@
             <td><span class="mono" style="font-weight: 700;">${formatPrice(d.price)}</span></td>
             <td>
               <span class="indicator-badge" style="background: ${badgeBg}; color: ${badgeCol}; font-weight: 800; display: inline-block;">${d.status_badge || d.verdict_fa}</span>
+              <div style="font-size: 0.70rem; color: #38bdf8; margin-top: 4px; font-family: var(--font-mono);">
+                🎯 TP1: <strong>${formatPrice(d.tp1_price)} (+1.1%)</strong> | 🛑 SL: <strong>${formatPrice(d.sl_price)}</strong>
+              </div>
+              <div style="font-size: 0.68rem; color: #94a3b8; margin-top: 2px;">
+                📥 ورود: <strong style="color: #f8fafc;">${d.entry_zone || ('$' + formatPrice(d.price))}</strong>
+              </div>
               ${d.action_advice ? `<div style="font-size: 0.71rem; color: #cbd5e1; margin-top: 3px; max-width: 250px;">💡 ${d.action_advice}</div>` : ''}
             </td>
             <td>
@@ -9268,14 +9282,17 @@
         const pFair = document.getElementById('instPlainFairValue');
         const pAction = document.getElementById('instPlainActionPlan');
 
-        const isLong = (data.action || '').includes('BUY') || (data.action || '').includes('LONG') || (scalp && (scalp.action_code === 'BUY'));
-        const isShort = (data.action || '').includes('SELL') || (data.action || '').includes('SHORT') || (scalp && (scalp.action_code === 'SELL'));
+        // Strict 100% Synchronization with Scalp Setup (Single Source of Truth)
+        const scalpCode = scalp ? (scalp.action_code || ((scalp.action && scalp.action.includes('BUY')) ? 'BUY' : ((scalp.action && scalp.action.includes('SELL')) ? 'SELL' : 'WAIT'))) : 'WAIT';
+        const isLong = scalpCode === 'BUY';
+        const isShort = scalpCode === 'SELL';
+        const isWait = scalpCode === 'WAIT';
 
         if (pBadge) {
           if (isLong) {
             pBadge.style.background = '#00e676';
             pBadge.style.color = '#000';
-            pBadge.innerText = '🟢 ورود لانگ مجاز است';
+            pBadge.innerText = '🟢 ورود لانگ مجاز است (ستاپ فعال)';
           } else if (isShort) {
             pBadge.style.background = '#ff3366';
             pBadge.style.color = '#fff';
@@ -9283,7 +9300,7 @@
           } else {
             pBadge.style.background = '#ffd700';
             pBadge.style.color = '#000';
-            pBadge.innerText = '🟡 فاز احتیاط / انتظار برای تایید';
+            pBadge.innerText = '🟡 فاز احتیاط / صبر برای تایید (WAIT)';
           }
         }
 
@@ -9293,7 +9310,7 @@
           } else if (isShort) {
             pWhale.innerHTML = `فشار فروش و دیواره‌های سنگین اردرهای فروش دیده می‌شود و نهنگ‌ها در حال توزیع و تخلیه هستند.`;
           } else {
-            pWhale.innerHTML = `تعادل نسبی بین خریدار و فروشنده وجود دارد و وال‌ها هنوز جهت قطعی را مشخص نکرده‌اند.`;
+            pWhale.innerHTML = `تعادل نسبی بین خریدار و فروشنده وجود دارد و وال‌ها هنوز جهت قطعی را مشخص نکرده‌اند (نوسان رنج).`;
           }
         }
 
@@ -9310,11 +9327,11 @@
 
         if (pAction) {
           if (isLong) {
-            pAction.innerHTML = `ورود در پولبک به محدوده <strong>${scalp ? (scalp.entry_zone || 'حمایت') : 'حمایت'}</strong> با حد ضرر معین؛ سیو سود ۵۰٪ روی تارگت ۱ فراموش نشود.`;
+            pAction.innerHTML = `ورود لیمیت در پولبک به محدوده <strong>${scalp ? (scalp.entry_zone || 'حمایت') : 'حمایت'}</strong> با حد ضرر معین <strong>$${formatPrice(scalp.stop_loss)}</strong>؛ لمس تارگت اول ($${formatPrice(scalp.tp1)}) = ۵۰٪ سیو سود و انتقال استاپ به نقطه ورود (ریسک‌فری).`;
           } else if (isShort) {
-            pAction.innerHTML = `ورود فروش در تست مقاومت‌ها با استاپ فشرده؛ بستن نیمی از حجم در تارگت اول الزامی است.`;
+            pAction.innerHTML = `ورود فروش در پولبک به محدوده <strong>${scalp ? (scalp.entry_zone || 'مقاومت') : 'مقاومت'}</strong> با حد ضرر معین <strong>$${formatPrice(scalp.stop_loss)}</strong>؛ خروج نیمی از حجم در تارگت اول ($${formatPrice(scalp.tp1)}).`;
           } else {
-            pAction.innerHTML = `از ورود هیجانی خودداری کرده و منتظر تشکیل کندل تاییدیه در حمایت یا مقاومت بمانید.`;
+            pAction.innerHTML = `سیستم در وضعیت <strong>صبر (WAIT)</strong> قرار دارد. ورود هیجانی در این نوسان فرسایشی ممنوع است؛ منتظر شکست معتبر یا ستاپ Grade A بمانید.`;
           }
         }
       } catch (err) {
