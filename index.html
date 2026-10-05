@@ -7707,7 +7707,7 @@
             <!-- PRO AI DIVERGENCE & SURPRISE RISK BOX -->
             <div style="background: linear-gradient(135deg, rgba(20, 24, 39, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid ${sColor}; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 0 15px rgba(0,0,0,0.5);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 8px;">
-                <div style="font-weight: 800; color: #fff; font-size: 0.92rem; display: flex; align-items: center; gap: 8px;">
+                <div style="font-weight: 800; color: #fff; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
                   <span>🧠</span> نظر و موضع اختصاصی هوش آسمان در برابر پیش‌بینی بازار (Agent Verdict)
                 </div>
                 <!-- Surprise Risk Meter -->
@@ -7715,6 +7715,79 @@
                   <span style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700;">ریسک غافلگیری (Surprise Risk):</span>
                   <span style="color: ${sColor}; font-weight: 800; font-family: var(--font-mono); font-size: 0.85rem;">${sRisk}%</span>
                   <span style="font-size: 0.72rem; color: ${sColor};">(${sLevel})</span>
+                </div>
+              </div>
+
+              <!-- Beginner Friendly Explanation Box -->
+              ${ag.beginner_explanation ? `
+              <div style="background: rgba(0, 210, 255, 0.08); border-right: 4px solid #00d2ff; padding: 12px 14px; border-radius: 6px; margin-bottom: 12px;">
+                <strong style="color: #00d2ff; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                  <span>💡</span> خلاصه ماجرا به زبان خیلی ساده (برای معامله‌گر تازه‌کار):
+                </strong>
+                <div style="color: #f1f5f9; font-size: 0.82rem; margin-top: 5px; line-height: 1.7;">
+                  ${ag.beginner_explanation}
+                </div>
+              </div>
+              ` : ''}
+
+              <!-- Concrete Target Projections for Gold & Bitcoin -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 14px;">
+                <!-- Gold Movement Box -->
+                <div style="background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.35); border-radius: 8px; padding: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: #ffd700; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                      <span>🥇</span> طلا چقدر بالا و پایین میره؟ (Gold XAU/USD)
+                    </strong>
+                    <span style="font-size: 0.72rem; color: #ffd700; background: rgba(255,215,0,0.18); padding: 2px 7px; border-radius: 4px; font-weight: 800;">
+                      ${ag.gold_projection ? ag.gold_projection.pips_expected : 'نوسان شدید طلا'}
+                    </span>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem;">
+                    <div style="background: rgba(0, 230, 118, 0.1); padding: 7px 10px; border-radius: 6px; border-right: 3px solid #00e676;">
+                      <span style="color: #00e676; font-weight: 800;">🟢 سناریوی صعودی (خوب برای طلا):</span>
+                      <div style="color: #f1f5f9; margin-top: 3px; font-size: 0.82rem;">
+                        مقدار جهش: <strong style="color: #00e676;">${ag.gold_projection ? ag.gold_projection.bull_delta : '+۳۵$ الی +۶۰$ رشد'}</strong> ⬅️ هدف انس: <strong style="color: #ffd700; font-family: var(--font-mono); font-size: 0.9rem;">${ag.gold_projection ? ag.gold_projection.bull_target : '$4,220+'}</strong>
+                      </div>
+                    </div>
+                    <div style="background: rgba(255, 51, 102, 0.1); padding: 7px 10px; border-radius: 6px; border-right: 3px solid #ff3366;">
+                      <span style="color: #ff3366; font-weight: 800;">🔴 سناریوی ریزشی (بد برای طلا):</span>
+                      <div style="color: #f1f5f9; margin-top: 3px; font-size: 0.82rem;">
+                        مقدار افت: <strong style="color: #ff3366;">${ag.gold_projection ? ag.gold_projection.bear_delta : '-۳۰$ الی -۵۰$ ریزش'}</strong> ⬅️ هدف کف انس: <strong style="color: #ffd700; font-family: var(--font-mono); font-size: 0.9rem;">${ag.gold_projection ? ag.gold_projection.bear_target : '$4,135'}</strong>
+                      </div>
+                    </div>
+                    ${ag.gold_projection && ag.gold_projection.simple_action_tip ? `
+                    <div style="font-size: 0.74rem; color: #cbd5e1; background: rgba(0,0,0,0.35); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
+                      ⚡ <strong>توصیه طلایی به مبتدی‌ها:</strong> ${ag.gold_projection.simple_action_tip}
+                    </div>
+                    ` : ''}
+                  </div>
+                </div>
+
+                <!-- Bitcoin Movement Box -->
+                <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.35); border-radius: 8px; padding: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="color: #00e676; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                      <span>🪙</span> بیت‌کوین چقدر بالا و پایین میره؟ (BTC/USDT)
+                    </strong>
+                    <span style="font-size: 0.72rem; color: #00e676; background: rgba(0,230,118,0.18); padding: 2px 7px; border-radius: 4px; font-weight: 800;">نوسان کریپتو</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem;">
+                    <div style="background: rgba(0, 230, 118, 0.1); padding: 7px 10px; border-radius: 6px; border-right: 3px solid #00e676;">
+                      <span style="color: #00e676; font-weight: 800;">🟢 سناریوی پامپ صعودی:</span>
+                      <div style="color: #f1f5f9; margin-top: 3px; font-size: 0.82rem;">
+                        مقدار پامپ: <strong style="color: #00e676;">${ag.crypto_projection ? ag.crypto_projection.bull_delta : '+۲,۰۰۰$ الی +۴,۰۰۰$'}</strong> ⬅️ هدف قیمت: <strong style="color: #00d2ff; font-family: var(--font-mono); font-size: 0.9rem;">${ag.crypto_projection ? ag.crypto_projection.bull_target : '$86,000+'}</strong>
+                      </div>
+                    </div>
+                    <div style="background: rgba(255, 51, 102, 0.1); padding: 7px 10px; border-radius: 6px; border-right: 3px solid #ff3366;">
+                      <span style="color: #ff3366; font-weight: 800;">🔴 سناریوی دامپ نزولی:</span>
+                      <div style="color: #f1f5f9; margin-top: 3px; font-size: 0.82rem;">
+                        مقدار دامپ: <strong style="color: #ff3366;">${ag.crypto_projection ? ag.crypto_projection.bear_delta : '-۱,۵۰۰$ الی -۳,۰۰۰$'}</strong> ⬅️ هدف کف: <strong style="color: #ff3366; font-family: var(--font-mono); font-size: 0.9rem;">${ag.crypto_projection ? ag.crypto_projection.bear_target : '$81,000'}</strong>
+                      </div>
+                    </div>
+                    <div style="font-size: 0.74rem; color: #cbd5e1; background: rgba(0,0,0,0.35); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
+                      ⚡ <strong>توصیه به مبتدی‌ها:</strong> در زمان اعلام این خبر از لوریج بالای ۵x پرهیز کنید تا نوسانات اولیه حساب شما را نسوزاند.
+                    </div>
+                  </div>
                 </div>
               </div>
 
