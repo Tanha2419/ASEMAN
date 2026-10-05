@@ -594,6 +594,26 @@ _whale_thread = threading.Thread(target=live_whale_execution_monitor_loop, daemo
 _whale_thread.start()
 
 
+def _parse_safe_rr(val) -> float:
+    """Safely parses risk-to-reward ratio from float, int or string formats like '1:2.5'"""
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str):
+        if ":" in val:
+            parts = val.split(":")
+            try:
+                num = float(parts[1].strip())
+                denom = float(parts[0].strip()) if float(parts[0].strip()) > 0 else 1.0
+                return num / denom
+            except Exception:
+                return 2.0
+        try:
+            return float(val.replace("1:", "").replace("R:R", "").strip())
+        except Exception:
+            return 2.0
+    return 2.0
+
+
 def auto_sentinel_loop():
     time.sleep(25) # wait for server boot
     while True:
@@ -609,11 +629,12 @@ def auto_sentinel_loop():
             bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip() or cfg.get("bot_token", "").strip()
             chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip() or cfg.get("chat_id", "").strip()
             auto_pilot = cfg.get("auto_pilot", True)
-            min_score = int(cfg.get("min_score", 85))
-            interval_m = max(10, int(cfg.get("interval_minutes", 20)))
+            min_score = int(cfg.get("min_score", 78)) # Optimized threshold to evaluate high-conviction detections
+            interval_m = max(5, int(cfg.get("interval_minutes", 10))) # Responsive 10-minute scan cycle
 
             now = time.time()
-            _sentinel_stats["last_run"] = time.strftime("%H:%M:%S UTC", time.gmtime(now))
+            now_iran = datetime.now(timezone(timedelta(hours=3, minutes=30)))
+            _sentinel_stats["last_run"] = now_iran.strftime("%H:%M:%S (ایران)")
 
             if auto_pilot and bot_token and chat_id:
                 # 1. MACRO TRADING SHIELD: Check Economic Calendar (CPI, NFP, FOMC, etc.)
@@ -681,86 +702,90 @@ def auto_sentinel_loop():
                 max_signals_per_cycle = int(cfg.get("max_signals_per_cycle", 8)) # default up to 8 signals per cycle
 
                 for cand in all_candidates:
-                    sym = cand.get("symbol", "")
-                    score = cand.get("growth_score", 0)
+                    try:
+                        sym = cand.get("symbol", "")
+                        score = cand.get("growth_score", 0)
 
-                    # Cooldown check: don't alert same symbol within 1.5 hours (5400 seconds)
-                    last_sent = _sent_cooldown.get(sym, 0)
-                    if score >= min_score and (now - last_sent > 5400):
-                        # BTC Trend Filter: If BTC is in freefall and this is an altcoin, protect capital
-                        if btc_dumping and "BTC" not in sym.upper():
-                            print(f"[SENTINEL] Skipping {sym} because BTC is dumping heavily.")
-                            continue
-
-                        analysis = agent.analyze_symbol(sym)
-                        if analysis.get("success"):
-                            # Institutional Elite Sniper Quality Gate:
-                            # 1. Strictly Grade A or A+ only (Strictly reject B, C, D, F)
-                            s3d = analysis.get("scores_3d", {})
-                            grade = s3d.get("grade", "C")
-                            comp_score = float(s3d.get("composite_confidence", 0) or s3d.get("composite_score", 0) or s3d.get("score", 0) or score)
-                            scalp_data = analysis.get("scalp_setup", {})
-                            scalp_act = scalp_data.get("action_code", "WAIT")
-                            rr_ratio = float(scalp_data.get("risk_reward", 2.0) or 2.0)
-                            shield_status = analysis.get("altcoin_shield", {}).get("status", "NORMAL")
-
-                            # Reject non-elite grades or WAIT signals
-                            if grade not in ["A+", "A"] or scalp_act == "WAIT":
+                        # Cooldown check: don't alert same symbol within 1.5 hours (5400 seconds)
+                        last_sent = _sent_cooldown.get(sym, 0)
+                        if score >= min_score and (now - last_sent > 5400):
+                            # BTC Trend Filter: If BTC is in freefall and this is an altcoin, protect capital
+                            if btc_dumping and "BTC" not in sym.upper():
+                                print(f"[SENTINEL] Skipping {sym} because BTC is dumping heavily.")
                                 continue
 
-                            # Reject low conviction / low composite score
-                            if comp_score < 78 and score < 82:
-                                continue
+                            analysis = agent.analyze_symbol(sym)
+                            if analysis.get("success"):
+                                # Institutional Elite Sniper Quality Gate:
+                                # 1. Strictly Grade A or A+ only (Strictly reject B, C, D, F)
+                                s3d = analysis.get("scores_3d", {})
+                                grade = s3d.get("grade", "C")
+                                comp_score = float(s3d.get("composite_confidence", 0) or s3d.get("composite_score", 0) or s3d.get("score", 0) or score)
+                                scalp_data = analysis.get("scalp_setup", {})
+                                scalp_act = scalp_data.get("action_code", "WAIT")
+                                rr_ratio = _parse_safe_rr(scalp_data.get("risk_reward", 2.0))
+                                shield_status = analysis.get("altcoin_shield", {}).get("status", "NORMAL")
 
-                            # Altcoin macro danger shield
-                            if scalp_act == "BUY" and shield_status == "DANGER":
-                                print(f"[SENTINEL] Skipping {sym} because Altcoin Shield is in DANGER mode.")
-                                continue
+                                # Reject non-elite grades or WAIT signals
+                                if grade not in ["A+", "A"] or scalp_act == "WAIT":
+                                    continue
 
-                            # Minimum 1:1.8 Risk-to-Reward ratio
-                            if rr_ratio < 1.8:
-                                continue
+                                # Reject low conviction / low composite score
+                                if comp_score < 68 and score < 78:
+                                    continue
 
-                            res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis)
-                            if res.get("success") and not res.get("simulated"):
-                                _sent_cooldown[sym] = now
-                                _sentinel_stats["alerts_sent"] += 1
-                                _sentinel_stats["last_alert"] = f"{sym} ({grade} - {scalp_act})"
-                                print(f"[SENTINEL] Auto-alert dispatched for {sym} to {chat_id}")
-                                
-                                # Register in live Outcome Tracker
-                                if scalp_data.get("tp1") and scalp_data.get("stop_loss"):
-                                    with _trackers_lock:
-                                        _active_signal_trackers.append({
-                                            "symbol": sym,
-                                            "action": scalp_data.get("action", "LONG"),
-                                            "entry": analysis.get("price", 0),
-                                            "sl": scalp_data.get("stop_loss", 0),
-                                            "tp1": scalp_data.get("tp1", 0),
-                                            "tp2": scalp_data.get("tp2", 0),
-                                            "created_at": now,
-                                            "bot_token": bot_token,
-                                            "chat_id": chat_id,
-                                            "tp1_hit": False,
-                                            "tp2_hit": False,
-                                            "closed": False
-                                        })
-                                    print(f"[SENTINEL] Enrolled {sym} in live outcome tracker.")
-                                    record_dispatched_signal(
-                                        symbol=sym,
-                                        action=scalp_data.get("action", "LONG"),
-                                        grade=grade,
-                                        score=score,
-                                        entry=analysis.get("price", 0),
-                                        sl=scalp_data.get("stop_loss", 0),
-                                        tp1=scalp_data.get("tp1", 0),
-                                        tp2=scalp_data.get("tp2", 0)
-                                    )
+                                # Altcoin macro danger shield
+                                if scalp_act == "BUY" and shield_status == "DANGER":
+                                    print(f"[SENTINEL] Skipping {sym} because Altcoin Shield is in DANGER mode.")
+                                    continue
 
-                                sent_in_cycle += 1
-                                time.sleep(3) # safe 3-second spacing between messages
-                                if sent_in_cycle >= max_signals_per_cycle:
-                                    break
+                                # Minimum 1:1.8 Risk-to-Reward ratio
+                                if rr_ratio < 1.8:
+                                    continue
+
+                                res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis)
+                                if res.get("success") and not res.get("simulated"):
+                                    _sent_cooldown[sym] = now
+                                    _sentinel_stats["alerts_sent"] += 1
+                                    _sentinel_stats["last_alert"] = f"{sym} ({grade} - {scalp_act})"
+                                    print(f"[SENTINEL] Auto-alert dispatched for {sym} to {chat_id}")
+                                    
+                                    # Register in live Outcome Tracker
+                                    if scalp_data.get("tp1") and scalp_data.get("stop_loss"):
+                                        with _trackers_lock:
+                                            _active_signal_trackers.append({
+                                                "symbol": sym,
+                                                "action": scalp_data.get("action", "LONG"),
+                                                "entry": analysis.get("price", 0),
+                                                "sl": scalp_data.get("stop_loss", 0),
+                                                "tp1": scalp_data.get("tp1", 0),
+                                                "tp2": scalp_data.get("tp2", 0),
+                                                "created_at": now,
+                                                "bot_token": bot_token,
+                                                "chat_id": chat_id,
+                                                "tp1_hit": False,
+                                                "tp2_hit": False,
+                                                "closed": False
+                                            })
+                                        print(f"[SENTINEL] Enrolled {sym} in live outcome tracker.")
+                                        record_dispatched_signal(
+                                            symbol=sym,
+                                            action=scalp_data.get("action", "LONG"),
+                                            grade=grade,
+                                            score=score,
+                                            entry=analysis.get("price", 0),
+                                            sl=scalp_data.get("stop_loss", 0),
+                                            tp1=scalp_data.get("tp1", 0),
+                                            tp2=scalp_data.get("tp2", 0)
+                                        )
+
+                                    sent_in_cycle += 1
+                                    time.sleep(3) # safe 3-second spacing between messages
+                                    if sent_in_cycle >= max_signals_per_cycle:
+                                        break
+                    except Exception as cand_err:
+                        print(f"[SENTINEL CAND ERR] {sym}: {cand_err}")
+                        continue
 
             time.sleep(interval_m * 60)
         except Exception as e:
