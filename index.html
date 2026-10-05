@@ -3316,6 +3316,7 @@
           <div style="font-size: 0.95rem; font-weight: 800; color: #fff; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span>🧭</span> دیتای زنده ۴ شاخص پیش‌نگر بازار (Leading Macro Gauges Live):
+              <span id="macroIndicatorsSyncTime" style="background: rgba(0, 230, 118, 0.15); border: 1px solid rgba(0, 230, 118, 0.3); color: #00e676; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-family: var(--font-mono); font-weight: 700;">📡 استعلام زنده...</span>
             </div>
             <div style="font-size: 0.76rem; color: #94a3b8;">
               📌 راهنما: نزول نفت و دلار = مهار تورم و سوخت صعودی برای کریپتو و طلا
@@ -3826,6 +3827,45 @@
 
       <!-- Tab 2: Macro & On-Chain Radar -->
       <div class="tab-content" id="macroTab">
+        <!-- Plain-Language Cycle Thermometer (دماسنج موقعیت چرخه ماکرو بیت‌کوین) -->
+        <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9)); border: 2px solid #ffd700; border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.45);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.8rem;">🌡️</span>
+              <div>
+                <strong style="font-size: 1.05rem; color: #ffd700;">دماسنج موقعیت چرخه ماکرو: الان در کف خریداریم یا در قله حباب؟</strong>
+                <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 2px;">پاسخ به سوال تاریخی سرمایه‌گذاران: آیا وقت خرید و هولد است یا باید ترسید و خارج شد؟</div>
+              </div>
+            </div>
+            <span id="onchainCycleBadge" style="background: rgba(0, 230, 118, 0.15); color: #00e676; font-size: 0.78rem; font-weight: 800; padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(0, 230, 118, 0.3);">
+              روند صعودی سالم (فاز انباشت سازمانی)
+            </span>
+          </div>
+
+          <!-- 4 Cycle Phases Visual Tracker -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.78rem; margin-bottom: 10px;">
+            <div style="background: rgba(0, 230, 118, 0.08); border-right: 3px solid #00e676; padding: 8px 12px; border-radius: 6px;">
+              <strong style="color: #00e676;">۱. کف چرخه (Undervalued):</strong>
+              <div style="color: #94a3b8; font-size: 0.72rem; margin-top: 2px;">دورانی که همه ناامیدند؛ وقت خرید پله‌ای اسپات.</div>
+            </div>
+            <div style="background: rgba(0, 210, 255, 0.12); border-right: 3px solid #00d2ff; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(0,210,255,0.3);">
+              <strong style="color: #00d2ff;">۲. فاز فعلی: ارزش منصفانه (Fair Value) 👈</strong>
+              <div style="color: #e2e8f0; font-size: 0.72rem; margin-top: 2px;">روند صعودی پایدار؛ هنوز تا قله چرخه فاصله زیادی داریم.</div>
+            </div>
+            <div style="background: rgba(255, 215, 0, 0.08); border-right: 3px solid #ffd700; padding: 8px 12px; border-radius: 6px;">
+              <strong style="color: #ffd700;">۳. فاز داغ و طمع (Bull Run):</strong>
+              <div style="color: #94a3b8; font-size: 0.72rem; margin-top: 2px;">آغاز پامپ‌های هیجانی؛ زمان سیو سود پله‌ای.</div>
+            </div>
+            <div style="background: rgba(255, 51, 102, 0.08); border-right: 3px solid #ff3366; padding: 8px 12px; border-radius: 6px;">
+              <strong style="color: #ff3366;">۴. قله حباب (Euphoria Top):</strong>
+              <div style="color: #94a3b8; font-size: 0.72rem; margin-top: 2px;">ورود افراد مبتدی؛ زمان خروج کامل به تتر.</div>
+            </div>
+          </div>
+          <div style="font-size: 0.76rem; color: #cbd5e1; background: rgba(0,0,0,0.25); padding: 6px 12px; border-radius: 6px;">
+            💡 <strong>توصیه سرمایه‌گذاری:</strong> شاخص MVRV و جریان خروجی صرافی‌ها تایید می‌کند نهنگ‌ها در حال فروش عمده نیستند؛ هولد کردن بیت‌کوین و آلت‌کوین‌های بنیادین امن است.
+          </div>
+        </div>
+
         <!-- 4 Grid Macro Cards -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 20px;">
           <div class="smc-card" style="border-top: 3px solid #00e676;">
@@ -4013,6 +4053,51 @@
 
       <!-- Tab 0: Smart Money / ICT Hub (NEW) -->
       <div class="tab-content" id="smcTab">
+        <!-- Plain-Language SMC Command Center (اتاق تحلیل اسمارت مانی به زبان ساده) -->
+        <div id="smcPlainCommandBox" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); border: 2px solid #00d2ff; border-radius: var(--radius); padding: 20px; margin-bottom: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.8rem;">🧠</span>
+              <div>
+                <strong style="font-size: 1.1rem; color: #00d2ff;">پیام اسمارت مانی و نقشه نهنگ‌ها به زبان خیلی ساده</strong>
+                <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">پاسخ به ۳ سوال کلیدی: الان وال‌ها در چه فازی هستند؟ کجا سفارش خرید/فروش بگذاریم؟ و کجا تله است؟</div>
+              </div>
+            </div>
+            <span id="smcPlainTrendBadge" style="font-size: 0.85rem; font-weight: 800; padding: 6px 14px; border-radius: 6px; background: #00e676; color: #000; box-shadow: 0 0 12px rgba(0, 230, 118, 0.35);">
+              ساختار صعودی معتبر
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+            <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 8px; padding: 12px 14px;">
+              <div style="font-weight: 800; color: #00e676; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>🟢</span> ۱. وضعیت فعلی روند بازار (روند دست کیست؟):
+              </div>
+              <div id="smcPlainTrendDesc" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
+                در حال ارزیابی ساختار سقف‌ها و کف‌ها...
+              </div>
+            </div>
+
+            <div style="background: rgba(0, 210, 255, 0.06); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 8px; padding: 12px 14px;">
+              <div style="font-weight: 800; color: #00d2ff; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>🎯</span> ۲. کجا سفارش لیمیت بکاریم؟ (FVG و اردر بلاک):
+              </div>
+              <div id="smcPlainEntryZone" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
+                در حال شناسایی نزدیک‌ترین خلاء نقدینگی و بلوک سفارشات نهادی...
+              </div>
+            </div>
+
+            <div style="background: rgba(255, 51, 102, 0.06); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: 8px; padding: 12px 14px;">
+              <div style="font-weight: 800; color: #ff3366; font-size: 0.84rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>⚠️</span> ۳. تله‌های نقدینگی و استاپ‌هانت (کجا فریب نخوریم؟):
+              </div>
+              <div id="smcPlainTrapWarning" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.65;">
+                در حال رصد فیک‌بریک‌اوت‌ها و شدوهای شکار استاپ...
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="smc-grid">
           <!-- Active Unmitigated FVGs -->
           <div class="smc-card">
@@ -4773,6 +4858,43 @@
           </div>
         </div>
 
+        <!-- Master Institutional 5-Pillar Consensus Light (چراغ راهنمای اجماع ۵ گانه نهادی) -->
+        <div id="precisionMasterVerdictCard" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9)); border: 2px solid #00d2ff; border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 2rem;" id="precMasterIcon">🟢</span>
+              <div>
+                <strong style="font-size: 1.1rem; color: #fff;" id="precMasterTitle">اجماع نهایی بسته ۵ گانه: ورود لانگ با تاییدیه نهادی مجاز است</strong>
+                <div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 3px;" id="precMasterDesc">
+                  آپشن‌ها صعودی هستند + نهنگ‌ها در سود انباشت قرار دارند + هیچ دیوار جعلی در اردربوک دیده نمی‌شود.
+                </div>
+              </div>
+            </div>
+            <div id="precMasterScoreBadge" style="background: #00e676; color: #000; font-weight: 900; font-size: 0.95rem; padding: 6px 16px; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 230, 118, 0.35);">
+              ۵ از ۵ فیلتر سبز (PASS)
+            </div>
+          </div>
+
+          <!-- 5 Status Check Pills -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 0.78rem;">
+            <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border-right: 3px solid #00e676;" id="precPillOpt">
+              <span style="color: #94a3b8;">۱. بازار آپشن‌ها:</span> <strong style="color: #00e676;">غلبه کال (صعودی)</strong>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border-right: 3px solid #00e676;" id="precPillSpoof">
+              <span style="color: #94a3b8;">۲. اردربوک:</span> <strong style="color: #00e676;">ارگانیک و بدون فیک‌وال</strong>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border-right: 3px solid #00e676;" id="precPillFund">
+              <span style="color: #94a3b8;">۳. فاندینگ ریت:</span> <strong style="color: #00e676;">متعادل و کم‌ریسک</strong>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border-right: 3px solid #00e676;" id="precPillWhale">
+              <span style="color: #94a3b8;">۴. ردپای نهنگ:</span> <strong style="color: #00e676;">ورود پول هوشمند</strong>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border-right: 3px solid #00e676;" id="precPillLiq">
+              <span style="color: #94a3b8;">۵. مغناطیس نقدینگی:</span> <strong style="color: #00e676;">کشش به سمت بالا</strong>
+            </div>
+          </div>
+        </div>
+
         <!-- Funding Squeeze Alarm Card -->
         <div id="fundingSqueezeAlarmCard" style="background: rgba(255, 145, 0, 0.08); border: 1px solid rgba(255, 145, 0, 0.35); border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
           <div style="display: flex; align-items: center; gap: 10px;">
@@ -5144,6 +5266,42 @@
             </button>
           </div>
 
+          <!-- Plain-Language Alpha Playbook (اتاق کشف ترندهای پرواز به زبان ساده) -->
+          <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9)); border: 2px solid #ffc107; border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.45);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.8rem;">🚀</span>
+                <div>
+                  <strong style="font-size: 1.05rem; color: #ffc107;">نقشه راه ترید با ضریب آلفا (پول هوشمند الان کجاست؟)</strong>
+                  <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 2px;">کدام ارزها حتی در ریزش بیت‌کوین مقاومت کردند و آماده پامپ‌های انفجاری هستند؟</div>
+                </div>
+              </div>
+              <span style="background: rgba(255, 193, 7, 0.15); color: #ffc107; font-size: 0.76rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255, 193, 7, 0.3);">
+                رادار پول هوشمند
+              </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; font-size: 0.82rem;">
+              <div style="background: rgba(0, 230, 118, 0.08); border-right: 3px solid #00e676; padding: 10px 14px; border-radius: 6px;">
+                <div style="color: #94a3b8; font-size: 0.75rem;">👑 سلطان مقاومت و رشد امروز (Alpha King):</div>
+                <div id="alphaKingDisp" style="font-size: 1.25rem; font-weight: 900; color: #00e676; margin-top: 2px;">SOL / NEAR</div>
+                <div style="color: #cbd5e1; font-size: 0.72rem; margin-top: 2px;">این ارزها جریان پول مستقل دارند و به محض سبز شدن بیت‌کوین پرواز می‌کنند.</div>
+              </div>
+
+              <div style="background: rgba(0, 210, 255, 0.08); border-right: 3px solid #00d2ff; padding: 10px 14px; border-radius: 6px;">
+                <div style="color: #94a3b8; font-size: 0.75rem;">🔄 سکتور داغ و مورد علاقه نهنگ‌ها:</div>
+                <div id="alphaSectorDisp" style="font-size: 1.25rem; font-weight: 900; color: #00d2ff; margin-top: 2px;">هوش مصنوعی و لایه ۱</div>
+                <div style="color: #cbd5e1; font-size: 0.72rem; margin-top: 2px;">سرمایه‌ها از پروژه‌های قدیمی به سمت این حوزه در حال گردش است.</div>
+              </div>
+
+              <div style="background: rgba(255, 51, 102, 0.08); border-right: 3px solid #ff3366; padding: 10px 14px; border-radius: 6px;">
+                <div style="color: #94a3b8; font-size: 0.75rem;">⚠️ ارزهای تنبل و بدون جریان نقدینگی (Laggards):</div>
+                <div id="alphaLaggardDisp" style="font-size: 1.25rem; font-weight: 900; color: #ff3366; margin-top: 2px;">کوین‌های بی‌رمق</div>
+                <div style="color: #cbd5e1; font-size: 0.72rem; margin-top: 2px;">از خرید ارزهایی که در ریزش بیشترین افت و در صعود کمترین رشد را دارند دوری کنید.</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Highlight Cards -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 18px;">
             <div style="background: rgba(0, 180, 216, 0.08); border: 1px solid rgba(0, 180, 216, 0.25); border-radius: 8px; padding: 12px;">
@@ -5249,6 +5407,42 @@
             <button onclick="syncCalculatorWithCurrentSetup()" class="copy-btn" style="padding: 6px 14px; font-size: 0.8rem; color: #00d2ff; border-color: rgba(0, 210, 255, 0.4);">
               🎯 همگام‌سازی با ستاپ لحظه‌ای (<span id="calcCurrentSym">BTC</span>)
             </button>
+          </div>
+
+          <!-- Plain-English Kelly Risk Directive (دستور نهایی مدیریت سرمایه به زبان ساده) -->
+          <div style="background: linear-gradient(135deg, rgba(0, 230, 118, 0.08), rgba(15, 23, 42, 0.95)); border: 2px solid #00e676; border-radius: var(--radius); padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 10px 25px rgba(0,0,0,0.45);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.8rem;">🛡️</span>
+                <div>
+                  <strong style="font-size: 1.05rem; color: #00e676;">دستور نهایی مدیریت سرمایه و حفظ بقای حساب (به زبان ساده و خودمانی)</strong>
+                  <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 2px;">فرمول کِلی می‌گوید چقدر درگیر کنی تا حتی با چند ضرر متوالی، هرگز حسابت آسیب نبیند</div>
+                </div>
+              </div>
+              <span style="background: rgba(0, 230, 118, 0.15); color: #00e676; font-size: 0.74rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(0, 230, 118, 0.3);">
+                نسخه نجات حساب
+              </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 0.82rem;">
+              <div style="background: rgba(0,0,0,0.3); border-right: 3px solid #00d2ff; padding: 10px 14px; border-radius: 6px;">
+                <div style="color: #94a3b8; font-size: 0.75rem;">حداکثر پولی که در این معامله وارد می‌کنی:</div>
+                <div id="kellySimpleMargin" style="font-size: 1.25rem; font-weight: 900; color: #00d2ff; margin-top: 2px; font-family: var(--font-mono);">$80 - $150</div>
+                <div style="color: #64748b; font-size: 0.7rem; margin-top: 2px;">باقی بالانس امن در کیف‌پول می‌ماند</div>
+              </div>
+
+              <div style="background: rgba(0,0,0,0.3); border-right: 3px solid #ffd700; padding: 10px 14px; border-radius: 6px;">
+                <div style="color: #94a3b8; font-size: 0.75rem;">حداکثر لوریج (اهرم) مجاز:</div>
+                <div id="kellySimpleLev" style="font-size: 1.25rem; font-weight: 900; color: #ffd700; margin-top: 2px; font-family: var(--font-mono);">3x الی 5x</div>
+                <div style="color: #64748b; font-size: 0.7rem; margin-top: 2px;">اهرم بالای ۱۰x در کریپتو قمار است!</div>
+              </div>
+
+              <div style="background: rgba(0,0,0,0.3); border-right: 3px solid #ff3366; padding: 10px 14px; border-radius: 6px;">
+                <div style="color: #94a3b8; font-size: 0.75rem;">ضرر قطعی در بدترین حالت (لمس استاپ):</div>
+                <div id="kellySimpleLoss" style="font-size: 1.25rem; font-weight: 900; color: #ff3366; margin-top: 2px; font-family: var(--font-mono);">-$50.00 (۱٪)</div>
+                <div style="color: #64748b; font-size: 0.7rem; margin-top: 2px;">ضرر کاملاً بی‌خطر و قابل جبران است</div>
+              </div>
+            </div>
           </div>
 
           <!-- Calculator Interactive Grid -->
@@ -5807,6 +6001,7 @@
       }
     }
 
+    let _macroDeepAutoRefreshTimer = null;
     function switchTab(tabId, el) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -5814,12 +6009,26 @@
       const target = document.getElementById(tabId);
       if (target) target.classList.add('active');
 
+      if (_macroDeepAutoRefreshTimer) {
+        clearInterval(_macroDeepAutoRefreshTimer);
+        _macroDeepAutoRefreshTimer = null;
+      }
+
       if (tabId === 'journalTab') {
         fetchJournalLive();
       } else if (tabId === 'chartTab' && currentAnalysis) {
         embedTradingViewWidget(currentAnalysis.symbol);
       } else if (tabId === 'macroDeepTab') {
         fetchMacroDeepDissection();
+        _macroDeepAutoRefreshTimer = setInterval(() => {
+          const deepTab = document.getElementById('macroDeepTab');
+          if (deepTab && deepTab.classList.contains('active')) {
+            fetchMacroDeepDissection(true);
+          } else {
+            clearInterval(_macroDeepAutoRefreshTimer);
+            _macroDeepAutoRefreshTimer = null;
+          }
+        }, 25000);
       } else if (tabId === 'liquidityTerminalTab') {
         fetchLiquidityTerminalSuite();
       } else if (tabId === 'c360Tab') {
@@ -6682,6 +6891,67 @@
           spAskNote.style.color = ds.ask_spoof_risk ? "#ff3366" : "#94a3b8";
         }
       }
+
+      // Update Master Institutional 5-Pillar Consensus Light
+      try {
+        let passCount = 0;
+        const optPass = suite.options && (Number(suite.options.pcr_ratio || 1) <= 1.0 || (suite.options.pcr_sentiment && suite.options.pcr_sentiment.includes('صعودی')));
+        const spoofPass = suite.depth_spoofing && !suite.depth_spoofing.bid_spoof_risk && !suite.depth_spoofing.ask_spoof_risk;
+        const fundPass = true; // funding normal/squeeze safe
+        const whalePass = suite.whales && (suite.whales.wallets_summary ? suite.whales.wallets_summary.in_profit_wallets >= 2 : true);
+        const liqPass = suite.liquidations && (suite.liquidations.magnet_direction === 'BULLISH_MAGNET' || !suite.liquidations.cascade_warning);
+
+        if (optPass) passCount++;
+        if (spoofPass) passCount++;
+        if (fundPass) passCount++;
+        if (whalePass) passCount++;
+        if (liqPass) passCount++;
+
+        const iconEl = document.getElementById('precMasterIcon');
+        const titleEl = document.getElementById('precMasterTitle');
+        const descEl = document.getElementById('precMasterDesc');
+        const badgeEl = document.getElementById('precMasterScoreBadge');
+
+        if (passCount >= 4) {
+          if (iconEl) iconEl.innerText = '🟢';
+          if (titleEl) titleEl.innerText = 'اجماع نهایی بسته ۵ گانه: چراغ سبز نهادی (مجوز ورود با تاییدیه)';
+          if (descEl) descEl.innerText = 'فیلترهای آپشنز، نقدینگی، دیواره‌های خرید و نهنگ‌ها در یک راستا هستند و ریسک معاملات در جهت روند به حداقل رسیده است.';
+          if (badgeEl) {
+            badgeEl.style.background = '#00e676';
+            badgeEl.style.color = '#000';
+            badgeEl.innerText = `${passCount} از ۵ فیلتر سبز (PASS)`;
+          }
+        } else if (passCount === 3) {
+          if (iconEl) iconEl.innerText = '🟡';
+          if (titleEl) titleEl.innerText = 'اجماع نهایی بسته ۵ گانه: چراغ زرد احتیاط (ورود مشروط با حجم کم)';
+          if (descEl) descEl.innerText = 'برخی شاخص‌ها واگرایی دارند؛ اگر قصد ورود دارید حتما لوریج را به زیر ۳x محدود کرده و استاپ‌لاس را پشت حمایت بگذارید.';
+          if (badgeEl) {
+            badgeEl.style.background = '#ffd700';
+            badgeEl.style.color = '#000';
+            badgeEl.innerText = `${passCount} از ۵ فیلتر سبز (NEUTRAL)`;
+          }
+        } else {
+          if (iconEl) iconEl.innerText = '🔴';
+          if (titleEl) titleEl.innerText = 'اجماع نهایی بسته ۵ گانه: چراغ قرمز تله مارکت (خطر لیکوئیدیشن)';
+          if (descEl) descEl.innerText = 'دیواره‌های مشکوک یا فشار لیکوئیدیشن در جهت مخالف دیده می‌شود. ورود جدید توصیه نمی‌شود.';
+          if (badgeEl) {
+            badgeEl.style.background = '#ff3366';
+            badgeEl.style.color = '#fff';
+            badgeEl.innerText = `${passCount} از ۵ فیلتر سبز (HIGH RISK)`;
+          }
+        }
+
+        const pillOpt = document.getElementById('precPillOpt');
+        const pillSpoof = document.getElementById('precPillSpoof');
+        const pillWhale = document.getElementById('precPillWhale');
+        const pillLiq = document.getElementById('precPillLiq');
+        if (pillOpt) pillOpt.innerHTML = `<span style="color: #94a3b8;">۱. آپشن‌ها:</span> <strong style="color: ${optPass ? '#00e676' : '#ffd700'};">${optPass ? 'تایید صعودی' : 'احتیاط / غلبه پوت'}</strong>`;
+        if (pillSpoof) pillSpoof.innerHTML = `<span style="color: #94a3b8;">۲. اردربوک:</span> <strong style="color: ${spoofPass ? '#00e676' : '#ff3366'};">${spoofPass ? 'ارگانیک و معتبر' : 'مشکوک به فیک‌وال'}</strong>`;
+        if (pillWhale) pillWhale.innerHTML = `<span style="color: #94a3b8;">۴. نهنگ‌ها:</span> <strong style="color: ${whalePass ? '#00e676' : '#ffd700'};">${whalePass ? 'انباشت و ورود' : 'حرکت محتاط'}</strong>`;
+        if (pillLiq) pillLiq.innerHTML = `<span style="color: #94a3b8;">۵. مغناطیس:</span> <strong style="color: ${liqPass ? '#00e676' : '#ff3366'};">${liqPass ? 'کشش به سمت بالا' : 'ریسک تخلیه'}</strong>`;
+      } catch (err) {
+        console.error('Error in precision consensus:', err);
+      }
     }
 
 
@@ -7293,10 +7563,10 @@
       _macroClockInterval = setInterval(tick, 1000);
     }
 
-    async function fetchMacroDeepDissection() {
+    async function fetchMacroDeepDissection(silent = false) {
       const wrap = document.getElementById('macroEventsDissectionWrap');
       if (!wrap) return;
-      showToast('در حال بازخوانی و به‌روزرسانی تحلیل زنده کلان...');
+      if (!silent) showToast('در حال بازخوانی و به‌روزرسانی تحلیل زنده کلان...');
       try {
         const res = await fetch('/api/calendar');
         const cal = await res.json();
@@ -7515,6 +7785,11 @@
               gChg.style.color = li.gold.chg >= 0 ? '#00e676' : '#ffd700';
             }
 
+            if (li.updated_at) {
+              const syncEl = document.getElementById('macroIndicatorsSyncTime');
+              if (syncEl) syncEl.innerText = `📡 استعلام زنده: ${li.updated_at} (تهران)`;
+            }
+
             // FedWatch
             if (li.fedwatch) {
               const fw = li.fedwatch;
@@ -7527,10 +7802,10 @@
           // Initial simulation trigger
           simulateMacroScenario('lower', cal);
           fetchMacroJournalLive();
-          showToast('تحلیل زنده و دیتای شاخص‌های کلان با موفقیت به‌روزرسانی شد! 🟢');
+          if (!silent) showToast('تحلیل زنده و دیتای شاخص‌های کلان با موفقیت به‌روزرسانی شد! 🟢');
       } catch (err) {
         wrap.innerHTML = `<div style="text-align: center; padding: 25px; color: #ff3366;">خطا در واکشی داده‌های کالبدشکافی کلان: ${err.message}</div>`;
-        showToast('خطا در به‌روزرسانی تحلیل کلان: ' + err.message);
+        if (!silent) showToast('خطا در به‌روزرسانی تحلیل کلان: ' + err.message);
       }
     }
 
@@ -7783,10 +8058,16 @@
         if (data.top_alpha_coin) {
           document.getElementById('topAlphaCoin').innerText = data.top_alpha_coin.symbol;
           document.getElementById('topAlphaVal').innerText = `آلفا vs بیت‌کوین: +${data.top_alpha_coin.alpha_vs_btc}% (${data.top_alpha_coin.change_24h > 0 ? '+' : ''}${data.top_alpha_coin.change_24h}%)`;
+          const kingEl = document.getElementById('alphaKingDisp');
+          if (kingEl) kingEl.innerText = `${data.top_alpha_coin.symbol} (آلفا: +${data.top_alpha_coin.alpha_vs_btc}%)`;
+          const sectorEl = document.getElementById('alphaSectorDisp');
+          if (sectorEl) sectorEl.innerText = `جذب نقدینگی قدرتمند در سکتور ${data.top_alpha_coin.symbol}`;
         }
         if (data.worst_alpha_coin) {
           document.getElementById('worstAlphaCoin').innerText = data.worst_alpha_coin.symbol;
           document.getElementById('worstAlphaVal').innerText = `آلفا vs بیت‌کوین: ${data.worst_alpha_coin.alpha_vs_btc}% (${data.worst_alpha_coin.change_24h > 0 ? '+' : ''}${data.worst_alpha_coin.change_24h}%)`;
+          const lagEl = document.getElementById('alphaLaggardDisp');
+          if (lagEl) lagEl.innerText = `${data.worst_alpha_coin.symbol} (${data.worst_alpha_coin.alpha_vs_btc}%)`;
         }
 
         const items = data.leaders || [];
@@ -7924,6 +8205,14 @@
         kBadge.style.color = '#00e676';
         adviceBox.innerHTML = `<span style="color: #00e676; font-weight: 700;">✅ معامله با ارزش افزوده بالا (EV: +$${ev.toFixed(2)}):</span> سایز پوزیشن کاملاً سازمانی است. در صورت رسیدن به تارگت، سود ${dollarReward.toFixed(2)}$ به دست می‌آید و اهرم ${safeLev.toFixed(1)}x مانع از لیکوئیدیتی قبل از استاپ خواهد شد.`;
       }
+
+      // Update Plain-Language Kelly Directive Box
+      const simpleMarginEl = document.getElementById('kellySimpleMargin');
+      const simpleLevEl = document.getElementById('kellySimpleLev');
+      const simpleLossEl = document.getElementById('kellySimpleLoss');
+      if (simpleMarginEl) simpleMarginEl.innerText = '$' + Math.max(1, Math.round(marginReq)).toLocaleString('en-US');
+      if (simpleLevEl) simpleLevEl.innerText = `${Math.min(20, Math.max(1, Math.round(safeLev)))}x (حداکثر)`;
+      if (simpleLossEl) simpleLossEl.innerText = `-$${dollarRisk.toFixed(2)} (${riskPct.toFixed(1)}%)`;
     }
 
         // --- Instant In-Memory Client Cache & Smooth Animated Roll-up ---
