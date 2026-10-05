@@ -629,7 +629,7 @@ def auto_sentinel_loop():
             bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip() or cfg.get("bot_token", "").strip()
             chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip() or cfg.get("chat_id", "").strip()
             auto_pilot = cfg.get("auto_pilot", True)
-            min_score = int(cfg.get("min_score", 78)) # Optimized threshold to evaluate high-conviction detections
+            min_score = int(cfg.get("min_score", 70)) # Balanced threshold for high-conviction detections
             interval_m = max(5, int(cfg.get("interval_minutes", 10))) # Responsive 10-minute scan cycle
 
             now = time.time()
@@ -717,7 +717,7 @@ def auto_sentinel_loop():
                             analysis = agent.analyze_symbol(sym)
                             if analysis.get("success"):
                                 # Institutional Elite Sniper Quality Gate:
-                                # 1. Strictly Grade A or A+ only (Strictly reject B, C, D, F)
+                                # Allow Grade A+, A, or solid Grade B
                                 s3d = analysis.get("scores_3d", {})
                                 grade = s3d.get("grade", "C")
                                 comp_score = float(s3d.get("composite_confidence", 0) or s3d.get("composite_score", 0) or s3d.get("score", 0) or score)
@@ -726,12 +726,12 @@ def auto_sentinel_loop():
                                 rr_ratio = _parse_safe_rr(scalp_data.get("risk_reward", 2.0))
                                 shield_status = analysis.get("altcoin_shield", {}).get("status", "NORMAL")
 
-                                # Reject non-elite grades or WAIT signals
-                                if grade not in ["A+", "A"] or scalp_act == "WAIT":
+                                # Reject non-actionable or WAIT signals
+                                if grade not in ["A+", "A", "B"] or scalp_act == "WAIT":
                                     continue
 
                                 # Reject low conviction / low composite score
-                                if comp_score < 68 and score < 78:
+                                if comp_score < 58 and score < 75:
                                     continue
 
                                 # Altcoin macro danger shield

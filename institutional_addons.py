@@ -1862,7 +1862,7 @@ class CoinlegsScanner:
                             trend_4h_fa = "🔥 شکست سقف ۴H (BOS)"
                             f5_val = "شکست سقف ۴H (BOS)"
                             f5_desc = "تایید ساختار صعودی کلان و شکست آخرین قله ۴ ساعته."
-                        elif curr_4h >= ema20_4h:
+                        elif curr_4h >= ema20_4h * 0.985:
                             f5_passed = True
                             growth_score += 10
                             trend_4h = "BULLISH"
@@ -1919,10 +1919,10 @@ class CoinlegsScanner:
             # --- DYNAMIC HIGH-WINRATE TP / SL & RISK-TO-REWARD ENGINE ---
             # TP1 set at realistic +1.0% to +1.2% impulse: hit in 80%+ setups to lock 50% profit and transition to 100% Breakeven (Risk-Free)
             atr_est = max(p_curr * 0.018, p_curr * 0.02)
-            sl_price = round(p_curr - (atr_est * 1.15), 4 if p_curr < 10 else 2)  # -2.3% safe structural stop
+            sl_price = round(p_curr - (atr_est * 1.05), 4 if p_curr < 10 else 2)  # -2.1% safe structural stop
             tp1_price = round(p_curr + (atr_est * 0.55), 4 if p_curr < 10 else 2) # +1.1% high-probability quick bank
-            tp2_price = round(p_curr + (atr_est * 1.35), 4 if p_curr < 10 else 2) # +2.7% structural target
-            tp3_price = round(p_curr + (atr_est * 2.50), 4 if p_curr < 10 else 2) # +5.0% expansion target
+            tp2_price = round(p_curr + (atr_est * 1.80), 4 if p_curr < 10 else 2) # +3.6% structural target
+            tp3_price = round(p_curr + (atr_est * 3.20), 4 if p_curr < 10 else 2) # +6.4% expansion target
             tp_pot_pct = round(((tp2_price - p_curr) / p_curr) * 100.0, 1)
 
             entry_limit_low = round(p_curr - (atr_est * 0.35), 4 if p_curr < 10 else 2)
@@ -1936,18 +1936,17 @@ class CoinlegsScanner:
 
             # --- FILTER GATE 1: Multi-Timeframe (MTF) Macro Alignment ---
             # If 4H Trend is Bearish (under 4H EMA) or Bearish Divergence detected, reject to prevent bull traps
-            if trend_4h == "BEARISH":
+            if trend_4h == "BEARISH" and alpha_rs < 2.0:
                 return None
             if div_badge == "BEARISH_DIV":
                 return None
 
-            # --- FILTER GATE 2: Dynamic Minimum Risk-to-Reward (R:R >= 1:2.0) ---
-            # We reject any setup where reward does not justify the risk
-            if rr_ratio < 1.9:
+            # --- FILTER GATE 2: Dynamic Minimum Risk-to-Reward (R:R >= 1:1.45) ---
+            if rr_ratio < 1.45:
                 return None
 
-            # Strict Selectivity Gate: Require at least Score >= 70 or pass_count >= 2
-            if growth_score < 70 and pass_count < 2:
+            # Selectivity Gate: Require at least Score >= 60 or pass_count >= 1
+            if growth_score < 60 and pass_count < 1:
                 return None
 
             # Actionable Strategy Verdict
