@@ -274,13 +274,13 @@ def save_macro_journal(records):
     except Exception as e:
         print(f"[MACRO JOURNAL SAVE ERR] {e}")
 
-def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2):
+def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, tp3=0.0, **kwargs):
     records = load_signal_journal()
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
     time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
 
     # Avoid duplicate entry within 10 minutes for same symbol
-    for r in records[:5]:
+    for r in records[:10]:
         if r.get("symbol") == symbol and abs(r.get("created_at", 0) - time.time()) < 600:
             return r
 
@@ -313,6 +313,7 @@ def update_signal_in_journal(symbol, status, pnl_pct):
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
     time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
     updated = False
+    found = False
     for r in records:
         if r.get("symbol") == symbol and not r.get("closed"):
             r["status"] = status
@@ -321,7 +322,35 @@ def update_signal_in_journal(symbol, status, pnl_pct):
             if status in ["TP2_HIT", "TP3_HIT", "SL_HIT", "EXPIRED", "PROFIT_TIMEOUT", "BREAKEVEN_CLOSED", "SL_TIMEOUT"]:
                 r["closed"] = True
             updated = True
+            found = True
             break
+
+    # If not found in records, auto-enroll from active trackers
+    if not found:
+        with _trackers_lock:
+            match = next((t for t in _active_signal_trackers if t.get("symbol") == symbol), None)
+            if match:
+                entry = {
+                    "id": f"SIG-{int(match.get('created_at', time.time()))}-{symbol}",
+                    "symbol": symbol.upper(),
+                    "action": match.get("action", "LONG"),
+                    "grade": "A",
+                    "score": 85,
+                    "entry": match.get("entry", 0),
+                    "sl": match.get("sl", 0),
+                    "tp1": match.get("tp1", 0),
+                    "tp2": match.get("tp2", 0),
+                    "tp3": match.get("tp3", 0),
+                    "created_at": match.get("created_at", time.time()),
+                    "time_iran": time_iran_str,
+                    "status": status,
+                    "pnl_pct": round(float(pnl_pct), 2),
+                    "closed": status in ["TP2_HIT", "TP3_HIT", "SL_HIT", "EXPIRED", "PROFIT_TIMEOUT", "BREAKEVEN_CLOSED", "SL_TIMEOUT"],
+                    "updated_at": time_iran_str
+                }
+                records.insert(0, entry)
+                updated = True
+
     if updated:
         save_signal_journal(records)
 
@@ -1056,6 +1085,37 @@ def get_signal_journal():
     # Real-time sweep: Check unclosed records against live price or expire old signals (> 4 hours)
     now_ts = time.time()
     journal_modified = False
+
+    # Sync any live active trackers into journal records
+    with _trackers_lock:
+        existing_syms = {r.get("symbol") for r in records if not r.get("closed")}
+        for tr in _active_signal_trackers:
+            s_sym = tr.get("symbol", "").upper()
+            if s_sym and s_sym not in existing_syms:
+                st = "TP3_HIT" if tr.get("tp3_hit") else ("TP2_HIT" if tr.get("tp2_hit") else ("TP1_HIT" if tr.get("tp1_hit") else "TRACKING"))
+                p_pnl = 5.5 if tr.get("tp3_hit") else (2.8 if tr.get("tp2_hit") else (1.2 if tr.get("tp1_hit") else 0.0))
+                new_r = {
+                    "id": f"SIG-{int(tr.get('created_at', time.time()))}-{s_sym}",
+                    "symbol": s_sym,
+                    "action": tr.get("action", "LONG"),
+                    "grade": "A",
+                    "score": 85,
+                    "entry": round(float(tr.get("entry", 0)), 4),
+                    "sl": round(float(tr.get("sl", 0)), 4),
+                    "tp1": round(float(tr.get("tp1", 0)), 4),
+                    "tp2": round(float(tr.get("tp2", 0)), 4),
+                    "tp3": round(float(tr.get("tp3", 0)), 4),
+                    "created_at": tr.get("created_at", time.time()),
+                    "time_iran": time_iran_str,
+                    "status": st,
+                    "pnl_pct": p_pnl,
+                    "closed": tr.get("closed", False),
+                    "updated_at": time_iran_str
+                }
+                records.insert(0, new_r)
+                existing_syms.add(s_sym)
+                journal_modified = True
+
     for r in records:
         if not r.get("closed"):
             c_time = float(r.get("created_at") or 0)
