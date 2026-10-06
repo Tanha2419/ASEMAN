@@ -25,6 +25,38 @@ from typing import Dict, Any, List, Optional
 import socket
 socket.setdefaulttimeout(5.0)
 
+def format_price_adaptive(val: Any, prefix: str = "$") -> str:
+    """
+    Intelligent adaptive decimal precision formatter for institutional crypto assets.
+    Eliminates identical Entry/TP/SL formatting issues on micro/sub-penny tokens (MEME, PEPE, SHIB, BONK, etc.).
+    - val >= 100: 2 decimals ($84,120.50)
+    - val >= 1: 4 decimals ($2.4510)
+    - val >= 0.01: 5 decimals ($0.04521)
+    - val >= 0.0001: 7 decimals ($0.0006130)
+    - val < 0.0001: 8 decimals ($0.00001428)
+    """
+    if val is None or val == "":
+        return f"{prefix}0.00"
+    try:
+        fval = float(val)
+    except (ValueError, TypeError):
+        return f"{prefix}{val}"
+    
+    abs_v = abs(fval)
+    if abs_v == 0:
+        return f"{prefix}0.00"
+    elif abs_v >= 100:
+        return f"{prefix}{fval:,.2f}"
+    elif abs_v >= 1:
+        return f"{prefix}{fval:,.4f}"
+    elif abs_v >= 0.01:
+        return f"{prefix}{fval:,.5f}"
+    elif abs_v >= 0.0001:
+        return f"{prefix}{fval:,.7f}"
+    else:
+        return f"{prefix}{fval:,.8f}"
+
+
 class MacroEngine:
     """Layer 6: Global Crypto Market Cap, Dominance & Correlations (Powered by CoinMarketCap Pro)"""
     _cached_macro = None
@@ -1191,25 +1223,29 @@ class TelegramDispatcher:
         if whale_cost_basis > 0:
             cost_basis_line = f"\n🏛️ <b>میانگین انباشت تجمیعی نهنگ‌ها:</b> <code>${whale_cost_basis:,.2f}</code> ({dist_pct:+.2f}% نسبت به قیمت فعلی)"
 
-        sl_suggested = round(price * (0.988 if is_buy else 1.012), 4 if price < 10 else 2)
-        tp1_suggested = round(price * (1.015 if is_buy else 0.985), 4 if price < 10 else 2)
-        tp2_suggested = round(price * (1.030 if is_buy else 0.970), 4 if price < 10 else 2)
+        sl_suggested = price * (0.988 if is_buy else 1.012)
+        tp1_suggested = price * (1.015 if is_buy else 0.985)
+        tp2_suggested = price * (1.030 if is_buy else 0.970)
+        price_fmt = format_price_adaptive(price)
+        sl_fmt = format_price_adaptive(sl_suggested)
+        tp1_fmt = format_price_adaptive(tp1_suggested)
+        tp2_fmt = format_price_adaptive(tp2_suggested)
 
         msg = f"""
 🐋 <b>هشدار شکار ردپای نهنگ‌ها (Whale Execution Alert)</b>
 ━━━━━━━━━━━━━━━━━━━━
 💎 <b>نماد:</b> #{symbol}
 ⚡ <b>نوع تراکنش نهنگ:</b> <code>{side_emoji}</code>
-💰 <b>قیمت دقیق ورود نهنگ:</b> <code>${price:,.4f}</code>
+💰 <b>قیمت دقیق ورود نهنگ:</b> <code>{price_fmt}</code>
 📊 <b>حجم معامله:</b> <code>{qty:,.2f} واحد (${usd_val:,.0f} USD)</code>{cost_basis_line}
 ⏰ <b>زمان دقیق رویداد (ایران 🇮🇷):</b> <code>ساعت {time_str} ({date_str})</code>
 
 🧭 <b>استراتژی پیشنهادی همراهی با نهنگ:</b>
 • {action_tip}
-• <b>محدوده ورود همگام:</b> <code>${price:,.4f} (در کندل تثبیت)</code>
-• <b>حد ضرر پیشنهادی:</b> <code>${sl_suggested:,.4f}</code>
-• <b>تارگت اول (TP1):</b> <code>${tp1_suggested:,.4f}</code>
-• <b>تارگت دوم (TP2):</b> <code>${tp2_suggested:,.4f}</code>
+• <b>محدوده ورود همگام:</b> <code>{price_fmt} (در کندل تثبیت)</code>
+• <b>حد ضرر پیشنهادی:</b> <code>{sl_fmt}</code>
+• <b>تارگت اول (TP1):</b> <code>{tp1_fmt}</code>
+• <b>تارگت دوم (TP2):</b> <code>{tp2_fmt}</code>
 ━━━━━━━━━━━━━━━━━━━━
 ⚠️ <i>نکته: برای کاهش ریسک اسلیپیج، با سفارش Limit و رعایت دقیق حد ضرر وارد شوید.</i>
 """
@@ -1267,15 +1303,21 @@ class TelegramDispatcher:
         action_emoji = "🚀" if "LONG" in scalp.get("action", "") or "BUY" in scalp.get("action", "") else "🔻"
 
         src = analysis_data.get('ticker', {}).get('source', 'Binance')
+        price_fmt = format_price_adaptive(price)
+        sl_fmt = format_price_adaptive(scalp.get('stop_loss', 0))
+        tp1_fmt = format_price_adaptive(scalp.get('tp1', 0))
+        tp2_fmt = format_price_adaptive(scalp.get('tp2', 0))
+        tp3_fmt = format_price_adaptive(scalp.get('tp3', 0))
+        liq_magnet_price_fmt = format_price_adaptive(liq_magnet_price)
         msg = f"""
 {grade_emoji} <b>سیگنال نهادی هوشمند CryptoAgent AI</b> [{sym}]
 ━━━━━━━━━━━━━━━━━━━━
-💰 <b>قیمت لحظه‌ای:</b> ${price:,.4f} ({src})
+💰 <b>قیمت لحظه‌ای:</b> {price_fmt} ({src})
 🧭 <b>سیگنال سیستم:</b> {action_emoji} <b>{scalp.get('action', 'WAIT')}</b>
 ⭐ <b>درجه سیگنال:</b> <code>Grade {grade}</code> ({s3d.get('composite_confidence', 0)}%){conf_badge}
 🐋 <b>رادار نهنگ‌ها:</b> <code>{whale_badge}</code>{hl_line}
 🏛️ <b>موقعیت نهنگ‌ها (Cost Basis):</b> <code>میانگین ورود: {whale_cost_fmt} ({whale_dist_fmt})</code>
-🧲 <b>آهنربای نقدینگی (Liquidity Pool):</b> <code>${liq_magnet_price:,.2f} ({liq_magnet_dir} / نقدینگی: {liq_magnet_vol})</code>
+🧲 <b>آهنربای نقدینگی (Liquidity Pool):</b> <code>{liq_magnet_price_fmt} ({liq_magnet_dir} / نقدینگی: {liq_magnet_vol})</code>
 🌊 <b>فوت‌پرینت اردر فلو (Absorption):</b> <code>{abs_title}</code>
 
 🎯 <b>تفکیک سه‌گانه امتیازات سازمانی:</b>
@@ -1292,10 +1334,10 @@ class TelegramDispatcher:
 ⏰ <b>زمان صدور به وقت ایران 🇮🇷:</b> <code>ساعت {tehran_time_str} ({tehran_date_str})</code>
 ⏳ <b>افق اعتبار ستاپ:</b> <code>۳۰ الی ۴۵ دقیقه (تا ساعت {valid_until_tehran} به وقت ایران)</code>
 🔹 <b>محدوده بهینه ورود:</b> <code>{scalp.get('entry_zone', '-')}</code>
-🛑 <b>حد ضرر ساختاری (SL):</b> <code>${scalp.get('stop_loss', 0):,.4f} (-{scalp.get('stop_loss_pct', 0)}%)</code>
-🎯 <b>تارگت اول (TP1):</b> <code>${scalp.get('tp1', 0):,.4f} (+{scalp.get('tp1_pct', 0)}%)</code> <i>[سیو سود ۵۰٪ + ریسک‌فری]</i>
-🎯 <b>تارگت دوم (TP2):</b> <code>${scalp.get('tp2', 0):,.4f} (+{scalp.get('tp2_pct', 0)}%)</code> <i>[تارگت ساختاری]</i>
-🎯 <b>تارگت سوم (TP3):</b> <code>${scalp.get('tp3', 0):,.4f} (+{scalp.get('tp3_pct', 0)}%)</code> <i>[استخر نقدینگی]</i>
+🛑 <b>حد ضرر ساختاری (SL):</b> <code>{sl_fmt} (-{scalp.get('stop_loss_pct', 0)}%)</code>
+🎯 <b>تارگت اول (TP1):</b> <code>{tp1_fmt} (+{scalp.get('tp1_pct', 0)}%)</code> <i>[سیو سود ۵۰٪ + ریسک‌فری]</i>
+🎯 <b>تارگت دوم (TP2):</b> <code>{tp2_fmt} (+{scalp.get('tp2_pct', 0)}%)</code> <i>[تارگت ساختاری]</i>
+🎯 <b>تارگت سوم (TP3):</b> <code>{tp3_fmt} (+{scalp.get('tp3_pct', 0)}%)</code> <i>[استخر نقدینگی]</i>
 ⚖️ <b>ریسک به ریوارد:</b> <code>{scalp.get('risk_reward', '1:2.0')}</code>
 
 🛡️ <b>دستورالعمل هوشمند مدیریت سرمایه:</b>
@@ -1952,7 +1994,16 @@ class CoinlegsScanner:
             # TP1 set at realistic +1.0% to +1.2% impulse: hit in 80%+ setups to lock 50% profit and transition to 100% Breakeven (Risk-Free)
             atr_est = max(p_curr * 0.018, p_curr * 0.02)
             # --- DYNAMIC HIGH-WINRATE TP / SL & RISK-TO-REWARD ENGINE ---
-            pDec = 6 if p_curr < 0.1 else (4 if p_curr < 10 else 2)
+            if p_curr < 0.0001:
+                pDec = 8
+            elif p_curr < 0.01:
+                pDec = 7
+            elif p_curr < 0.1:
+                pDec = 6
+            elif p_curr < 10:
+                pDec = 4
+            else:
+                pDec = 2
             atr_est = max(p_curr * 0.015, p_curr * 0.018)
             
             # SL: safe structural cushion (~2.0% to 2.4% below current price)

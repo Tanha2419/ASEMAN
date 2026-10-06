@@ -30,6 +30,7 @@ from typing import Dict, Any, Optional
 
 from analyzer_engine import CryptoTradingAgent, AgentAdvisor, clean_symbol, get_base_coin
 from institutional_addons import (
+    format_price_adaptive,
     MacroEngine, OnChainEngine, NewsCircuitBreaker, BacktestEngine,
     TelegramDispatcher, DexScreenerEngine, CoinlegsScanner, HeatmapEngine,
     LiquidationHeatmapEngine, WhaleFlowEngine, EconomicCalendarEngine,
@@ -354,7 +355,34 @@ def update_signal_in_journal(symbol, status, pnl_pct):
     if updated:
         save_signal_journal(records)
 
-_sent_cooldown = {} # {symbol: timestamp}
+COOLDOWN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sent_cooldown.json")
+
+def _normalize_cooldown_sym(sym: str) -> str:
+    if not sym:
+        return ""
+    return str(sym).upper().replace("USDT", "").replace("USD", "").replace("/", "").strip()
+
+def load_sent_cooldown() -> Dict[str, float]:
+    if os.path.exists(COOLDOWN_FILE):
+        try:
+            with open(COOLDOWN_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return {_normalize_cooldown_sym(k): float(v) for k, v in data.items()}
+        except Exception as e:
+            print(f"[COOLDOWN LOAD ERR] {e}")
+    return {}
+
+def save_sent_cooldown(cooldown_dict: Dict[str, float]):
+    try:
+        now = time.time()
+        cleaned = {k: v for k, v in cooldown_dict.items() if (now - v) < 86400}
+        with open(COOLDOWN_FILE, "w", encoding="utf-8") as f:
+            json.dump(cleaned, f, indent=2)
+    except Exception as e:
+        print(f"[COOLDOWN SAVE ERR] {e}")
+
+_sent_cooldown = load_sent_cooldown()
 _shield_notified_events = set() # Track events already broadcast to Telegram
 _active_signal_trackers = [] # List of live dispatched signals
 _trackers_lock = threading.Lock()
@@ -423,7 +451,7 @@ def signal_outcome_tracker_loop():
 ✨ <b>پایان افق زمانی معامله در سود (+{cur_pnl}%) 📈</b>
 ━━━━━━━━━━━━━━━━━━━━
 💎 <b>نماد:</b> #{sym}
-💰 <b>قیمت فعلی:</b> ${current_price:,.4f}
+💰 <b>قیمت فعلی:</b> {format_price_adaptive(current_price)}
 📊 <b>بازدهی ثبت‌شده:</b> <code>+{cur_pnl:.2f}%</code>
 ⏰ <b>زمان (ایران 🇮🇷):</b> <code>ساعت {iran_time}</code>
 
@@ -453,7 +481,7 @@ def signal_outcome_tracker_loop():
 🎯 <b>تارگت اول (TP1) با موفقیت تاچ شد! 🚀</b>
 ━━━━━━━━━━━━━━━━━━━━
 💎 <b>نماد:</b> #{sym}
-💰 <b>قیمت ثبت تارگت:</b> ${current_price:,.4f}
+💰 <b>قیمت ثبت تارگت:</b> {format_price_adaptive(current_price)}
 📈 <b>سود خالص ستاپ:</b> <code>+{pct:.2f}%</code> (بدون لوریج)
 ⏰ <b>زمان لمس تارگت (ایران 🇮🇷):</b> <code>ساعت {iran_time}</code>
 
@@ -483,7 +511,7 @@ def signal_outcome_tracker_loop():
 👑 <b>تارگت دوم (TP2) با موفقیت درو شد! 🏆</b>
 ━━━━━━━━━━━━━━━━━━━━
 💎 <b>نماد:</b> #{sym}
-💰 <b>قیمت ثبت تارگت:</b> ${current_price:,.4f}
+💰 <b>قیمت ثبت تارگت:</b> {format_price_adaptive(current_price)}
 🌟 <b>مجموع بازدهی ستاپ:</b> <code>+{pct2:.2f}%</code>
 ⏰ <b>زمان لمس تارگت (ایران 🇮🇷):</b> <code>ساعت {iran_time}</code>
 
@@ -509,7 +537,7 @@ def signal_outcome_tracker_loop():
 🚀 <b>تارگت سوم (TP3) و استخر نقدینگی نهایی با موفقیت فتح شد! 👑</b>
 ━━━━━━━━━━━━━━━━━━━━
 💎 <b>نماد:</b> #{sym}
-💰 <b>قیمت ثبت تارگت:</b> ${current_price:,.4f}
+💰 <b>قیمت ثبت تارگت:</b> {format_price_adaptive(current_price)}
 🌟 <b>سود نهایی ستاپ:</b> <code>+{pct3:.2f}%</code>
 ⏰ <b>زمان لمس تارگت (ایران 🇮🇷):</b> <code>ساعت {iran_time}</code>
 
@@ -532,7 +560,7 @@ def signal_outcome_tracker_loop():
 🛡️ <b>بسته‌شدن بدون ریسک باقی‌مانده پوزیشن (Risk-Free Breakeven)</b>
 ━━━━━━━━━━━━━━━━━━━━
 💎 <b>نماد:</b> #{sym}
-💰 <b>قیمت خروج:</b> ${current_price:,.4f}
+💰 <b>قیمت خروج:</b> {format_price_adaptive(current_price)}
 ✨ <b>وضعیت:</b> ۵۰٪ سود در تارگت ۱ ذخیره شد و مابقی پوزیشن در نقطه ورود بدون ضرر بسته شد.
 ⏰ <b>زمان (ایران 🇮🇷):</b> <code>ساعت {iran_time}</code>
 ━━━━━━━━━━━━━━━━━━━━
@@ -555,7 +583,7 @@ def signal_outcome_tracker_loop():
 🛑 <b>اطلاعیه حد ضرر معامله (Stop Loss)</b>
 ━━━━━━━━━━━━━━━━━━━━
 ⚠️ <b>نماد:</b> #{sym}
-💰 <b>قیمت خروج:</b> ${current_price:,.4f}
+💰 <b>قیمت خروج:</b> {format_price_adaptive(current_price)}
 📉 <b>میزان ضرر کنترل‌شده:</b> <code>-{pct_loss:.2f}%</code>
 ⏰ <b>زمان (ایران 🇮🇷):</b> <code>ساعت {iran_time}</code>
 
@@ -787,14 +815,20 @@ def auto_sentinel_loop():
                 sent_in_cycle = 0
                 max_signals_per_cycle = int(cfg.get("max_signals_per_cycle", 8)) # default up to 8 signals per cycle
 
+                seen_in_cycle = set()
                 for cand in all_candidates:
                     try:
                         sym = cand.get("symbol", "")
+                        norm_sym = _normalize_cooldown_sym(sym)
+                        if not norm_sym or norm_sym in seen_in_cycle:
+                            continue
+                        seen_in_cycle.add(norm_sym)
+
                         score = cand.get("growth_score", 0)
 
-                        # Cooldown check: don't alert same symbol within 1.5 hours (5400 seconds)
-                        last_sent = _sent_cooldown.get(sym, 0)
-                        if score >= min_score and (now - last_sent > 5400):
+                        # Cooldown check: don't alert same symbol within 2 hours (7200 seconds)
+                        last_sent = _sent_cooldown.get(norm_sym, 0)
+                        if score >= min_score and (now - last_sent > 7200):
                             # BTC Trend Filter: If BTC is in freefall and this is an altcoin, protect capital
                             if btc_dumping and "BTC" not in sym.upper():
                                 print(f"[SENTINEL] Skipping {sym} because BTC is dumping heavily.")
@@ -847,15 +881,22 @@ def auto_sentinel_loop():
 
                                 res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis)
                                 if res.get("success") and not res.get("simulated"):
-                                    _sent_cooldown[sym] = now
+                                    _sent_cooldown[norm_sym] = now
+                                    _sent_cooldown[sym.upper()] = now
+                                    save_sent_cooldown(_sent_cooldown)
                                     _sentinel_stats["alerts_sent"] += 1
                                     _sentinel_stats["last_alert"] = f"{sym} ({grade} - {scalp_act})"
                                     print(f"[SENTINEL] Auto-alert dispatched for {sym} to {chat_id}")
                                     
-                                    # Register in live Outcome Tracker
+                                    # Register in live Outcome Tracker (prevent duplicates)
                                     if scalp_data.get("tp1") and scalp_data.get("stop_loss"):
                                         with _trackers_lock:
-                                            _active_signal_trackers.append({
+                                            already_tracked = any(
+                                                _normalize_cooldown_sym(t.get("symbol", "")) == norm_sym and not t.get("closed")
+                                                for t in _active_signal_trackers
+                                            )
+                                            if not already_tracked:
+                                                _active_signal_trackers.append({
                                                 "symbol": sym,
                                                 "action": scalp_data.get("action", "LONG"),
                                                 "entry": analysis.get("price", 0),
@@ -871,7 +912,7 @@ def auto_sentinel_loop():
                                                 "tp3_hit": False,
                                                 "closed": False
                                             })
-                                        print(f"[SENTINEL] Enrolled {sym} in live outcome tracker.")
+                                                print(f"[SENTINEL] Enrolled {sym} in live outcome tracker.")
                                         record_dispatched_signal(
                                             symbol=sym,
                                             action=scalp_data.get("action", "LONG"),
@@ -988,6 +1029,9 @@ def send_telegram_signal(req: TelegramSendRequest):
     dispatch_res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis)
 
     if dispatch_res.get("success") and not dispatch_res.get("simulated"):
+        norm_s = _normalize_cooldown_sym(req.symbol)
+        _sent_cooldown[norm_s] = time.time()
+        save_sent_cooldown(_sent_cooldown)
         scalp_data = analysis.get("scalp_setup", {})
         if scalp_data.get("tp1") and scalp_data.get("stop_loss"):
             with _trackers_lock:

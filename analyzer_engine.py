@@ -5,7 +5,7 @@ import numpy as np
 import time
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, List
-from institutional_addons import CryptoQuantNetflowEngine, TokenUnlocksRadar, StablecoinSupplyRatioEngine, MacroEngine, OnChainEngine, NewsCircuitBreaker, BacktestEngine, TelegramDispatcher
+from institutional_addons import CryptoQuantNetflowEngine, TokenUnlocksRadar, StablecoinSupplyRatioEngine, MacroEngine, OnChainEngine, NewsCircuitBreaker, BacktestEngine, TelegramDispatcher, format_price_adaptive
 
 def clean_symbol(raw_symbol: str) -> str:
     s = raw_symbol.upper().strip().replace("/", "").replace("-", "").replace("_", "")
@@ -1646,11 +1646,11 @@ class CryptoTradingAgent:
             {"param": "نرخ تامین مالی (Funding Rate)", "val": f"{derivatives.get('funding_rate_fmt', '0%')} ({derivatives.get('market_crowd', 'خنثی')})", "status": "INFO"},
             {"param": "شکار نقدینگی و تسویه استاپ‌ها (Sweeps)", "val": sweep_str, "status": "PASS" if sweep else "INFO"},
             {"param": "وضعیت دفتر سفارشات (Order Book Imbalance)", "val": imbalance, "status": "PASS" if ratio > 1.15 or ratio < 0.85 else "INFO"},
-            {"param": "گره تراکم حجم نقدینگی (POC)", "val": f"${smc_15m.get('poc', 0):,.4f} (VAH: ${smc_15m.get('vah', 0):,.4f} | VAL: ${smc_15m.get('val', 0):,.4f})", "status": "INFO"},
+            {"param": "گره تراکم حجم نقدینگی (POC)", "val": f"{format_price_adaptive(smc_15m.get('poc', 0))} (VAH: {format_price_adaptive(smc_15m.get('vah', 0))} | VAL: {format_price_adaptive(smc_15m.get('val', 0))})", "status": "INFO"},
             {"param": "سیگنال نهایی سیستم (Signal)", "val": action, "status": "PASS" if "LONG" in action or "SHORT" in action or "BUY" in action or "SELL" in action else "WARN"},
             {"param": "محدوده ورود بهینه (Entry Zone)", "val": scalp.get("entry_zone", "-"), "status": "INFO"},
-            {"param": "حد ضرر قطعی (Stop Loss)", "val": f"${scalp.get('stop_loss', 0):,.4f} (-{scalp.get('stop_loss_pct', 0)}%)", "status": "PASS"},
-            {"param": "حدود سود مرحله‌ای (TP1 / TP2 / TP3)", "val": f"TP1: ${scalp.get('tp1',0):,.4f} | TP2: ${scalp.get('tp2',0):,.4f} | TP3: ${scalp.get('tp3',0):,.4f}", "status": "PASS"},
+            {"param": "حد ضرر قطعی (Stop Loss)", "val": f"{format_price_adaptive(scalp.get('stop_loss', 0))} (-{scalp.get('stop_loss_pct', 0)}%)", "status": "PASS"},
+            {"param": "حدود سود مرحله‌ای (TP1 / TP2 / TP3)", "val": f"TP1: {format_price_adaptive(scalp.get('tp1',0))} | TP2: {format_price_adaptive(scalp.get('tp2',0))} | TP3: {format_price_adaptive(scalp.get('tp3',0))}", "status": "PASS"},
             {"param": "نسبت ریسک به ریوارد (Risk/Reward)", "val": scalp.get("risk_reward", "1:2.0"), "status": "PASS"},
             {"param": "تفکیک امتیازات ۳ بعدی (Direction / Entry / Risk)", "val": f"جهت: {scores.get('direction_score')}/100 | ورود: {scores.get('entry_score')}/100 | ریسک: {scores.get('risk_score')}/100", "status": "PASS" if scores.get("composite_confidence", 0) >= 65 else "WARN"},
             {"param": "درجه سیگنال و وین‌ریت معتبر (Confidence)", "val": f"{scores.get('grade_title')} - {scores.get('composite_confidence')}/100", "status": "PASS" if scores.get("grade") in ["A+", "A"] else ("WARN" if scores.get("grade") == "B" else "DANGER")}
@@ -1785,7 +1785,7 @@ class CryptoTradingAgent:
                 entry_low = self._round_val(min(retest_price, ema20))
                 entry_high = self._round_val(price)
                 
-            entry_str = f"{entry_low} - {entry_high} (ورود در پولبک)"
+            entry_str = f"{format_price_adaptive(entry_low)} - {format_price_adaptive(entry_high)} (ورود در پولبک)"
             
             # --- INSTITUTIONAL STRUCTURAL STOP LOSS (BULLISH) ---
             # Stop loss sits safely BELOW structural support & order block bottom,
@@ -1844,7 +1844,7 @@ class CryptoTradingAgent:
                 entry_low = self._round_val(price)
                 entry_high = self._round_val(max(retest_price, ema20))
                 
-            entry_str = f"{entry_low} - {entry_high} (ورود در پولبک)"
+            entry_str = f"{format_price_adaptive(entry_low)} - {format_price_adaptive(entry_high)} (ورود در پولبک)"
             
             # --- INSTITUTIONAL STRUCTURAL STOP LOSS (BEARISH) ---
             # Stop loss sits safely ABOVE structural resistance & order block top,
@@ -1888,7 +1888,7 @@ class CryptoTradingAgent:
             action = "WAIT / NO SCALP (صبر برای شفافیت روند)"
             action_code = "WAIT"
             direction = "NEUTRAL"
-            entry_str = f"محدوده رنج بین {self._round_val(nearest_sup)} تا {self._round_val(nearest_res)}"
+            entry_str = f"محدوده رنج بین {format_price_adaptive(nearest_sup)} تا {format_price_adaptive(nearest_res)}"
             sl = self._round_val(nearest_sup * 0.995)
             risk = price - sl
             if risk <= 0: risk = price * 0.005
@@ -2096,7 +2096,7 @@ class CryptoTradingAgent:
 
         summary_paragraphs = []
         summary_paragraphs.append(
-            f"نماد **{symbol}** هم‌اکنون با قیمت **{price:,.4f} دلار** معامله می‌شود و در ۲۴ ساعت گذشته تغییرات قیمتی **{change_24h:+.2f}%** همراه با حجم معاملات نقدی معادل **{vol_million:,.1f} میلیون دلار** به ثبت رسانده است."
+            f"نماد **{symbol}** هم‌اکنون با قیمت **{format_price_adaptive(price)}** معامله می‌شود و در ۲۴ ساعت گذشته تغییرات قیمتی **{change_24h:+.2f}%** همراه با حجم معاملات نقدی معادل **{vol_million:,.1f} میلیون دلار** به ثبت رسانده است."
         )
 
         ob_ratio = orderbook.get("ratio", 1.0)
@@ -2111,7 +2111,7 @@ class CryptoTradingAgent:
         vwap_data = smc_15m.get("vwap_cvd", {})
         
         summary_paragraphs.append(
-            f"در عمق بازار (Order Book)، وضعیت **{ob_pressure}** (نسبت خریدار/فروشنده: **{ob_ratio}**) مشاهده می‌شود. شاخص طمع و ترس کل بازار روی **{fng_val}** ({fng_desc}) قرار دارد. مرکز کنترل حجم نقدینگی (POC) در قیمت **{poc:,.4f} دلار** و میانگین قیمت وزنی حجم (VWAP) روی **{vwap_data.get('vwap', 0):,.4f} دلار** قرار دارد ({vwap_data.get('vwap_position', '')})."
+            f"در عمق بازار (Order Book)، وضعیت **{ob_pressure}** (نسبت خریدار/فروشنده: **{ob_ratio}**) مشاهده می‌شود. شاخص طمع و ترس کل بازار روی **{fng_val}** ({fng_desc}) قرار دارد. مرکز کنترل حجم نقدینگی (POC) در قیمت **{format_price_adaptive(poc)}** و میانگین قیمت وزنی حجم (VWAP) روی **{format_price_adaptive(vwap_data.get('vwap', 0))}** قرار دارد ({vwap_data.get('vwap_position', '')})."
         )
 
         summary_paragraphs.append(
