@@ -4550,14 +4550,16 @@
                   <th style="padding: 12px 14px;">حد ضرر (SL)</th>
                   <th style="padding: 12px 14px;">تارگت اول (TP1)</th>
                   <th style="padding: 12px 14px;">تارگت دوم (TP2)</th>
+                  <th style="padding: 12px 14px; color: #c084fc;">تارگت سوم (TP3)</th>
                   <th style="padding: 12px 14px;">وضعیت پایش زنده</th>
                   <th style="padding: 12px 14px;">بازدهی ستاپ</th>
                   <th style="padding: 12px 14px;">زمان ثبت (ایران 🇮🇷)</th>
+                  <th style="padding: 12px 14px; text-align: center;">عملیات آنالیز</th>
                 </tr>
               </thead>
               <tbody id="journalTableBody">
                 <tr>
-                  <td colspan="10" style="text-align: center; padding: 30px; color: var(--text-dim);">
+                  <td colspan="12" style="text-align: center; padding: 30px; color: var(--text-dim);">
                     در حال فراخوانی داده‌های ژورنال سیگنال‌ها...
                   </td>
                 </tr>
@@ -5919,6 +5921,18 @@
       applyJournalFilters();
     }
 
+    function openSymbolAnalysis(sym) {
+      if (!sym) return;
+      const clean = String(sym).replace(/USDT$/i, '').toUpperCase().trim();
+      // Load symbol data and triggers analysis
+      loadSymbol(clean);
+      // Switch to institutional master analysis tab
+      const tabBtn = document.getElementById('tabBtnPrecision') || document.querySelector('.tab-btn');
+      switchTab('instTab', tabBtn);
+      // Smooth scroll to top analysis viewport
+      window.scrollTo({ top: 180, behavior: 'smooth' });
+    }
+
     function applyJournalFilters() {
       const searchInput = document.getElementById('journalSearchInput');
       const query = (searchInput ? searchInput.value.trim().toUpperCase() : '');
@@ -5929,7 +5943,7 @@
 
       // Status filter
       if (_journalActiveFilter === 'TP') {
-        filtered = filtered.filter(r => r.status === 'TP1_HIT' || r.status === 'TP2_HIT');
+        filtered = filtered.filter(r => r.status === 'TP1_HIT' || r.status === 'TP2_HIT' || r.status === 'TP3_HIT');
       } else if (_journalActiveFilter === 'ACTIVE') {
         filtered = filtered.filter(r => !r.closed);
       } else if (_journalActiveFilter === 'SL') {
@@ -5942,7 +5956,7 @@
       }
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--text-dim);">هیچ معامله‌ای با شرایط فیلتر انتخاب‌شده یافت نشد.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 24px; color: var(--text-dim);">هیچ معامله‌ای با شرایط فیلتر انتخاب‌شده یافت نشد.</td></tr>`;
         return;
       }
 
@@ -5954,7 +5968,10 @@
 
         let statusBadge = '';
         let pnlBadge = '';
-        if (r.status === 'TP2_HIT') {
+        if (r.status === 'TP3_HIT') {
+          statusBadge = `<span style="background: rgba(168,85,247,0.25); color: #c084fc; padding: 3px 8px; border-radius: 4px; font-weight: 800; font-size: 0.75rem;">👑 تارگت ۳ (سود ماکسیمم)</span>`;
+          pnlBadge = `<span style="color: #00e676; font-weight: 800; font-family: var(--font-mono);">+${(r.pnl_pct || 0).toFixed(2)}%</span>`;
+        } else if (r.status === 'TP2_HIT') {
           statusBadge = `<span style="background: rgba(255,215,0,0.2); color: #ffd700; padding: 3px 8px; border-radius: 4px; font-weight: 800; font-size: 0.75rem;">🏆 تارگت ۲ (کامل)</span>`;
           pnlBadge = `<span style="color: #00e676; font-weight: 800; font-family: var(--font-mono);">+${(r.pnl_pct || 0).toFixed(2)}%</span>`;
         } else if (r.status === 'TP1_HIT') {
@@ -5971,12 +5988,17 @@
           pnlBadge = `<span style="color: #94a3b8; font-family: var(--font-mono);">در جریان...</span>`;
         }
 
+        const cleanSym = String(r.symbol || '').replace(/USDT$/i, '').toUpperCase().trim();
         return `
-          <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); font-family: var(--font-mono);">
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); font-family: var(--font-mono); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
             <td style="padding: 10px 14px; color: var(--text-dim);">${i + 1}</td>
-            <td style="padding: 10px 14px;">
-              <strong style="color: #fff; font-size: 0.88rem;">${r.symbol}</strong>
-              <span style="background: ${dirBg}; color: ${dirColor}; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; margin-right: 6px; font-weight: 700;">${dirIcon}</span>
+            <td style="padding: 10px 14px; cursor: pointer;" onclick="openSymbolAnalysis('${cleanSym}')" title="برای آنالیز و تحلیل زنده ${cleanSym} کلیک کنید">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="background: rgba(0, 210, 255, 0.15); border: 1px solid rgba(0, 210, 255, 0.4); color: #00d2ff; padding: 3px 8px; border-radius: 6px; font-weight: 800; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 0 8px rgba(0, 210, 255, 0.2);">
+                  <span>🔍</span> ${cleanSym}
+                </span>
+                <span style="background: ${dirBg}; color: ${dirColor}; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700;">${dirIcon}</span>
+              </div>
             </td>
             <td style="padding: 10px 14px;">
               <span style="background: rgba(255,215,0,0.12); color: #ffd700; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 0.75rem;">
@@ -5987,9 +6009,15 @@
             <td style="padding: 10px 14px; color: #ff3366;">$${Number(r.sl || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</td>
             <td style="padding: 10px 14px; color: #00e676;">$${Number(r.tp1 || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</td>
             <td style="padding: 10px 14px; color: #ffd700;">$${Number(r.tp2 || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</td>
+            <td style="padding: 10px 14px; color: #c084fc; font-weight: 700;">$${Number(r.tp3 || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</td>
             <td style="padding: 10px 14px;">${statusBadge}</td>
             <td style="padding: 10px 14px;">${pnlBadge}</td>
             <td style="padding: 10px 14px; color: #cbd5e1; font-size: 0.75rem; direction: ltr; text-align: right;">${r.time_iran || '-'}</td>
+            <td style="padding: 10px 14px; text-align: center;">
+              <button type="button" onclick="openSymbolAnalysis('${cleanSym}')" style="background: linear-gradient(135deg, rgba(0,210,255,0.2), rgba(0,230,118,0.2)); border: 1px solid rgba(0,210,255,0.4); color: #00d2ff; padding: 4px 12px; border-radius: 6px; font-size: 0.74rem; font-weight: 800; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(0,210,255,0.4)'" onmouseout="this.style.background='rgba(0,210,255,0.2)'" title="کالبدشکافی ۳۶۰ درجه و لایو ${cleanSym}">
+                📊 آنالیز ارز
+              </button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -6026,7 +6054,7 @@
         const data = await res.json();
         
         if (!data || !data.records) {
-          if (tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px; color: var(--text-dim);">هیچ معامله‌ای تا این لحظه ثبت نشده است.</td></tr>`;
+          if (tbody) tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 20px; color: var(--text-dim);">هیچ معامله‌ای تا این لحظه ثبت نشده است.</td></tr>`;
           return;
         }
 
@@ -6062,7 +6090,7 @@
         _journalAllRecords = data.records || [];
         applyJournalFilters();
       } catch (err) {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px; color: #ff3366;">خطا در دریافت اطلاعات ژورنال عملکرد.</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 20px; color: #ff3366;">خطا در دریافت اطلاعات ژورنال عملکرد.</td></tr>`;
       }
     }
 
@@ -6073,7 +6101,7 @@
         return;
       }
 
-      const headers = ["ID", "Symbol", "Direction", "Grade", "Score", "Entry Price", "Stop Loss", "TP1", "TP2", "Status", "PnL %", "Iran Time", "Updated At"];
+      const headers = ["ID", "Symbol", "Direction", "Grade", "Score", "Entry Price", "Stop Loss", "TP1", "TP2", "TP3", "Status", "PnL %", "Iran Time", "Updated At"];
       const rows = _journalAllRecords.map(r => [
         r.id || "",
         r.symbol || "",
@@ -6084,6 +6112,7 @@
         r.sl || 0,
         r.tp1 || 0,
         r.tp2 || 0,
+        r.tp3 || 0,
         r.status || "",
         (r.pnl_pct || 0) + "%",
         r.time_iran || "",
