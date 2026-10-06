@@ -275,6 +275,19 @@ def save_macro_journal(records):
     except Exception as e:
         print(f"[MACRO JOURNAL SAVE ERR] {e}")
 
+def _round_signal_val(v):
+    if v is None: return 0.0
+    try:
+        val = float(v)
+    except Exception:
+        return 0.0
+    abs_v = abs(val)
+    if abs_v >= 100: return round(val, 2)
+    elif abs_v >= 1: return round(val, 4)
+    elif abs_v >= 0.01: return round(val, 5)
+    elif abs_v >= 0.0001: return round(val, 7)
+    else: return round(val, 8)
+
 def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, tp3=0.0, **kwargs):
     records = load_signal_journal()
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
@@ -282,20 +295,34 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, 
 
     # Avoid duplicate entry within 10 minutes for same symbol
     for r in records[:10]:
-        if r.get("symbol") == symbol and abs(r.get("created_at", 0) - time.time()) < 600:
+        if r.get("symbol") == symbol.upper() and abs(r.get("created_at", 0) - time.time()) < 600:
             return r
 
+    entry_f = float(entry or 0)
+    tp1_f = float(tp1 or 0)
+    tp2_f = float(tp2 or 0)
+    tp3_f = float(tp3 or 0)
+    sl_f = float(sl or 0)
+    is_long = "LONG" in str(action).upper() or "BUY" in str(action).upper()
+
+    # Guarantee TP3 is calculated with structural target if not provided
+    if tp3_f <= 0 and entry_f > 0:
+        if tp2_f > 0:
+            tp3_f = entry_f + (tp2_f - entry_f) * 1.55 if is_long else entry_f - (entry_f - tp2_f) * 1.55
+        else:
+            tp3_f = entry_f * 1.055 if is_long else entry_f * 0.945
+
     new_entry = {
-        "id": f"SIG-{int(time.time())}-{symbol}",
+        "id": f"SIG-{int(time.time())}-{symbol.upper()}",
         "symbol": symbol.upper(),
         "action": action.upper(),
         "grade": grade,
         "score": score,
-        "entry": round(float(entry or 0), 4),
-        "sl": round(float(sl or 0), 4),
-        "tp1": round(float(tp1 or 0), 4),
-        "tp2": round(float(tp2 or 0), 4),
-        "tp3": round(float(tp3 or 0), 4),
+        "entry": _round_signal_val(entry_f),
+        "sl": _round_signal_val(sl_f),
+        "tp1": _round_signal_val(tp1_f),
+        "tp2": _round_signal_val(tp2_f),
+        "tp3": _round_signal_val(tp3_f),
         "created_at": time.time(),
         "time_iran": time_iran_str,
         "status": "TRACKING", # TRACKING, TP1_HIT, TP2_HIT, TP3_HIT, SL_HIT, PROFIT_TIMEOUT, BREAKEVEN_CLOSED
@@ -1042,11 +1069,13 @@ def send_telegram_signal(req: TelegramSendRequest):
                     "sl": scalp_data.get("stop_loss", 0),
                     "tp1": scalp_data.get("tp1", 0),
                     "tp2": scalp_data.get("tp2", 0),
+                    "tp3": scalp_data.get("tp3", 0),
                     "created_at": time.time(),
                     "bot_token": bot_token,
                     "chat_id": chat_id,
                     "tp1_hit": False,
                     "tp2_hit": False,
+                    "tp3_hit": False,
                     "closed": False
                 })
             s3d = analysis.get("scores_3d", {})
@@ -1058,7 +1087,8 @@ def send_telegram_signal(req: TelegramSendRequest):
                 entry=analysis.get("price", 0),
                 sl=scalp_data.get("stop_loss", 0),
                 tp1=scalp_data.get("tp1", 0),
-                tp2=scalp_data.get("tp2", 0)
+                tp2=scalp_data.get("tp2", 0),
+                tp3=scalp_data.get("tp3", 0)
             )
 
     return dispatch_res
@@ -1171,6 +1201,7 @@ def get_signal_journal():
             sl = float(r.get("sl") or 0)
             tp1 = float(r.get("tp1") or 0)
             tp2 = float(r.get("tp2") or 0)
+            tp3 = float(r.get("tp3") or 0)
             action = r.get("action", "LONG")
             is_long = "LONG" in action or "BUY" in action
 
@@ -1207,6 +1238,15 @@ def get_signal_journal():
                         if hit_tp2:
                             r["status"] = "TP2_HIT"
                             r["pnl_pct"] = round(abs((tp2 - entry) / entry) * 100, 2)
+                            if not tp3:
+                                r["closed"] = True
+                            r["updated_at"] = time_iran_str
+                            journal_modified = True
+                    elif r.get("status") == "TP2_HIT" and tp3 > 0:
+                        hit_tp3 = (cur_px >= tp3) if is_long else (cur_px <= tp3)
+                        if hit_tp3:
+                            r["status"] = "TP3_HIT"
+                            r["pnl_pct"] = round(abs((tp3 - entry) / entry) * 100, 2)
                             r["closed"] = True
                             r["updated_at"] = time_iran_str
                             journal_modified = True
@@ -1218,8 +1258,9 @@ def get_signal_journal():
 
     # Calculate statistics
     total_trades = len(records)
-    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT"]])
-    tp2_count = len([r for r in records if r.get("status") == "TP2_HIT"])
+    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT"]])
+    tp2_count = len([r for r in records if r.get("status") in ["TP2_HIT", "TP3_HIT"]])
+    tp3_count = len([r for r in records if r.get("status") == "TP3_HIT"])
     sl_count = len([r for r in records if r.get("status") == "SL_HIT"])
     active_count = len([r for r in records if not r.get("closed")])
     

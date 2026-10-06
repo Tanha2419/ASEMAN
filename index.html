@@ -4550,14 +4550,16 @@
                   <th style="padding: 12px 14px;">حد ضرر (SL)</th>
                   <th style="padding: 12px 14px;">تارگت اول (TP1)</th>
                   <th style="padding: 12px 14px;">تارگت دوم (TP2)</th>
+                  <th style="padding: 12px 14px; color: #c084fc;">تارگت سوم (TP3)</th>
                   <th style="padding: 12px 14px;">وضعیت پایش زنده</th>
                   <th style="padding: 12px 14px;">بازدهی ستاپ</th>
                   <th style="padding: 12px 14px;">زمان ثبت (ایران 🇮🇷)</th>
+                  <th style="padding: 12px 14px; text-align: center;">عملیات آنالیز</th>
                 </tr>
               </thead>
               <tbody id="journalTableBody">
                 <tr>
-                  <td colspan="10" style="text-align: center; padding: 30px; color: var(--text-dim);">
+                  <td colspan="12" style="text-align: center; padding: 30px; color: var(--text-dim);">
                     در حال فراخوانی داده‌های ژورنال سیگنال‌ها...
                   </td>
                 </tr>
@@ -5919,6 +5921,61 @@
       applyJournalFilters();
     }
 
+    function formatJournalPrice(val, fallbackVal = 0) {
+      let num = Number(val);
+      if (!num || isNaN(num) || num <= 0) {
+        num = Number(fallbackVal);
+      }
+      if (!num || isNaN(num) || num <= 0) return '-';
+      const abs = Math.abs(num);
+      if (abs >= 100) {
+        return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else if (abs >= 1) {
+        return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      } else if (abs >= 0.01) {
+        return '$' + num.toFixed(5);
+      } else if (abs >= 0.0001) {
+        return '$' + num.toFixed(7);
+      } else {
+        return '$' + num.toFixed(8);
+      }
+    }
+
+    function openSymbolAnalysis(sym) {
+      if (!sym) return;
+      const clean = String(sym).replace(/USDT$/i, '').toUpperCase().trim();
+      
+      // 1. Instant toast notification
+      if (typeof showToast === 'function') {
+        showToast(`🚀 در حال فراخوانی و تحلیل هوشمند ۳۶۰ درجه نماد ${clean}...`);
+      }
+      
+      // 2. Reset category tab filter to ALL so all tabs and tab buttons are fully visible
+      if (typeof filterTabCategory === 'function') {
+        filterTabCategory('ALL');
+      }
+      
+      // 3. Switch to Institutional Master Signal Tab (instTab)
+      const instBtn = document.getElementById('tabBtnInst') || document.querySelector('.tab-btn');
+      if (typeof switchTab === 'function') {
+        switchTab('instTab', instBtn);
+      }
+      
+      // 4. Update search inputs immediately
+      const symInp = document.getElementById('symbolInput');
+      const heroInp = document.getElementById('heroSearchInput');
+      if (symInp) symInp.value = clean;
+      if (heroInp) heroInp.value = clean;
+      
+      // 5. Trigger live analysis
+      if (typeof loadSymbol === 'function') {
+        loadSymbol(clean);
+      }
+      
+      // 6. Smooth scroll to top analysis viewport
+      window.scrollTo({ top: 180, behavior: 'smooth' });
+    }
+
     function applyJournalFilters() {
       const searchInput = document.getElementById('journalSearchInput');
       const query = (searchInput ? searchInput.value.trim().toUpperCase() : '');
@@ -5929,7 +5986,7 @@
 
       // Status filter
       if (_journalActiveFilter === 'TP') {
-        filtered = filtered.filter(r => r.status === 'TP1_HIT' || r.status === 'TP2_HIT');
+        filtered = filtered.filter(r => r.status === 'TP1_HIT' || r.status === 'TP2_HIT' || r.status === 'TP3_HIT');
       } else if (_journalActiveFilter === 'ACTIVE') {
         filtered = filtered.filter(r => !r.closed);
       } else if (_journalActiveFilter === 'SL') {
@@ -5942,7 +5999,7 @@
       }
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--text-dim);">هیچ معامله‌ای با شرایط فیلتر انتخاب‌شده یافت نشد.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 24px; color: var(--text-dim);">هیچ معامله‌ای با شرایط فیلتر انتخاب‌شده یافت نشد.</td></tr>`;
         return;
       }
 
@@ -5954,7 +6011,10 @@
 
         let statusBadge = '';
         let pnlBadge = '';
-        if (r.status === 'TP2_HIT') {
+        if (r.status === 'TP3_HIT') {
+          statusBadge = `<span style="background: rgba(168,85,247,0.25); color: #c084fc; padding: 3px 8px; border-radius: 4px; font-weight: 800; font-size: 0.75rem;">👑 تارگت ۳ (سود ماکسیمم)</span>`;
+          pnlBadge = `<span style="color: #00e676; font-weight: 800; font-family: var(--font-mono);">+${(r.pnl_pct || 0).toFixed(2)}%</span>`;
+        } else if (r.status === 'TP2_HIT') {
           statusBadge = `<span style="background: rgba(255,215,0,0.2); color: #ffd700; padding: 3px 8px; border-radius: 4px; font-weight: 800; font-size: 0.75rem;">🏆 تارگت ۲ (کامل)</span>`;
           pnlBadge = `<span style="color: #00e676; font-weight: 800; font-family: var(--font-mono);">+${(r.pnl_pct || 0).toFixed(2)}%</span>`;
         } else if (r.status === 'TP1_HIT') {
@@ -5971,25 +6031,57 @@
           pnlBadge = `<span style="color: #94a3b8; font-family: var(--font-mono);">در جریان...</span>`;
         }
 
+        const cleanSym = String(r.symbol || '').replace(/USDT$/i, '').toUpperCase().trim();
+        const entryPrice = Number(r.entry || 0);
+        const slPrice = Number(r.sl || 0);
+        const tp1Price = Number(r.tp1 || 0);
+        const tp2Price = Number(r.tp2 || 0);
+        
+        // Guarantee TP3 is NEVER empty or 0: compute institutional structural expansion target if missing
+        let tp3Price = Number(r.tp3 || 0);
+        if (!tp3Price || tp3Price <= 0) {
+          if (tp2Price > 0 && entryPrice > 0) {
+            tp3Price = isLong ? (entryPrice + (tp2Price - entryPrice) * 1.55) : (entryPrice - (entryPrice - tp2Price) * 1.55);
+          } else if (entryPrice > 0) {
+            tp3Price = isLong ? (entryPrice * 1.055) : (entryPrice * 0.945);
+          }
+        }
+
+        const entryFmt = formatJournalPrice(entryPrice);
+        const slFmt = formatJournalPrice(slPrice);
+        const tp1Fmt = formatJournalPrice(tp1Price);
+        const tp2Fmt = formatJournalPrice(tp2Price);
+        const tp3Fmt = formatJournalPrice(tp3Price);
+
         return `
-          <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); font-family: var(--font-mono);">
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); font-family: var(--font-mono); transition: background 0.2s;" onmouseover="this.style.background='rgba(0, 210, 255, 0.04)'" onmouseout="this.style.background='transparent'">
             <td style="padding: 10px 14px; color: var(--text-dim);">${i + 1}</td>
-            <td style="padding: 10px 14px;">
-              <strong style="color: #fff; font-size: 0.88rem;">${r.symbol}</strong>
-              <span style="background: ${dirBg}; color: ${dirColor}; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; margin-right: 6px; font-weight: 700;">${dirIcon}</span>
+            <td style="padding: 10px 14px; cursor: pointer;" onclick="openSymbolAnalysis('${cleanSym}')" title="برای آنالیز و تحلیل فوری و زنده ${cleanSym} کلیک کنید">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="background: rgba(0, 210, 255, 0.18); border: 1px solid rgba(0, 210, 255, 0.5); color: #00d2ff; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 0 10px rgba(0, 210, 255, 0.25); cursor: pointer; transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                  <span>⚡</span> ${cleanSym}
+                </span>
+                <span style="background: ${dirBg}; color: ${dirColor}; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700;">${dirIcon}</span>
+              </div>
             </td>
             <td style="padding: 10px 14px;">
               <span style="background: rgba(255,215,0,0.12); color: #ffd700; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 0.75rem;">
                 ${r.grade || 'A'} (${r.score || 85})
               </span>
             </td>
-            <td style="padding: 10px 14px; color: #fff;">$${Number(r.entry || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</td>
-            <td style="padding: 10px 14px; color: #ff3366;">$${Number(r.sl || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</td>
-            <td style="padding: 10px 14px; color: #00e676;">$${Number(r.tp1 || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</td>
-            <td style="padding: 10px 14px; color: #ffd700;">$${Number(r.tp2 || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4})}</td>
+            <td style="padding: 10px 14px; color: #fff; font-weight: 600;">${entryFmt}</td>
+            <td style="padding: 10px 14px; color: #ff3366; font-weight: 600;">${slFmt}</td>
+            <td style="padding: 10px 14px; color: #00e676; font-weight: 600;">${tp1Fmt}</td>
+            <td style="padding: 10px 14px; color: #ffd700; font-weight: 600;">${tp2Fmt}</td>
+            <td style="padding: 10px 14px; color: #c084fc; font-weight: 800; text-shadow: 0 0 8px rgba(192, 132, 252, 0.35);">${tp3Fmt}</td>
             <td style="padding: 10px 14px;">${statusBadge}</td>
             <td style="padding: 10px 14px;">${pnlBadge}</td>
             <td style="padding: 10px 14px; color: #cbd5e1; font-size: 0.75rem; direction: ltr; text-align: right;">${r.time_iran || '-'}</td>
+            <td style="padding: 10px 14px; text-align: center;">
+              <button type="button" onclick="openSymbolAnalysis('${cleanSym}')" style="background: linear-gradient(135deg, rgba(0,210,255,0.25), rgba(0,230,118,0.25)); border: 1px solid rgba(0,210,255,0.5); color: #00d2ff; padding: 5px 14px; border-radius: 6px; font-size: 0.76rem; font-weight: 800; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);" onmouseover="this.style.background='rgba(0,210,255,0.45)'; this.style.transform='scale(1.04)'" onmouseout="this.style.background='linear-gradient(135deg, rgba(0,210,255,0.25), rgba(0,230,118,0.25))'; this.style.transform='scale(1)'" title="کالبدشکافی ۳۶۰ درجه و لایو ${cleanSym}">
+                <span>🚀</span> آنالیز فوری
+              </button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -6026,7 +6118,7 @@
         const data = await res.json();
         
         if (!data || !data.records) {
-          if (tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px; color: var(--text-dim);">هیچ معامله‌ای تا این لحظه ثبت نشده است.</td></tr>`;
+          if (tbody) tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 20px; color: var(--text-dim);">هیچ معامله‌ای تا این لحظه ثبت نشده است.</td></tr>`;
           return;
         }
 
@@ -6062,7 +6154,7 @@
         _journalAllRecords = data.records || [];
         applyJournalFilters();
       } catch (err) {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px; color: #ff3366;">خطا در دریافت اطلاعات ژورنال عملکرد.</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 20px; color: #ff3366;">خطا در دریافت اطلاعات ژورنال عملکرد.</td></tr>`;
       }
     }
 
@@ -6073,7 +6165,7 @@
         return;
       }
 
-      const headers = ["ID", "Symbol", "Direction", "Grade", "Score", "Entry Price", "Stop Loss", "TP1", "TP2", "Status", "PnL %", "Iran Time", "Updated At"];
+      const headers = ["ID", "Symbol", "Direction", "Grade", "Score", "Entry Price", "Stop Loss", "TP1", "TP2", "TP3", "Status", "PnL %", "Iran Time", "Updated At"];
       const rows = _journalAllRecords.map(r => [
         r.id || "",
         r.symbol || "",
@@ -6084,6 +6176,7 @@
         r.sl || 0,
         r.tp1 || 0,
         r.tp2 || 0,
+        r.tp3 || 0,
         r.status || "",
         (r.pnl_pct || 0) + "%",
         r.time_iran || "",
