@@ -1662,7 +1662,7 @@ class CoinlegsScanner:
     _cached_detections = None
     _last_scan_time = 0
 
-    TOP_70_SYMBOLS = [
+    TOP_100_SYMBOLS = [
         'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT',
         'DOGEUSDT', 'ADAUSDT', 'TRXUSDT', 'SUIUSDT', 'AVAXUSDT',
         'LINKUSDT', 'NEARUSDT', 'TONUSDT', 'SHIBUSDT', 'PEPEUSDT',
@@ -1676,8 +1676,16 @@ class CoinlegsScanner:
         'BEAMUSDT', 'ARUSDT', 'WLDUSDT', 'DYDXUSDT', 'JASMYUSDT',
         'BLURUSDT', 'NOTUSDT', 'CHZUSDT', 'PENDLEUSDT', 'BOMEUSDT',
         'MEWUSDT', 'SANDUSDT', 'MANAUSDT', 'AXSUSDT', 'ENAUSDT',
-        'ONDOUSDT', 'STRKUSDT', 'FLOWUSDT', 'ORDIUSDT', 'NEOUSDT'
+        'ONDOUSDT', 'STRKUSDT', 'FLOWUSDT', 'ORDIUSDT', 'NEOUSDT',
+        'EOSUSDT', 'ZECUSDT', 'DASHUSDT', 'XTZUSDT', 'KAVAUSDT',
+        'IOTAUSDT', 'MINAUSDT', 'QNTUSDT', 'EGLDUSDT', 'CFXUSDT',
+        'ROSEUSDT', 'GMXUSDT', 'SNXUSDT', 'LDOUSDT', 'ENSUSDT',
+        '1INCHUSDT', 'GRTUSDT', 'CAKEUSDT', 'RUNEUSDT', 'WOOUSDT',
+        'SUPERUSDT', 'ARKMUSDT', 'MEMEUSDT', 'MAVUSDT', 'IDUSDT',
+        'BIGTIMEUSDT', 'FLUXUSDT', 'PEOPLEUSDT', 'LPTUSDT', 'HIGHUSDT'
     ]
+
+    TOP_70_SYMBOLS = TOP_100_SYMBOLS # Backward compatibility
 
     @classmethod
     def _analyze_single_symbol(cls, sym: str, all_tickers: Dict[str, Any] = None, btc_chg_24h: float = 0.0) -> Optional[Dict[str, Any]]:
@@ -1688,13 +1696,27 @@ class CoinlegsScanner:
             vol_usd_24h = float(tk.get('quoteVolume', 0.0)) if tk else 0.0
             curr_price = float(tk.get('lastPrice', 0.0)) if tk else 0.0
 
-            # 1. Fetch 15M candles (last 45 candles)
-            url_15m = f"https://api.mexc.com/api/v3/klines?symbol={sym}&interval=15m&limit=45"
-            req_15m = urllib.request.Request(url_15m, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req_15m, timeout=2.5) as resp:
-                candles = json.loads(resp.read().decode())
-                if not candles or len(candles) < 25:
+            # 1. Fetch Fast 5M candles (last 45 candles) - Binance Global Priority (Synced with Main Dashboard)
+            candles = None
+            try:
+                url_5m_binance = f"https://data-api.binance.vision/api/v3/klines?symbol={sym}&interval=5m&limit=45"
+                req_5m = urllib.request.Request(url_5m_binance, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req_5m, timeout=2.0) as resp:
+                    candles = json.loads(resp.read().decode())
+            except Exception:
+                candles = None
+
+            if not candles or len(candles) < 25:
+                try:
+                    url_5m_mexc = f"https://api.mexc.com/api/v3/klines?symbol={sym}&interval=5m&limit=45"
+                    req_5m = urllib.request.Request(url_5m_mexc, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req_5m, timeout=2.5) as resp:
+                        candles = json.loads(resp.read().decode())
+                except Exception:
                     return None
+
+            if not candles or len(candles) < 25:
+                return None
 
             closes = np.array([float(c[4]) for c in candles])
             highs = np.array([float(c[2]) for c in candles])
@@ -1844,36 +1866,46 @@ class CoinlegsScanner:
             trend_4h = "NEUTRAL"
             trend_4h_fa = "⚪ خنثی ۴H"
             try:
-                url_4h = f"https://api.mexc.com/api/v3/klines?symbol={sym}&interval=4h&limit=15"
-                req_4h = urllib.request.Request(url_4h, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req_4h, timeout=2.0) as resp_4h:
-                    c4 = json.loads(resp_4h.read().decode())
-                    if c4 and len(c4) >= 10:
-                        c4_closes = np.array([float(x[4]) for x in c4])
-                        c4_highs = np.array([float(x[2]) for x in c4])
-                        ema20_4h = float(np.mean(c4_closes[-10:]))
-                        curr_4h = float(c4_closes[-1])
-                        swing_high_4h = float(np.max(c4_highs[-10:-2]))
-                        
-                        if curr_4h >= swing_high_4h:
-                            f5_passed = True
-                            growth_score += 16
-                            trend_4h = "BULLISH_BOS"
-                            trend_4h_fa = "🔥 شکست سقف ۴H (BOS)"
-                            f5_val = "شکست سقف ۴H (BOS)"
-                            f5_desc = "تایید ساختار صعودی کلان و شکست آخرین قله ۴ ساعته."
-                        elif curr_4h >= ema20_4h * 0.985:
-                            f5_passed = True
-                            growth_score += 10
-                            trend_4h = "BULLISH"
-                            trend_4h_fa = "🟢 صعودی (بالای EMA)"
-                            f5_val = "بالای میانگین ۴H"
-                            f5_desc = "قیمت بالاتر از میانگین متحرک کلان قرار دارد."
-                        else:
-                            trend_4h = "BEARISH"
-                            trend_4h_fa = "🔴 زیر میانگین ۴H"
-                            f5_val = "زیر میانگین ۴H"
-                            f5_desc = "روند کلان هنوز تاییدیه صعودی کامل نداده است."
+                c4 = None
+                try:
+                    url_4h_bin = f"https://data-api.binance.vision/api/v3/klines?symbol={sym}&interval=4h&limit=15"
+                    req_4h = urllib.request.Request(url_4h_bin, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req_4h, timeout=2.0) as resp_4h:
+                        c4 = json.loads(resp_4h.read().decode())
+                except Exception:
+                    c4 = None
+                
+                if not c4 or len(c4) < 10:
+                    url_4h = f"https://api.mexc.com/api/v3/klines?symbol={sym}&interval=4h&limit=15"
+                    req_4h = urllib.request.Request(url_4h, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req_4h, timeout=2.0) as resp_4h:
+                        c4 = json.loads(resp_4h.read().decode())
+                if c4 and len(c4) >= 10:
+                    c4_closes = np.array([float(x[4]) for x in c4])
+                    c4_highs = np.array([float(x[2]) for x in c4])
+                    ema20_4h = float(np.mean(c4_closes[-10:]))
+                    curr_4h = float(c4_closes[-1])
+                    swing_high_4h = float(np.max(c4_highs[-10:-2]))
+                    
+                    if curr_4h >= swing_high_4h:
+                        f5_passed = True
+                        growth_score += 16
+                        trend_4h = "BULLISH_BOS"
+                        trend_4h_fa = "🔥 شکست سقف ۴H (BOS)"
+                        f5_val = "شکست سقف ۴H (BOS)"
+                        f5_desc = "تایید ساختار صعودی کلان و شکست آخرین قله ۴ ساعته."
+                    elif curr_4h >= ema20_4h * 0.985:
+                        f5_passed = True
+                        growth_score += 10
+                        trend_4h = "BULLISH"
+                        trend_4h_fa = "🟢 صعودی (بالای EMA)"
+                        f5_val = "بالای میانگین ۴H"
+                        f5_desc = "قیمت بالاتر از میانگین متحرک کلان قرار دارد."
+                    else:
+                        trend_4h = "BEARISH"
+                        trend_4h_fa = "🔴 زیر میانگین ۴H"
+                        f5_val = "زیر میانگین ۴H"
+                        f5_desc = "روند کلان هنوز تاییدیه صعودی کامل نداده است."
             except Exception:
                 f5_val = "بررسی نشده"
                 f5_desc = "داده ۴ ساعته در دسترس نبود."
@@ -1919,14 +1951,37 @@ class CoinlegsScanner:
             # --- DYNAMIC HIGH-WINRATE TP / SL & RISK-TO-REWARD ENGINE ---
             # TP1 set at realistic +1.0% to +1.2% impulse: hit in 80%+ setups to lock 50% profit and transition to 100% Breakeven (Risk-Free)
             atr_est = max(p_curr * 0.018, p_curr * 0.02)
-            sl_price = round(p_curr - (atr_est * 1.05), 4 if p_curr < 10 else 2)  # -2.1% safe structural stop
-            tp1_price = round(p_curr + (atr_est * 0.55), 4 if p_curr < 10 else 2) # +1.1% high-probability quick bank
-            tp2_price = round(p_curr + (atr_est * 1.80), 4 if p_curr < 10 else 2) # +3.6% structural target
-            tp3_price = round(p_curr + (atr_est * 3.20), 4 if p_curr < 10 else 2) # +6.4% expansion target
-            tp_pot_pct = round(((tp2_price - p_curr) / p_curr) * 100.0, 1)
-
-            entry_limit_low = round(p_curr - (atr_est * 0.35), 4 if p_curr < 10 else 2)
-            entry_zone_str = f"${entry_limit_low} - ${p_curr} (کاشت اردر در پولبک)"
+            # --- DYNAMIC HIGH-WINRATE TP / SL & RISK-TO-REWARD ENGINE ---
+            pDec = 6 if p_curr < 0.1 else (4 if p_curr < 10 else 2)
+            atr_est = max(p_curr * 0.015, p_curr * 0.018)
+            
+            # SL: safe structural cushion (~2.0% to 2.4% below current price)
+            sl_raw = p_curr - max(atr_est * 1.10, p_curr * 0.020)
+            sl_price = round(sl_raw, pDec)
+            
+            # Entry Zone: Pullback Discount Zone (never overlap with TP1!)
+            entry_low = round(p_curr - max(atr_est * 0.40, p_curr * 0.006), pDec)
+            entry_high = round(p_curr, pDec)
+            entry_zone_str = f"${entry_low} - ${entry_high} (کاشت اردر در پولبک)"
+            
+            # Staged Targets strictly calculated ABOVE entry_high:
+            # TP1: strictly at least +1.2% above entry_high (Quick Bank 50% + Breakeven Lock)
+            tp1_raw = max(entry_high * 1.012, p_curr + (atr_est * 0.65))
+            tp1_price = round(tp1_raw, pDec)
+            
+            # TP2: +2.8% to +3.6% (Structural wave target)
+            tp2_raw = max(entry_high * 1.028, p_curr + (atr_est * 1.80))
+            tp2_price = round(tp2_raw, pDec)
+            
+            # TP3: +5.5% to +8.0% (Final expansion / Liquidity Pool hunt)
+            tp3_raw = max(entry_high * 1.055, p_curr + (atr_est * 3.40))
+            tp3_price = round(tp3_raw, pDec)
+            
+            tp1_pct = round(((tp1_price - p_curr) / p_curr) * 100.0, 1)
+            tp2_pct = round(((tp2_price - p_curr) / p_curr) * 100.0, 1)
+            tp3_pct = round(((tp3_price - p_curr) / p_curr) * 100.0, 1)
+            sl_pct = round(((p_curr - sl_price) / p_curr) * 100.0, 1)
+            tp_pot_pct = tp2_pct
 
             # Calculate precise Risk-to-Reward ratio
             risk_dist = max(1e-8, p_curr - sl_price)
@@ -1995,9 +2050,13 @@ class CoinlegsScanner:
                 "entry_price": p_curr,
                 "entry_zone": entry_zone_str,
                 "sl_price": sl_price,
+                "sl_pct": sl_pct,
                 "tp1_price": tp1_price,
+                "tp1_pct": tp1_pct,
                 "tp2_price": tp2_price,
+                "tp2_pct": tp2_pct,
                 "tp3_price": tp3_price,
+                "tp3_pct": tp3_pct,
                 "tp_potential_pct": tp_pot_pct,
                 "risk_reward": rr_text,
                 "signal_strength": growth_score,
@@ -2013,22 +2072,29 @@ class CoinlegsScanner:
         if cls._cached_detections and (now - cls._last_scan_time < 75):
             return cls._cached_detections
 
-        target_symbols = symbols if symbols else cls.TOP_70_SYMBOLS
+        target_symbols = symbols if symbols else cls.TOP_100_SYMBOLS
 
-        # 1. Fast Batch Ticker Fetch (0.5s for all 1800+ MEXC pairs)
+        # 1. Fast Batch Ticker Fetch - Binance Global Priority (Synced with Main Dashboard), Fallback to MEXC
         all_tickers = {}
         btc_chg_24h = 0.0
         try:
-            req_all = urllib.request.Request("https://api.mexc.com/api/v3/ticker/24hr", headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req_all, timeout=4.0) as resp:
+            req_all = urllib.request.Request("https://data-api.binance.vision/api/v3/ticker/24hr", headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req_all, timeout=3.5) as resp:
                 raw_list = json.loads(resp.read().decode())
                 all_tickers = {it['symbol']: it for it in raw_list}
-            btc_chg_24h = float(all_tickers.get('BTCUSDT', {}).get('priceChangePercent', 0.0)) * 100.0
+            btc_chg_24h = float(all_tickers.get('BTCUSDT', {}).get('priceChangePercent', 0.0))
         except Exception:
-            pass
+            try:
+                req_all = urllib.request.Request("https://api.mexc.com/api/v3/ticker/24hr", headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req_all, timeout=4.0) as resp:
+                    raw_list = json.loads(resp.read().decode())
+                    all_tickers = {it['symbol']: it for it in raw_list}
+                btc_chg_24h = float(all_tickers.get('BTCUSDT', {}).get('priceChangePercent', 0.0)) * 100.0
+            except Exception:
+                pass
 
-        # 2. Concurrent parallel scan across all 70 symbols
-        with ThreadPoolExecutor(max_workers=16) as executor:
+        # 2. Concurrent parallel scan across all 100 symbols
+        with ThreadPoolExecutor(max_workers=20) as executor:
             raw_items = list(executor.map(lambda s: cls._analyze_single_symbol(s, all_tickers, btc_chg_24h), target_symbols))
 
         # Filter out None (neutral/weak coins omitted)

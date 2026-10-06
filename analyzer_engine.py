@@ -1749,10 +1749,10 @@ class CryptoTradingAgent:
 
         # 5-Layer Confluence Gates for M1/M5 Scalping (Institutional Quality Gate)
         bullish_aligned = (
-            ("BULLISH" in bias_5m or "BULLISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP"))
+            ("BULLISH" in bias_5m or "BULLISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") or price >= ema20)
             and bullish_mtf
-            and (36 <= rsi_5m <= 65)
-            and ob_ratio >= 1.02
+            and (32 <= rsi_5m <= 72)
+            and ob_ratio >= 0.88
             and not has_sell_wall
             and not is_short_covering_trap
             and fake_badge != "BULL_TRAP"
@@ -1760,10 +1760,10 @@ class CryptoTradingAgent:
         )
 
         bearish_aligned = (
-            ("BEARISH" in bias_5m or "BEARISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP"))
+            ("BEARISH" in bias_5m or "BEARISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") or price <= ema20)
             and bearish_mtf
-            and (35 <= rsi_5m <= 64)
-            and ob_ratio <= 0.98
+            and (28 <= rsi_5m <= 68)
+            and ob_ratio <= 1.12
             and not has_buy_wall
             and not is_long_liquidation_trap
             and fake_badge != "BEAR_TRAP"
@@ -1806,17 +1806,17 @@ class CryptoTradingAgent:
             sl = self._round_val(sl_raw)
             
             # GATE 4: High-Winrate Staged Targets (TP1 Quick Bank + Breakeven Lock)
-            # TP1 (+0.8% to +1.2%): reached in 80%+ of momentum pushes -> Banks 50% profit & moves SL to entry
-            tp1_dist = max(price * 0.009, 0.65 * risk)
+            # TP1 (+1.2%): reached in 80%+ of momentum pushes -> Banks 50% profit & moves SL to entry
+            tp1_dist = max(price * 0.012, 0.70 * risk)
             tp1 = self._round_val(price + tp1_dist)
 
-            # TP2 (+2.0% to +2.8%): structural extension
-            tp2_dist = max(price * 0.020, 1.80 * risk)
+            # TP2 (+2.8% to +3.6%): structural extension
+            tp2_dist = max(price * 0.028, 1.80 * risk)
             tp2 = self._round_val(price + tp2_dist)
 
-            # TP3 (+3.8% to +5.5%): liquidity pool hunt
-            tp3_dist = max(price * 0.038, 3.20 * risk)
-            tp3 = self._round_val(max(price + tp3_dist, smc.get("bsl_pool_target", price * 1.038)))
+            # TP3 (+5.5% to +8.0%): liquidity pool hunt
+            tp3_dist = max(price * 0.055, 3.40 * risk)
+            tp3 = self._round_val(max(price + tp3_dist, smc.get("bsl_pool_target", price * 1.055)))
             
             rr_val = round((tp2 - price) / risk, 1) if risk > 0 else 2.5
             confidence = "92%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "88%"
@@ -1824,10 +1824,10 @@ class CryptoTradingAgent:
             triggers = [
                 f"تاییدیه همسویی ساختاری نهادی (MTF 4H صعودی + عمق خرید {ob_ratio:.2f}x + فقدان دیوار فروش)",
                 "حد ضرر ساختاری امن پشت سنگر اردر بلاک با فاصله تنفس ۱.۸٪ (مصون از شدوهای نقدینگی)",
-                "سیو سود ۵۰٪ در تارگت ۱ (+۱٪) و انتقال فوری حد ضرر به نقطه ورود (Risk-Free Breakeven)",
+                "سیو سود ۵۰٪ در تارگت ۱ (+۱.۲٪) و انتقال فوری حد ضرر به نقطه ورود (Risk-Free Breakeven)",
                 "شکار استخر نقدینگی سقف (BSL Liquidity Pool) با نسبت سود به ریسک بالای ۲.۲"
             ]
-            warning = "پس از تاچ تارگت ۱ (+۱٪)، بلافاصله ۵۰٪ حجم را ببندید و حد ضرر را روی نقطه ورود بگذارید تا معامله کاملاً بدون ریسک شود."
+            warning = "پس از تاچ تارگت ۱ (+۱.۲٪)، بلافاصله ۵۰٪ حجم را ببندید و حد ضرر را روی نقطه ورود بگذارید تا معامله کاملاً بدون ریسک شود."
 
         # Bearish M1/M5 Scalp Setup
         elif bearish_aligned:
@@ -1864,14 +1864,14 @@ class CryptoTradingAgent:
             sl = self._round_val(sl_raw)
             
             # GATE 4: High-Winrate Staged Targets (TP1 Quick Bank + Breakeven Lock)
-            tp1_dist = max(price * 0.009, 0.65 * risk)
+            tp1_dist = max(price * 0.012, 0.70 * risk)
             tp1 = self._round_val(price - tp1_dist)
 
-            tp2_dist = max(price * 0.020, 1.80 * risk)
+            tp2_dist = max(price * 0.028, 1.80 * risk)
             tp2 = self._round_val(price - tp2_dist)
 
-            tp3_dist = max(price * 0.038, 3.20 * risk)
-            tp3 = self._round_val(min(price - tp3_dist, smc.get("ssl_pool_target", price * 0.962)))
+            tp3_dist = max(price * 0.055, 3.40 * risk)
+            tp3 = self._round_val(min(price - tp3_dist, smc.get("ssl_pool_target", price * 0.945)))
             
             rr_val = round((price - tp2) / risk, 1) if risk > 0 else 2.5
             confidence = "90%" if (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") else "86%"

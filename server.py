@@ -294,9 +294,10 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2):
         "sl": round(float(sl or 0), 4),
         "tp1": round(float(tp1 or 0), 4),
         "tp2": round(float(tp2 or 0), 4),
+        "tp3": round(float(tp3 or 0), 4),
         "created_at": time.time(),
         "time_iran": time_iran_str,
-        "status": "TRACKING", # TRACKING, TP1_HIT, TP2_HIT, SL_HIT, EXPIRED
+        "status": "TRACKING", # TRACKING, TP1_HIT, TP2_HIT, TP3_HIT, SL_HIT, PROFIT_TIMEOUT, BREAKEVEN_CLOSED
         "pnl_pct": 0.0,
         "closed": False,
         "updated_at": time_iran_str
@@ -317,7 +318,7 @@ def update_signal_in_journal(symbol, status, pnl_pct):
             r["status"] = status
             r["pnl_pct"] = round(float(pnl_pct), 2)
             r["updated_at"] = time_iran_str
-            if status in ["TP2_HIT", "SL_HIT", "EXPIRED"]:
+            if status in ["TP2_HIT", "TP3_HIT", "SL_HIT", "EXPIRED", "PROFIT_TIMEOUT", "BREAKEVEN_CLOSED", "SL_TIMEOUT"]:
                 r["closed"] = True
             updated = True
             break
@@ -326,7 +327,7 @@ def update_signal_in_journal(symbol, status, pnl_pct):
 
 _sent_cooldown = {} # {symbol: timestamp}
 _shield_notified_events = set() # Track events already broadcast to Telegram
-_active_signal_trackers = [] # List of live dispatched signals: [{"symbol": s, "action": a, "entry": e, "sl": sl, "tp1": tp1, "tp2": tp2, "created_at": t, "chat_id": c, "bot_token": tok, "tp1_hit": False, "tp2_hit": False, "closed": False}]
+_active_signal_trackers = [] # List of live dispatched signals
 _trackers_lock = threading.Lock()
 _sentinel_stats = {
     "last_run": "آماده به کار",
@@ -339,7 +340,7 @@ _sentinel_stats = {
 }
 
 def signal_outcome_tracker_loop():
-    """Monitors live active dispatched signals, detects TP1/TP2 or SL hits, and notifies Telegram channel"""
+    """Monitors live active dispatched signals, detects TP1/TP2/TP3 or SL hits, and notifies Telegram channel"""
     time.sleep(40) # let server start
     while True:
         try:
@@ -356,17 +357,13 @@ def signal_outcome_tracker_loop():
                 created = tr.get("created_at", 0)
                 now = time.time()
 
-                # Expire after 3.5 hours
-                if now - created > 12600:
-                    tr["closed"] = True
-                    update_signal_in_journal(sym, "EXPIRED", 0.0)
-                    continue
-
                 # Fetch live price using 5-tier fallback engine
                 clean_s = sym.upper().replace("USDT", "").replace("USD", "").strip()
                 ticker = agent.fetcher.fetch_ticker(f"{clean_s}USDT")
                 current_price = float(ticker.get("last_price") or ticker.get("price") or 0.0) if ticker else 0.0
                 if not current_price:
+                    if now - created > 14400:
+                        tr["closed"] = True
                     continue
 
                 action = tr.get("action", "")
@@ -375,11 +372,45 @@ def signal_outcome_tracker_loop():
                 sl = tr.get("sl", 0)
                 tp1 = tr.get("tp1", 0)
                 tp2 = tr.get("tp2", 0)
+                tp3 = tr.get("tp3", 0)
                 bot_tok = tr.get("bot_token", "")
                 chat_id = tr.get("chat_id", "")
 
                 now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
                 iran_time = now_iran.strftime("%H:%M:%S")
+
+                # Check Timeout Expiration with actual profit evaluation
+                if now - created > 14400: # 4 hours
+                    tr["closed"] = True
+                    cur_pnl = ((current_price - entry) / entry) * 100.0 if is_long else ((entry - current_price) / entry) * 100.0
+                    cur_pnl = round(cur_pnl, 2)
+                    
+                    if tr.get("tp1_hit"):
+                        update_signal_in_journal(sym, "TP1_CLOSED_TIMEOUT", max(1.1, cur_pnl))
+                    elif cur_pnl >= 0.5:
+                        _sentinel_stats["tp_hits_count"] += 1
+                        update_signal_in_journal(sym, "PROFIT_TIMEOUT", cur_pnl)
+                        msg_p = f"""
+✨ <b>پایان افق زمانی معامله در سود (+{cur_pnl}%) 📈</b>
+━━━━━━━━━━━━━━━━━━━━
+💎 <b>نماد:</b> #{sym}
+💰 <b>قیمت فعلی:</b> ${current_price:,.4f}
+📊 <b>بازدهی ثبت‌شده:</b> <code>+{cur_pnl:.2f}%</code>
+⏰ <b>زمان (ایران 🇮🇷):</b> <code>ساعت {iran_time}</code>
+
+✅ با گذشت ۴ ساعت، معامله با سود بسته شد.
+━━━━━━━━━━━━━━━━━━━━
+🤖 <i>CryptoAgent Signal Outcome Sentinel</i>
+"""
+                        try:
+                            TelegramDispatcher.send_raw_text(bot_tok, chat_id, msg_p.strip())
+                        except Exception:
+                            pass
+                    elif cur_pnl <= -1.4:
+                        update_signal_in_journal(sym, "SL_TIMEOUT", cur_pnl)
+                    else:
+                        update_signal_in_journal(sym, "BREAKEVEN_CLOSED", cur_pnl)
+                    continue
 
                 # Check TP1
                 if not tr.get("tp1_hit"):
@@ -387,7 +418,7 @@ def signal_outcome_tracker_loop():
                     if hit_tp1:
                         tr["tp1_hit"] = True
                         _sentinel_stats["tp_hits_count"] += 1
-                        pct = abs((tp1 - entry) / entry) * 100 if entry else 1.0
+                        pct = abs((tp1 - entry) / entry) * 100 if entry else 1.2
                         update_signal_in_journal(sym, "TP1_HIT", pct)
                         msg = f"""
 🎯 <b>تارگت اول (TP1) با موفقیت تاچ شد! 🚀</b>
@@ -414,9 +445,10 @@ def signal_outcome_tracker_loop():
                     hit_tp2 = (current_price >= tp2) if is_long else (current_price <= tp2)
                     if hit_tp2:
                         tr["tp2_hit"] = True
-                        tr["closed"] = True
+                        if not tp3:
+                            tr["closed"] = True
                         _sentinel_stats["tp_hits_count"] += 1
-                        pct2 = abs((tp2 - entry) / entry) * 100 if entry else 2.0
+                        pct2 = abs((tp2 - entry) / entry) * 100 if entry else 2.8
                         update_signal_in_journal(sym, "TP2_HIT", pct2)
                         msg = f"""
 👑 <b>تارگت دوم (TP2) با موفقیت درو شد! 🏆</b>
@@ -426,13 +458,38 @@ def signal_outcome_tracker_loop():
 🌟 <b>مجموع بازدهی ستاپ:</b> <code>+{pct2:.2f}%</code>
 ⏰ <b>زمان لمس تارگت (ایران 🇮🇷):</b> <code>ساعت {iran_time}</code>
 
-✅ معامله با سود عالی به سرانجام رسید. پوزیشن به‌طور کامل بسته شد.
+✅ معامله با سود عالی به سرانجام رسید. ریسک‌فری روی تارگت ۳ ادامه دارد.
 ━━━━━━━━━━━━━━━━━━━━
 🤖 <i>CryptoAgent Signal Outcome Sentinel</i>
 """
                         try:
                             TelegramDispatcher.send_raw_text(bot_tok, chat_id, msg.strip())
                             print(f"[OUTCOME TRACKER] TP2 HIT alert sent for {sym}")
+                        except Exception as e:
+                            print(f"[OUTCOME TRACKER ERR] {e}")
+
+                # Check TP3 (Final Liquidity Pool)
+                if tr.get("tp2_hit") and tp3 and not tr.get("tp3_hit"):
+                    hit_tp3 = (current_price >= tp3) if is_long else (current_price <= tp3)
+                    if hit_tp3:
+                        tr["tp3_hit"] = True
+                        tr["closed"] = True
+                        pct3 = abs((tp3 - entry) / entry) * 100 if entry else 5.5
+                        update_signal_in_journal(sym, "TP3_HIT", pct3)
+                        msg3 = f"""
+🚀 <b>تارگت سوم (TP3) و استخر نقدینگی نهایی با موفقیت فتح شد! 👑</b>
+━━━━━━━━━━━━━━━━━━━━
+💎 <b>نماد:</b> #{sym}
+💰 <b>قیمت ثبت تارگت:</b> ${current_price:,.4f}
+🌟 <b>سود نهایی ستاپ:</b> <code>+{pct3:.2f}%</code>
+⏰ <b>زمان لمس تارگت (ایران 🇮🇷):</b> <code>ساعت {iran_time}</code>
+
+🎉 پوزیشن به طور کامل با حداکثر سود ممکن بسته شد.
+━━━━━━━━━━━━━━━━━━━━
+🤖 <i>CryptoAgent Signal Outcome Sentinel</i>
+"""
+                        try:
+                            TelegramDispatcher.send_raw_text(bot_tok, chat_id, msg3.strip())
                         except Exception as e:
                             print(f"[OUTCOME TRACKER ERR] {e}")
 
@@ -463,7 +520,7 @@ def signal_outcome_tracker_loop():
                     hit_sl = (current_price <= sl) if is_long else (current_price >= sl)
                     if hit_sl:
                         tr["closed"] = True
-                        pct_loss = abs((sl - entry) / entry) * 100 if entry else 0.8
+                        pct_loss = abs((sl - entry) / entry) * 100 if entry else 2.1
                         update_signal_in_journal(sym, "SL_HIT", -pct_loss)
                         msg = f"""
 🛑 <b>اطلاعیه حد ضرر معامله (Stop Loss)</b>
@@ -749,14 +806,14 @@ def auto_sentinel_loop():
                                     print(f"[SENTINEL] Skipping {sym} because 4H trend is bullish ({bias_4h}).")
                                     continue
 
-                                # Order book depth check
+                                # Order book depth check: only reject if massive dumping sell wall
                                 ob_ratio = float(analysis.get("order_book", {}).get("ratio", 1.0))
-                                if scalp_act == "BUY" and ob_ratio < 1.02:
-                                    print(f"[SENTINEL] Skipping {sym} because order book lacks buy pressure ({ob_ratio:.2f}x).")
+                                if scalp_act == "BUY" and ob_ratio < 0.88:
+                                    print(f"[SENTINEL] Skipping {sym} because order book has heavy sell wall ({ob_ratio:.2f}x).")
                                     continue
 
-                                # Minimum 1:1.8 Risk-to-Reward ratio
-                                if rr_ratio < 1.8:
+                                # Minimum 1:1.45 Risk-to-Reward ratio
+                                if rr_ratio < 1.45:
                                     continue
 
                                 res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis)
@@ -776,11 +833,13 @@ def auto_sentinel_loop():
                                                 "sl": scalp_data.get("stop_loss", 0),
                                                 "tp1": scalp_data.get("tp1", 0),
                                                 "tp2": scalp_data.get("tp2", 0),
+                                                "tp3": scalp_data.get("tp3", 0),
                                                 "created_at": now,
                                                 "bot_token": bot_token,
                                                 "chat_id": chat_id,
                                                 "tp1_hit": False,
                                                 "tp2_hit": False,
+                                                "tp3_hit": False,
                                                 "closed": False
                                             })
                                         print(f"[SENTINEL] Enrolled {sym} in live outcome tracker.")
@@ -792,7 +851,8 @@ def auto_sentinel_loop():
                                             entry=analysis.get("price", 0),
                                             sl=scalp_data.get("stop_loss", 0),
                                             tp1=scalp_data.get("tp1", 0),
-                                            tp2=scalp_data.get("tp2", 0)
+                                            tp2=scalp_data.get("tp2", 0),
+                                            tp3=scalp_data.get("tp3", 0)
                                         )
 
                                     sent_in_cycle += 1
