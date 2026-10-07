@@ -696,6 +696,99 @@
       color: var(--blue);
     }
 
+    /* ========================================================
+       UNIFIED & BEAUTIFIED JOURNAL BUTTONS (CRYPTO ASEMAN)
+       ======================================================== */
+    .journal-action-btn {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      font-family: var(--font-fa);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+    .journal-action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+      filter: brightness(1.15);
+    }
+    .journal-action-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Mode switcher buttons (Equal-size & High Aesthetics) */
+    .journal-mode-btn {
+      height: 40px;
+      padding: 0 18px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      font-family: var(--font-fa);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      color: #94a3b8;
+    }
+    .journal-mode-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    .journal-mode-btn.active {
+      background: linear-gradient(135deg, #00e676, #00b34d);
+      color: #030712 !important;
+      border-color: #00e676 !important;
+      box-shadow: 0 0 15px rgba(0, 230, 118, 0.35);
+    }
+
+    /* Filter status pills (Equal-size, uniform height 34px, consistent min-width) */
+    .journal-filter-pill {
+      height: 34px;
+      min-width: 125px;
+      padding: 0 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      font-family: var(--font-fa);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      color: #94a3b8;
+    }
+    .journal-filter-pill:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.22);
+      transform: translateY(-1px);
+    }
+    .journal-filter-pill.active {
+      background: #00e676;
+      color: #030712 !important;
+      border-color: #00e676 !important;
+      box-shadow: 0 0 12px rgba(0, 230, 118, 0.35);
+    }
+
     /* ==========================================================================
        Educational Modal & Beginner Glossary Styling
        ========================================================================== */
@@ -3670,13 +3763,13 @@
                 </div>
               </div>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;" onclick="event.stopPropagation();">
-              <span style="background: rgba(0,230,118,0.15); color: #00e676; font-size: 0.76rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.3);">نرخ دقت: ۹۵.۲٪</span>
-              <button type="button" onclick="recordCurrentMacroForecast()" class="action-btn" style="background: linear-gradient(135deg, #00e676, #00b4d8); color: #000; font-weight: 800; font-size: 0.8rem; padding: 7px 14px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 0 10px rgba(0, 230, 118, 0.3);">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;" onclick="event.stopPropagation();">
+              <span style="height: 38px; display: inline-flex; align-items: center; background: rgba(0,230,118,0.15); color: #00e676; font-size: 0.78rem; font-weight: 800; padding: 0 14px; border-radius: 8px; border: 1px solid rgba(0,230,118,0.35);">نرخ دقت: ۹۵.۲٪</span>
+              <button type="button" onclick="recordCurrentMacroForecast()" class="journal-action-btn" style="background: linear-gradient(135deg, #00e676, #00b4d8); color: #000; border: none;">
                 <span>📥</span> ثبت و فریز پیش‌بینی
               </button>
-              <button type="button" onclick="fetchMacroJournalLive()" class="copy-btn" style="padding: 7px 12px; font-size: 0.8rem; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2);">
-                🔄 بازخوانی
+              <button type="button" onclick="fetchMacroJournalLive()" class="journal-action-btn" style="color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.45); background: rgba(0, 210, 255, 0.12);">
+                <span>🔄</span> بازخوانی
               </button>
             </div>
           </div>
@@ -4486,21 +4579,21 @@
 
             <!-- Actions & Export -->
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" onclick="event.stopPropagation();">
-              <span id="signalJournalQuickBadge" style="background: rgba(0,230,118,0.15); color: #00e676; font-size: 0.76rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.3);">رصد بلادرنگ سیگنال‌ها</span>
-              <button id="btnToggleSentinel" onclick="toggleSentinelState()" class="copy-btn" style="padding: 7px 14px; font-size: 0.82rem; color: #ff3366; border-color: rgba(255, 51, 102, 0.4); background: rgba(255, 51, 102, 0.1); font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
+              <span id="signalJournalQuickBadge" style="height: 38px; display: inline-flex; align-items: center; background: rgba(0,230,118,0.15); color: #00e676; font-size: 0.78rem; font-weight: 800; padding: 0 14px; border-radius: 8px; border: 1px solid rgba(0,230,118,0.35);">رصد بلادرنگ سیگنال‌ها</span>
+              <button id="btnToggleSentinel" onclick="toggleSentinelState()" class="journal-action-btn" style="color: #ff3366; border: 1px solid rgba(255, 51, 102, 0.45); background: rgba(255, 51, 102, 0.12);">
                 <span id="sentinelBtnIcon">⏹️</span> <span id="sentinelBtnText">توقف ثبت و تلگرام</span>
               </button>
-              <button id="btnResetJournal" onclick="resetJournalData()" class="copy-btn" style="padding: 7px 14px; font-size: 0.82rem; color: #ffd166; border-color: rgba(255, 209, 102, 0.4); background: rgba(255, 209, 102, 0.1); font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
+              <button id="btnResetJournal" onclick="resetJournalData()" class="journal-action-btn" style="color: #ffd166; border: 1px solid rgba(255, 209, 102, 0.45); background: rgba(255, 209, 102, 0.12);">
                 <span>🗑️</span> ریست ژورنال
               </button>
-              <button onclick="switchTab('macroDeepTab', document.getElementById('tabBtnMacroDeep')); setTimeout(() => { const el = document.getElementById('macroJournalContainer'); if (el) { el.scrollIntoView({behavior: 'smooth'}); if (typeof openMacroJournalDrawer === 'function') openMacroJournalDrawer(); } }, 150);" class="copy-btn" style="padding: 7px 14px; font-size: 0.82rem; color: #ff3d71; border-color: rgba(255, 61, 113, 0.4); background: rgba(255, 61, 113, 0.08); font-weight: 700;">
-                🏛️ ژورنال هوش کلان (Macro AI)
+              <button onclick="switchTab('macroDeepTab', document.getElementById('tabBtnMacroDeep')); setTimeout(() => { const el = document.getElementById('macroJournalContainer'); if (el) { el.scrollIntoView({behavior: 'smooth'}); if (typeof openMacroJournalDrawer === 'function') openMacroJournalDrawer(); } }, 150);" class="journal-action-btn" style="color: #ff3d71; border: 1px solid rgba(255, 61, 113, 0.45); background: rgba(255, 61, 113, 0.12);">
+                <span>🏛️</span> ژورنال هوش کلان
               </button>
-              <button onclick="exportJournalToCSV()" class="copy-btn" style="padding: 7px 14px; font-size: 0.82rem; color: #ffd700; border-color: rgba(255, 215, 0, 0.4); background: rgba(255, 215, 0, 0.08); font-weight: 700;">
-                📥 دانلود CSV
+              <button onclick="exportJournalToCSV()" class="journal-action-btn" style="color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.45); background: rgba(255, 215, 0, 0.12);">
+                <span>📥</span> دانلود CSV
               </button>
-              <button onclick="fetchJournalLive()" class="copy-btn" style="padding: 7px 16px; font-size: 0.82rem; color: #00e676; border-color: rgba(0, 230, 118, 0.4); font-weight: 700;">
-                🔄 به‌روزرسانی
+              <button onclick="fetchJournalLive()" class="journal-action-btn" style="color: #00e676; border: 1px solid rgba(0, 230, 118, 0.45); background: rgba(0, 230, 118, 0.12);">
+                <span>🔄</span> به‌روزرسانی
               </button>
             </div>
           </div>
@@ -4508,16 +4601,16 @@
           <!-- Drawer Content Body -->
           <div id="signalJournalDrawerContent" style="padding: 22px; display: block; transition: all 0.3s ease;">
             <!-- Journal Timeframe Mode Switcher Bar -->
-            <div style="display: flex; gap: 8px; margin-bottom: 18px; background: rgba(0, 0, 0, 0.4); padding: 6px; border-radius: 8px; border: 1px solid var(--border-color); width: fit-content; flex-wrap: wrap; align-items: center;">
-              <span style="font-size: 0.8rem; color: #94a3b8; margin-left: 6px;">تایم‌فریم ژورنال:</span>
-              <button id="btnJournalModeScalp" onclick="switchJournalMode('scalp')" style="padding: 7px 16px; border-radius: 6px; font-weight: 800; font-size: 0.82rem; border: 1px solid #00e676; cursor: pointer; background: #00e676; color: #0a0d14; transition: all 0.2s;">
-                ⚡ ژورنال اسکالپ لحظه‌ای (M1/M5)
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.4); padding: 8px; border-radius: 10px; border: 1px solid var(--border-color); width: fit-content; flex-wrap: wrap; align-items: center;">
+              <span style="font-size: 0.82rem; color: #94a3b8; margin-left: 6px; font-weight: 700;">تایم‌فریم ژورنال:</span>
+              <button id="btnJournalModeScalp" onclick="switchJournalMode('scalp')" class="journal-mode-btn active">
+                <span>⚡</span> ژورنال اسکالپ لحظه‌ای (M1/M5)
               </button>
-              <button id="btnJournalMode4H" onclick="switchJournalMode('4h')" style="padding: 7px 16px; border-radius: 6px; font-weight: 800; font-size: 0.82rem; border: 1px solid var(--border-color); cursor: pointer; background: transparent; color: #94a3b8; transition: all 0.2s;">
-                🌊 ژورنال روند و تکنیکال ۴ ساعته (4H Swing)
+              <button id="btnJournalMode4H" onclick="switchJournalMode('4h')" class="journal-mode-btn">
+                <span>🌊</span> ژورنال روند و تکنیکال ۴ ساعته (4H Swing)
               </button>
-              <button id="btnRecordCurrent4H" onclick="recordCurrentSymbolTo4HJournal()" class="copy-btn" style="padding: 7px 14px; font-size: 0.8rem; color: #00d2ff; border-color: rgba(0, 210, 255, 0.4); background: rgba(0, 210, 255, 0.08); font-weight: 700;">
-                ➕ ثبت نماد فعلی در ژورنال ۴ ساعته
+              <button id="btnRecordCurrent4H" onclick="recordCurrentSymbolTo4HJournal()" class="journal-action-btn" style="color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.45); background: rgba(0, 210, 255, 0.12); height: 40px;">
+                <span>➕</span> ثبت نماد فعلی در ژورنال ۴ ساعته
               </button>
             </div>
 
@@ -4567,14 +4660,14 @@
           </div>
 
                     <!-- Interactive Filter & Instant Search Bar -->
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; background: rgba(0,0,0,0.25); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; background: rgba(0,0,0,0.25); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-color);">
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <span style="font-size: 0.8rem; color: var(--text-dim); margin-left: 4px;">🎯 فیلتر وضعیت:</span>
-              <button class="chat-prompt-pill" id="jFilterAll" style="background: #00e676; color: #000; font-weight: 800; border-color: #00e676;" onclick="filterJournalByStatus('ALL')">همه معاملات</button>
-              <button class="chat-prompt-pill" id="jFilterTp" style="background: transparent; color: var(--text-muted);" onclick="filterJournalByStatus('TP')">🏆 فقط تارگت‌خورده‌ها</button>
-              <button class="chat-prompt-pill" id="jFilterActive" style="background: transparent; color: var(--text-muted);" onclick="filterJournalByStatus('ACTIVE')">⚡ در حال پایش لایو</button>
-              <button class="chat-prompt-pill" id="jFilterSl" style="background: transparent; color: var(--text-muted);" onclick="filterJournalByStatus('SL')">🛑 خروج با حد ضرر</button>
-              <button class="chat-prompt-pill" id="jFilterBe" style="background: transparent; color: var(--text-muted);" onclick="filterJournalByStatus('BREAKEVEN')">🛡️ ریسک‌فری و خروج بی‌ضرر</button>
+              <span style="font-size: 0.8rem; color: var(--text-dim); margin-left: 4px; font-weight: 700;">🎯 فیلتر وضعیت:</span>
+              <button class="journal-filter-pill active" id="jFilterAll" onclick="filterJournalByStatus('ALL')"><span>🌐</span> همه معاملات</button>
+              <button class="journal-filter-pill" id="jFilterTp" onclick="filterJournalByStatus('TP')"><span>🏆</span> تارگت‌خورده‌ها</button>
+              <button class="journal-filter-pill" id="jFilterActive" onclick="filterJournalByStatus('ACTIVE')"><span>⚡</span> در حال پایش لایو</button>
+              <button class="journal-filter-pill" id="jFilterSl" onclick="filterJournalByStatus('SL')"><span>🛑</span> خروج با حد ضرر</button>
+              <button class="journal-filter-pill" id="jFilterBe" onclick="filterJournalByStatus('BREAKEVEN')"><span>🛡️</span> خروج ریسک‌فری</button>
             </div>
 
             <div style="display: flex; align-items: center; gap: 8px; min-width: 220px;">
@@ -5945,21 +6038,16 @@
         'ALL': 'jFilterAll',
         'TP': 'jFilterTp',
         'ACTIVE': 'jFilterActive',
-        'SL': 'jFilterSl'
+        'SL': 'jFilterSl',
+        'BREAKEVEN': 'jFilterBe'
       };
       Object.entries(btns).forEach(([k, btnId]) => {
         const el = document.getElementById(btnId);
         if (el) {
           if (k === status) {
-            el.style.background = '#00e676';
-            el.style.color = '#000';
-            el.style.fontWeight = '800';
-            el.style.borderColor = '#00e676';
+            el.classList.add('active');
           } else {
-            el.style.background = 'transparent';
-            el.style.color = 'var(--text-muted)';
-            el.style.fontWeight = 'normal';
-            el.style.borderColor = 'var(--border-color)';
+            el.classList.remove('active');
           }
         }
       });
@@ -6282,25 +6370,29 @@
 
       if (mode === '4h') {
         if (btn4H) {
-          btn4H.style.background = '#00d2ff';
-          btn4H.style.color = '#0a0d14';
+          btn4H.classList.add('active');
+          btn4H.style.background = 'linear-gradient(135deg, #00d2ff, #0077ff)';
+          btn4H.style.color = '#fff';
           btn4H.style.borderColor = '#00d2ff';
         }
         if (btnScalp) {
-          btnScalp.style.background = 'transparent';
+          btnScalp.classList.remove('active');
+          btnScalp.style.background = 'rgba(255, 255, 255, 0.04)';
           btnScalp.style.color = '#94a3b8';
-          btnScalp.style.borderColor = 'var(--border-color)';
+          btnScalp.style.borderColor = 'rgba(255, 255, 255, 0.12)';
         }
       } else {
         if (btnScalp) {
-          btnScalp.style.background = '#00e676';
-          btnScalp.style.color = '#0a0d14';
+          btnScalp.classList.add('active');
+          btnScalp.style.background = 'linear-gradient(135deg, #00e676, #00b34d)';
+          btnScalp.style.color = '#030712';
           btnScalp.style.borderColor = '#00e676';
         }
         if (btn4H) {
-          btn4H.style.background = 'transparent';
+          btn4H.classList.remove('active');
+          btn4H.style.background = 'rgba(255, 255, 255, 0.04)';
           btn4H.style.color = '#94a3b8';
-          btn4H.style.borderColor = 'var(--border-color)';
+          btn4H.style.borderColor = 'rgba(255, 255, 255, 0.12)';
         }
       }
       fetchJournalLive();
