@@ -22,7 +22,7 @@ except ImportError:
     import matplotlib
 
 from fastapi import FastAPI, Query, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
@@ -57,14 +57,46 @@ app.add_middleware(
 # Enable instant GZip Compression for ultrafast response payload transfer
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
-# Security & Protocol Headers Middleware
+# Enterprise Cybersecurity & SSL Protocol Middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
+    # 1. Enforce HTTPS upgrade behind Reverse Proxies (Render, Cloudflare, AWS)
+    # Eliminates Chrome "Not Secure" warning when users visit via plain HTTP
+    proto = request.headers.get("x-forwarded-proto", "").lower()
+    if proto == "http":
+        https_url = request.url.replace(scheme="https")
+        return RedirectResponse(url=str(https_url), status_code=301)
+
     response = await call_next(request)
+
+    # 2. HTTP Strict Transport Security (HSTS) - Mandates HTTPS for 2 years & preloading
+    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+
+    # 3. Prevent MIME Sniffing & XSS Exploits
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
+
+    # 4. Strict Referrer Policy
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    # 5. Restrict Dangerous Browser Permissions (Zero Camera, Mic, Geolocation, Payment)
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
+
+    # 6. Content Security Policy (CSP) - Permits local resources, Google Fonts, TradingView, and secure websockets
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; "
+        "img-src 'self' https: data: blob:; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: https://s3.tradingview.com; "
+        "style-src 'self' 'unsafe-inline' https: https://fonts.googleapis.com; "
+        "font-src 'self' https: data: https://fonts.gstatic.com; "
+        "connect-src 'self' https: wss:; "
+        "frame-src 'self' https: https://s.tradingview.com https://www.tradingview.com;"
+    )
+
+    # 7. Cross-Origin Opener Policy for popups
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+
     return response
 
 agent = CryptoTradingAgent()
@@ -1256,12 +1288,13 @@ def get_signal_journal():
     if journal_modified:
         save_signal_journal(records)
 
-    # Calculate statistics
+    # Calculate comprehensive institutional statistics
     total_trades = len(records)
-    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT"]])
+    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT", "PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"]])
     tp2_count = len([r for r in records if r.get("status") in ["TP2_HIT", "TP3_HIT"]])
     tp3_count = len([r for r in records if r.get("status") == "TP3_HIT"])
-    sl_count = len([r for r in records if r.get("status") == "SL_HIT"])
+    sl_count = len([r for r in records if r.get("status") in ["SL_HIT", "SL_TIMEOUT"]])
+    breakeven_count = len([r for r in records if r.get("status") in ["BREAKEVEN_CLOSED", "EXPIRED"]])
     active_count = len([r for r in records if not r.get("closed")])
     
     total_profit_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) > 0])
@@ -1278,6 +1311,7 @@ def get_signal_journal():
             "tp_hits": tp1_count,
             "tp2_hits": tp2_count,
             "sl_hits": sl_count,
+            "breakeven_hits": breakeven_count,
             "active_tracking": active_count,
             "win_rate": win_rate,
             "total_pnl": round(total_profit_pnl, 2),

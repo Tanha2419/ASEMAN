@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; img-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: https://s3.tradingview.com; style-src 'self' 'unsafe-inline' https: https://fonts.googleapis.com; font-src 'self' https: data: https://fonts.gstatic.com; connect-src 'self' https: wss:; frame-src 'self' https: https://s.tradingview.com https://www.tradingview.com;">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="description" content="پلتفرم تحلیلی و مانیتورینگ بلادرنگ ارزهای دیجیتال آسمان - تحلیل جریان سفارشات، نقدینگی و پرایس‌اکشن نهادی (کاملاً تحلیلی و غیرحضانتی)">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💎</text></svg>">
   <title>ایجنت هوشمند تحلیل، اسکالپ و اسمارت‌مانی کریپتو | CryptoAgent AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4504,9 +4509,15 @@
             </div>
 
             <div style="background: rgba(255, 51, 102, 0.08); border: 1px solid rgba(255, 51, 102, 0.25); border-radius: 10px; padding: 14px;">
-              <div style="font-size: 0.76rem; color: var(--text-dim);">استاپ‌های فعال‌شده (SL Hits)</div>
+              <div style="font-size: 0.76rem; color: var(--text-dim);">استاپ‌های مستقیم (SL Hits)</div>
               <div style="font-size: 1.5rem; font-weight: 800; color: #ff3366; margin-top: 4px; font-family: var(--font-mono);" id="journalSlHits">0</div>
               <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">خروج با انضباط سازمانی</div>
+            </div>
+
+            <div style="background: rgba(0, 210, 255, 0.08); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 10px; padding: 14px;">
+              <div style="font-size: 0.76rem; color: var(--text-dim);">خروج بدون ریسک و منقضی (Breakeven)</div>
+              <div style="font-size: 1.5rem; font-weight: 800; color: #00d2ff; margin-top: 4px; font-family: var(--font-mono);" id="journalBreakevenHits">0</div>
+              <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">حفظ اصل سرمایه (ریسک‌فری / رنج ۴ ساعته)</div>
             </div>
 
             <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.25); border-radius: 10px; padding: 14px;">
@@ -4530,6 +4541,7 @@
               <button class="chat-prompt-pill" id="jFilterTp" style="background: transparent; color: var(--text-muted);" onclick="filterJournalByStatus('TP')">🏆 فقط تارگت‌خورده‌ها</button>
               <button class="chat-prompt-pill" id="jFilterActive" style="background: transparent; color: var(--text-muted);" onclick="filterJournalByStatus('ACTIVE')">⚡ در حال پایش لایو</button>
               <button class="chat-prompt-pill" id="jFilterSl" style="background: transparent; color: var(--text-muted);" onclick="filterJournalByStatus('SL')">🛑 خروج با حد ضرر</button>
+              <button class="chat-prompt-pill" id="jFilterBe" style="background: transparent; color: var(--text-muted);" onclick="filterJournalByStatus('BREAKEVEN')">🛡️ ریسک‌فری و خروج بی‌ضرر</button>
             </div>
 
             <div style="display: flex; align-items: center; gap: 8px; min-width: 220px;">
@@ -6128,6 +6140,8 @@
         document.getElementById("journalTotalTrades").innerText = stats.total_trades || 0;
         document.getElementById("journalTpHits").innerText = stats.tp_hits || 0;
         document.getElementById("journalSlHits").innerText = stats.sl_hits || 0;
+        const beEl = document.getElementById("journalBreakevenHits");
+        if (beEl) beEl.innerText = stats.breakeven_hits || 0;
 
         const quickBadge = document.getElementById("signalJournalQuickBadge");
         if (quickBadge) {
