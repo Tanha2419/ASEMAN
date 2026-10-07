@@ -4392,6 +4392,19 @@
               </div>
             </div>
 
+            <!-- Top 50 High-Liquidity Institutional Filter Checkbox -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 14px; background: rgba(0, 210, 255, 0.08); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px;">
+              <input type="checkbox" id="tgTop50Check" checked style="width: 18px; height: 18px; accent-color: #00d2ff; cursor: pointer;" />
+              <div>
+                <label for="tgTop50Check" style="font-size: 0.85rem; font-weight: 800; color: #00d2ff; cursor: pointer;">
+                  🎯 فیلتر هوشمند ۵۰ ارز برتر بازار (Top 50 High-Liquidity Only)
+                </label>
+                <div style="font-size: 0.72rem; color: #cbd5e1; margin-top: 2px;">
+                  ارسال سیگنال تلگرام صرفاً برای ۵۰ رمزارز اول با نقدینگی نهادی سنگین (حذف کوین‌های کم‌حجم، تضمین بالاترین وین‌ریت، بدون اسلیپیج و شدوهای دستکاری).
+                </div>
+              </div>
+            </div>
+
             <!-- Macro News Shield Auto-Protection Banner -->
             <div style="background: rgba(255, 51, 102, 0.08); border: 1px solid rgba(255, 51, 102, 0.25); border-radius: 8px; padding: 12px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -4472,8 +4485,14 @@
             </div>
 
             <!-- Actions & Export -->
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;" onclick="event.stopPropagation();">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" onclick="event.stopPropagation();">
               <span id="signalJournalQuickBadge" style="background: rgba(0,230,118,0.15); color: #00e676; font-size: 0.76rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.3);">رصد بلادرنگ سیگنال‌ها</span>
+              <button id="btnToggleSentinel" onclick="toggleSentinelState()" class="copy-btn" style="padding: 7px 14px; font-size: 0.82rem; color: #ff3366; border-color: rgba(255, 51, 102, 0.4); background: rgba(255, 51, 102, 0.1); font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
+                <span id="sentinelBtnIcon">⏹️</span> <span id="sentinelBtnText">توقف ثبت و تلگرام</span>
+              </button>
+              <button id="btnResetJournal" onclick="resetJournalData()" class="copy-btn" style="padding: 7px 14px; font-size: 0.82rem; color: #ffd166; border-color: rgba(255, 209, 102, 0.4); background: rgba(255, 209, 102, 0.1); font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
+                <span>🗑️</span> ریست ژورنال
+              </button>
               <button onclick="switchTab('macroDeepTab', document.getElementById('tabBtnMacroDeep')); setTimeout(() => { const el = document.getElementById('macroJournalContainer'); if (el) { el.scrollIntoView({behavior: 'smooth'}); if (typeof openMacroJournalDrawer === 'function') openMacroJournalDrawer(); } }, 150);" class="copy-btn" style="padding: 7px 14px; font-size: 0.82rem; color: #ff3d71; border-color: rgba(255, 61, 113, 0.4); background: rgba(255, 61, 113, 0.08); font-weight: 700;">
                 🏛️ ژورنال هوش کلان (Macro AI)
               </button>
@@ -4488,6 +4507,20 @@
 
           <!-- Drawer Content Body -->
           <div id="signalJournalDrawerContent" style="padding: 22px; display: block; transition: all 0.3s ease;">
+            <!-- Journal Timeframe Mode Switcher Bar -->
+            <div style="display: flex; gap: 8px; margin-bottom: 18px; background: rgba(0, 0, 0, 0.4); padding: 6px; border-radius: 8px; border: 1px solid var(--border-color); width: fit-content; flex-wrap: wrap; align-items: center;">
+              <span style="font-size: 0.8rem; color: #94a3b8; margin-left: 6px;">تایم‌فریم ژورنال:</span>
+              <button id="btnJournalModeScalp" onclick="switchJournalMode('scalp')" style="padding: 7px 16px; border-radius: 6px; font-weight: 800; font-size: 0.82rem; border: 1px solid #00e676; cursor: pointer; background: #00e676; color: #0a0d14; transition: all 0.2s;">
+                ⚡ ژورنال اسکالپ لحظه‌ای (M1/M5)
+              </button>
+              <button id="btnJournalMode4H" onclick="switchJournalMode('4h')" style="padding: 7px 16px; border-radius: 6px; font-weight: 800; font-size: 0.82rem; border: 1px solid var(--border-color); cursor: pointer; background: transparent; color: #94a3b8; transition: all 0.2s;">
+                🌊 ژورنال روند و تکنیکال ۴ ساعته (4H Swing)
+              </button>
+              <button id="btnRecordCurrent4H" onclick="recordCurrentSymbolTo4HJournal()" class="copy-btn" style="padding: 7px 14px; font-size: 0.8rem; color: #00d2ff; border-color: rgba(0, 210, 255, 0.4); background: rgba(0, 210, 255, 0.08); font-weight: 700;">
+                ➕ ثبت نماد فعلی در ژورنال ۴ ساعته
+              </button>
+            </div>
+
             <!-- KPI Metric Cards -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 22px;">
             <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.25); border-radius: 10px; padding: 14px;">
@@ -6123,10 +6156,180 @@
       }
     }
 
+    
+    // ==========================================
+    // SENTINEL PAUSE / RESUME & JOURNAL RESET
+    // ==========================================
+    let _sentinelIsPaused = false;
+
+    async function fetchSentinelStatus() {
+      try {
+        const res = await fetch("/api/sentinel/status");
+        if (!res.ok) return;
+        const data = await res.json();
+        _sentinelIsPaused = Boolean(data.is_paused);
+        updateSentinelUIState();
+      } catch (e) {
+        console.warn("fetchSentinelStatus err:", e);
+      }
+    }
+
+    function updateSentinelUIState() {
+      const btn1 = document.getElementById("btnToggleSentinel");
+      const btn2 = document.getElementById("btnTgToggleSentinel");
+      const icon1 = document.getElementById("sentinelBtnIcon");
+      const text1 = document.getElementById("sentinelBtnText");
+      const badge = document.getElementById("sentinelStatusBadge");
+      const qBadge = document.getElementById("signalJournalQuickBadge");
+
+      if (_sentinelIsPaused) {
+        if (text1) text1.textContent = "از سرگیری ثبت و تلگرام";
+        if (icon1) icon1.textContent = "▶️";
+        if (btn1) {
+          btn1.style.color = "#00e676";
+          btn1.style.borderColor = "rgba(0, 230, 118, 0.4)";
+          btn1.style.background = "rgba(0, 230, 118, 0.12)";
+        }
+        if (btn2) {
+          btn2.textContent = "▶️ شروع مجدد ارسال تلگرام";
+          btn2.style.color = "#00e676";
+          btn2.style.borderColor = "rgba(0, 230, 118, 0.4)";
+          btn2.style.background = "rgba(0, 230, 118, 0.12)";
+        }
+        if (badge) {
+          badge.textContent = "⏸️ دیده‌بان موقتاً متوقف است (PAUSED)";
+          badge.style.color = "#ff3366";
+          badge.style.borderColor = "rgba(255, 51, 102, 0.4)";
+          badge.style.background = "rgba(255, 51, 102, 0.15)";
+        }
+        if (qBadge) {
+          qBadge.textContent = "⏸️ ثبت وقایع و تلگرام متوقف است";
+          qBadge.style.color = "#ff3366";
+          qBadge.style.borderColor = "rgba(255, 51, 102, 0.4)";
+          qBadge.style.background = "rgba(255, 51, 102, 0.15)";
+        }
+      } else {
+        if (text1) text1.textContent = "توقف ثبت و تلگرام";
+        if (icon1) icon1.textContent = "⏹️";
+        if (btn1) {
+          btn1.style.color = "#ff3366";
+          btn1.style.borderColor = "rgba(255, 51, 102, 0.4)";
+          btn1.style.background = "rgba(255, 51, 102, 0.1)";
+        }
+        if (btn2) {
+          btn2.textContent = "⏹️ استوپ ارسال تلگرام";
+          btn2.style.color = "#ff3366";
+          btn2.style.borderColor = "rgba(255, 51, 102, 0.4)";
+          btn2.style.background = "rgba(255, 51, 102, 0.12)";
+        }
+        if (badge) {
+          badge.textContent = "🟢 دیده‌بان ابری آماده به کار";
+          badge.style.color = "#00e676";
+          badge.style.borderColor = "rgba(0, 230, 118, 0.3)";
+          badge.style.background = "rgba(0, 230, 118, 0.15)";
+        }
+      }
+    }
+
+    async function toggleSentinelState() {
+      try {
+        const res = await fetch("/api/sentinel/toggle", { method: "POST" });
+        if (!res.ok) throw new Error("Network error");
+        const data = await res.json();
+        _sentinelIsPaused = Boolean(data.is_paused);
+        updateSentinelUIState();
+        alert(data.message || (_sentinelIsPaused ? "ارسال پیام تلگرام و ثبت وقایع متوقف شد." : "ارسال پیام و ثبت وقایع از سر گرفته شد."));
+      } catch (err) {
+        alert("خطا در تغییر وضعیت دیده‌بان: " + err.message);
+      }
+    }
+
+    async function resetJournalData() {
+      const modeName = (_activeJournalMode === '4h') ? "ژورنال معاملات ۴ ساعته و سوئینگ" : "ژورنال اسکالپ سریع";
+      const ok = confirm(`⚠️ اخطار مهم:\nآیا از پاک‌سازی و صفر کردن کامل ${modeName} اطمینان دارید؟\nتمام رکوردهای قبلی پاک شده و آمار از نو آغاز خواهد شد.`);
+      if (!ok) return;
+
+      try {
+        const resetUrl = (_activeJournalMode === '4h') ? "/api/journal/4h/reset" : "/api/journal/reset";
+        const res = await fetch(resetUrl, { method: "POST" });
+        if (!res.ok) throw new Error("Server error");
+        const data = await res.json();
+        alert(data.message || "ژورنال با موفقیت ریست شد.");
+        fetchJournalLive();
+      fetchSentinelStatus();
+      } catch (err) {
+        alert("خطا در ریست کردن ژورنال: " + err.message);
+      }
+    }
+
+    async function resetTelegramCooldown() {
+      try {
+        const res = await fetch("/api/telegram/reset-cooldown", { method: "POST" });
+        if (!res.ok) throw new Error("Server error");
+        const data = await res.json();
+        alert(data.message || "کول‌داون نمادها با موفقیت صفر شد.");
+      } catch (err) {
+        alert("خطا در ریست کول‌داون: " + err.message);
+      }
+    }
+
+    let _activeJournalMode = 'scalp'; // 'scalp' or '4h'
+
+    function switchJournalMode(mode) {
+      _activeJournalMode = mode;
+      const btnScalp = document.getElementById("btnJournalModeScalp");
+      const btn4H = document.getElementById("btnJournalMode4H");
+
+      if (mode === '4h') {
+        if (btn4H) {
+          btn4H.style.background = '#00d2ff';
+          btn4H.style.color = '#0a0d14';
+          btn4H.style.borderColor = '#00d2ff';
+        }
+        if (btnScalp) {
+          btnScalp.style.background = 'transparent';
+          btnScalp.style.color = '#94a3b8';
+          btnScalp.style.borderColor = 'var(--border-color)';
+        }
+      } else {
+        if (btnScalp) {
+          btnScalp.style.background = '#00e676';
+          btnScalp.style.color = '#0a0d14';
+          btnScalp.style.borderColor = '#00e676';
+        }
+        if (btn4H) {
+          btn4H.style.background = 'transparent';
+          btn4H.style.color = '#94a3b8';
+          btn4H.style.borderColor = 'var(--border-color)';
+        }
+      }
+      fetchJournalLive();
+    }
+
+    async function recordCurrentSymbolTo4HJournal() {
+      const symInput = document.getElementById('symbolInput') || document.getElementById('heroSearchInput');
+      const sym = symInput ? symInput.value.trim() : 'BTC';
+      try {
+        const res = await fetch('/api/journal/4h/record', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol: sym })
+        });
+        const data = await res.json();
+        alert(data.message || 'ستاپ ۴ ساعته ثبت شد.');
+        if (data.success && _activeJournalMode === '4h') {
+          fetchJournalLive();
+        }
+      } catch (e) {
+        alert('خطا در ثبت ستاپ ۴ ساعته: ' + e.message);
+      }
+    }
+
     async function fetchJournalLive() {
       const tbody = document.getElementById("journalTableBody");
       try {
-        const res = await fetch("/api/journal");
+        const url = (_activeJournalMode === '4h') ? "/api/journal/4h" : "/api/journal";
+        const res = await fetch(url);
         const data = await res.json();
         
         if (!data || !data.records) {

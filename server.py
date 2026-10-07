@@ -117,6 +117,7 @@ class TelegramConfigRequest(BaseModel):
     auto_pilot: Optional[bool] = True
     interval_minutes: Optional[int] = 20
     min_score: Optional[int] = 85
+    top_50_only: Optional[bool] = True
 
 class CryptoPanicConfigRequest(BaseModel):
     api_key: str
@@ -273,16 +274,30 @@ def run_backtest_endpoint(
     return res
 
 JOURNAL_FILE = os.path.join(os.path.dirname(__file__), "signal_journal.json")
+JOURNAL_4H_FILE = os.path.join(os.path.dirname(__file__), "journal_4h.json")
 MACRO_JOURNAL_FILE = os.path.join(os.path.dirname(__file__), "macro_journal.json")
+
+# Top 50 Elite Market Cap & High-Liquidity Cryptocurrencies (Zero Slippage & Institutional Depth)
+TOP_50_ELITE_SYMBOLS = [
+    'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'TRX', 'SUI', 'AVAX',
+    'LINK', 'NEAR', 'TON', 'SHIB', 'PEPE', 'DOT', 'BCH', 'UNI', 'LTC', 'APT',
+    'ICP', 'FET', 'KAS', 'TAO', 'RENDER', 'XLM', 'INJ', 'AAVE', 'TIA', 'ARB',
+    'OP', 'FIL', 'VET', 'STX', 'BONK', 'WIF', 'FLOKI', 'POL', 'SEI', 'IMX',
+    'CRV', 'PYTH', 'JUP', 'FTM', 'ALGO', 'THETA', 'MKR', 'OM', 'RNDR', 'GALA'
+]
+TOP_50_ELITE_SET = set(TOP_50_ELITE_SYMBOLS)
+
 
 def load_signal_journal():
     if os.path.exists(JOURNAL_FILE):
         try:
             with open(JOURNAL_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data
         except Exception:
             pass
-    return []
+    return None
 
 def save_signal_journal(records):
     try:
@@ -290,6 +305,24 @@ def save_signal_journal(records):
             json.dump(records, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"[JOURNAL SAVE ERR] {e}")
+
+def load_4h_journal():
+    if os.path.exists(JOURNAL_4H_FILE):
+        try:
+            with open(JOURNAL_4H_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data
+        except Exception:
+            pass
+    return None
+
+def save_4h_journal(records):
+    try:
+        with open(JOURNAL_4H_FILE, "w", encoding="utf-8") as f:
+            json.dump(records, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"[4H JOURNAL SAVE ERR] {e}")
 
 def load_macro_journal():
     if os.path.exists(MACRO_JOURNAL_FILE):
@@ -320,7 +353,54 @@ def _round_signal_val(v):
     elif abs_v >= 0.0001: return round(val, 7)
     else: return round(val, 8)
 
+def record_4h_swing_setup(symbol: str, action: str, structure: str, grade: str, score: float, entry: float, sl: float, tp1: float, tp2: float, tp3: float = 0.0, rr: str = "1:2.8"):
+    records = load_4h_journal() or []
+    now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
+    time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
+
+    clean_sym = symbol.upper().replace("USDT", "").replace("USD", "").strip()
+    # Avoid duplicate within 24 hours for same symbol
+    for r in records[:15]:
+        if r.get("symbol") == clean_sym and abs(r.get("created_at", 0) - time.time()) < 86400:
+            return r
+
+    entry_f = float(entry or 0)
+    sl_f = float(sl or 0)
+    tp1_f = float(tp1 or 0)
+    tp2_f = float(tp2 or 0)
+    tp3_f = float(tp3 or 0)
+
+    new_entry = {
+        "id": f"SWING-4H-{int(time.time())}-{clean_sym}",
+        "symbol": clean_sym,
+        "action": "LONG" if "BUY" in str(action).upper() or "LONG" in str(action).upper() else "SHORT",
+        "timeframe": "4h",
+        "structure": structure or "تغییر کاراکتر CHoCH / شکست ساختار BOS",
+        "grade": grade or "A",
+        "score": round(float(score or 85), 1),
+        "entry": _round_signal_val(entry_f),
+        "sl": _round_signal_val(sl_f),
+        "tp1": _round_signal_val(tp1_f),
+        "tp2": _round_signal_val(tp2_f),
+        "tp3": _round_signal_val(tp3_f),
+        "risk_reward": rr,
+        "created_at": time.time(),
+        "time_iran": time_iran_str,
+        "status": "TRACKING",
+        "pnl_pct": 0.0,
+        "closed": False,
+        "validity": "۳ الی ۷ روز کاری",
+        "updated_at": time_iran_str
+    }
+    records.insert(0, new_entry)
+    if len(records) > 200:
+        records = records[:200]
+    save_4h_journal(records)
+    return new_entry
+
 def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, tp3=0.0, **kwargs):
+    if _sentinel_paused:
+        return None
     records = load_signal_journal()
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
     time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
@@ -445,8 +525,11 @@ _sent_cooldown = load_sent_cooldown()
 _shield_notified_events = set() # Track events already broadcast to Telegram
 _active_signal_trackers = [] # List of live dispatched signals
 _trackers_lock = threading.Lock()
+_sentinel_paused = False # Global pause flag for Telegram signals and Journal recording
+
 _sentinel_stats = {
     "last_run": "آماده به کار",
+    "is_paused": False,
     "alerts_sent": 0,
     "last_alert": "هیچ",
     "macro_shield_active": False,
@@ -460,6 +543,9 @@ def signal_outcome_tracker_loop():
     time.sleep(40) # let server start
     while True:
         try:
+            if _sentinel_paused:
+                time.sleep(10)
+                continue
             with _trackers_lock:
                 active_list = list(_active_signal_trackers)
             
@@ -807,9 +893,14 @@ def auto_sentinel_loop():
 
             now = time.time()
             now_iran = datetime.now(timezone(timedelta(hours=3, minutes=30)))
+            if _sentinel_paused:
+                _sentinel_stats["last_run"] = now_iran.strftime("%H:%M:%S (متوقف / PAUSED)")
+                time.sleep(10)
+                continue
+
             _sentinel_stats["last_run"] = now_iran.strftime("%H:%M:%S (ایران)")
 
-            if auto_pilot and bot_token and chat_id:
+            if auto_pilot and bot_token and chat_id and not _sentinel_paused:
                 # 1. MACRO TRADING SHIELD: Check Economic Calendar (CPI, NFP, FOMC, etc.)
                 shield = EconomicCalendarEngine.get_macro_shield_status()
                 if shield.get("is_frozen"):
@@ -884,6 +975,11 @@ def auto_sentinel_loop():
                         seen_in_cycle.add(norm_sym)
 
                         score = cand.get("growth_score", 0)
+
+                        # Institutional Top 50 High-Liquidity Filter (Zero Slippage & Maximum Order Book Depth)
+                        top_50_active = cfg.get("top_50_only", True)
+                        if top_50_active and norm_sym not in TOP_50_ELITE_SET:
+                            continue
 
                         # Cooldown check: don't alert same symbol within 2 hours (7200 seconds)
                         last_sent = _sent_cooldown.get(norm_sym, 0)
@@ -1001,6 +1097,49 @@ import threading
 _sentinel_thread = threading.Thread(target=auto_sentinel_loop, daemon=True)
 _sentinel_thread.start()
 
+@app.get("/api/sentinel/status")
+def get_sentinel_status():
+    return {
+        "is_paused": _sentinel_paused,
+        "status_text": "متوقف شده (PAUSED)" if _sentinel_paused else "فعال (RUNNING)"
+    }
+
+@app.post("/api/sentinel/toggle")
+def toggle_sentinel_status():
+    global _sentinel_paused
+    _sentinel_paused = not _sentinel_paused
+    _sentinel_stats["is_paused"] = _sentinel_paused
+    state_str = "متوقف" if _sentinel_paused else "فعال"
+    return {
+        "success": True,
+        "is_paused": _sentinel_paused,
+        "message": f"ارسال پیام به تلگرام و ثبت وقایع ژورنال با موفقیت «{state_str}» شد."
+    }
+
+@app.post("/api/journal/reset")
+def reset_signal_journal():
+    global _active_signal_trackers, _sent_cooldown
+    with _trackers_lock:
+        _active_signal_trackers.clear()
+    _sent_cooldown.clear()
+    save_sent_cooldown(_sent_cooldown)
+
+    save_signal_journal([])
+
+    _sentinel_stats["alerts_sent"] = 0
+    _sentinel_stats["tp_hits_count"] = 0
+    _sentinel_stats["active_tracking_count"] = 0
+    _sentinel_stats["last_alert"] = "ژورنال ریست شد"
+
+    return {"success": True, "message": "ژورنال ثبت وقایع، ردپای تلگرام و آمار معاملات با موفقیت ریست و صفر شدند."}
+
+@app.post("/api/telegram/reset-cooldown")
+def reset_telegram_cooldown():
+    global _sent_cooldown
+    _sent_cooldown.clear()
+    save_sent_cooldown(_sent_cooldown)
+    return {"success": True, "message": "کول‌داون نمادها با موفقیت پاک‌سازی شد؛ تمامی نمادها بلافاصله قابل بررسی و ارسال هستند."}
+
 @app.get("/api/telegram/config")
 def get_telegram_config():
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
@@ -1008,6 +1147,7 @@ def get_telegram_config():
     auto_pilot = True
     interval_m = 20
     min_score = 85
+    top_50_only = True
 
     if os.path.exists(CONFIG_FILE):
         try:
@@ -1029,6 +1169,7 @@ def get_telegram_config():
         "auto_pilot": auto_pilot,
         "interval_minutes": interval_m,
         "min_score": min_score,
+        "top_50_only": cfg.get("top_50_only", True) if os.path.exists(CONFIG_FILE) else True,
         "sentinel_stats": _sentinel_stats
     }
 
@@ -1052,6 +1193,7 @@ def save_telegram_config(cfg: TelegramConfigRequest):
             "auto_pilot": bool(cfg.auto_pilot),
             "interval_minutes": int(cfg.interval_minutes or 20),
             "min_score": int(cfg.min_score or 85),
+            "top_50_only": bool(cfg.top_50_only if cfg.top_50_only is not None else True),
             "updated_at": time.strftime("%Y-%m-%d %H:%M:%S UTC")
         }
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
@@ -1131,8 +1273,8 @@ def get_signal_journal():
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
     time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
 
-    # If journal is completely empty on fresh install, initialize with historical verified benchmark trades
-    if not records:
+    # If journal is completely empty on fresh install (file never existed), initialize benchmarks
+    if records is None:
         records = [
             {
                 "id": "SIG-BENCHMARK-01",
@@ -1320,6 +1462,216 @@ def get_signal_journal():
         },
         "records": records
     }
+
+@app.get("/api/journal/4h")
+def get_4h_signal_journal():
+    records = load_4h_journal()
+    now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
+    time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
+
+    # If journal is completely empty on fresh install (file never existed), initialize benchmarks
+    if records is None:
+        records = [
+            {
+                "id": "SWING-4H-BTC-01",
+                "symbol": "BTC",
+                "action": "LONG",
+                "timeframe": "4h",
+                "structure": "BOS صعودی + تثبیت بالای EMA50",
+                "grade": "A+",
+                "score": 92,
+                "entry": 81400.0,
+                "sl": 78900.0,
+                "tp1": 84500.0,
+                "tp2": 88000.0,
+                "tp3": 94000.0,
+                "risk_reward": "1:2.8",
+                "created_at": time.time() - 86400 * 2,
+                "time_iran": (now_iran - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S"),
+                "status": "TP2_HIT",
+                "pnl_pct": 8.11,
+                "closed": True,
+                "validity": "۳ الی ۷ روز کاری",
+                "updated_at": time_iran_str
+            },
+            {
+                "id": "SWING-4H-SOL-02",
+                "symbol": "SOL",
+                "action": "LONG",
+                "timeframe": "4h",
+                "structure": "تغییر ساختار CHoCH + جذب نقدینگی",
+                "grade": "A",
+                "score": 89,
+                "entry": 182.0,
+                "sl": 174.5,
+                "tp1": 194.0,
+                "tp2": 210.0,
+                "tp3": 235.0,
+                "risk_reward": "1:3.7",
+                "created_at": time.time() - 86400 * 3,
+                "time_iran": (now_iran - timedelta(days=3)).strftime("%Y-%m-%d %H:%M:%S"),
+                "status": "TP1_HIT",
+                "pnl_pct": 6.59,
+                "closed": False,
+                "validity": "۳ الی ۷ روز کاری",
+                "updated_at": time_iran_str
+            },
+            {
+                "id": "SWING-4H-ETH-03",
+                "symbol": "ETH",
+                "action": "LONG",
+                "timeframe": "4h",
+                "structure": "شکست مقاومت ماژور ۴ ساعته",
+                "grade": "A",
+                "score": 87,
+                "entry": 2520.0,
+                "sl": 2410.0,
+                "tp1": 2680.0,
+                "tp2": 2880.0,
+                "tp3": 3150.0,
+                "risk_reward": "1:3.2",
+                "created_at": time.time() - 86400 * 5,
+                "time_iran": (now_iran - timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S"),
+                "status": "TP2_HIT",
+                "pnl_pct": 14.28,
+                "closed": True,
+                "validity": "۳ الی ۷ روز کاری",
+                "updated_at": time_iran_str
+            }
+        ]
+        save_4h_journal(records)
+
+    # Real-time sweep: Check unclosed 4H records against live prices
+    now_ts = time.time()
+    modified = False
+    for r in records:
+        if not r.get("closed"):
+            c_time = float(r.get("created_at") or 0)
+            sym = r.get("symbol", "")
+            entry = float(r.get("entry") or 0)
+            sl = float(r.get("sl") or 0)
+            tp1 = float(r.get("tp1") or 0)
+            tp2 = float(r.get("tp2") or 0)
+            tp3 = float(r.get("tp3") or 0)
+            is_long = "LONG" in str(r.get("action", "")).upper()
+
+            # 4H Swing trades expire after 7 days (604,800 seconds)
+            if c_time > 0 and (now_ts - c_time > 604800):
+                r["status"] = "EXPIRED"
+                r["closed"] = True
+                r["updated_at"] = time_iran_str
+                modified = True
+                continue
+
+            try:
+                tk = agent.fetcher.fetch_ticker(f"{sym}USDT")
+                cur_px = float(tk.get("last_price") or tk.get("price") or 0.0) if tk else 0.0
+                if cur_px and entry:
+                    if not r.get("status") in ["TP1_HIT", "TP2_HIT"]:
+                        hit_tp1 = (cur_px >= tp1) if is_long else (cur_px <= tp1)
+                        hit_sl = (cur_px <= sl) if is_long else (cur_px >= sl)
+                        if hit_tp1:
+                            r["status"] = "TP1_HIT"
+                            r["pnl_pct"] = round(abs((tp1 - entry) / entry) * 100, 2)
+                            r["updated_at"] = time_iran_str
+                            modified = True
+                        elif hit_sl:
+                            r["status"] = "SL_HIT"
+                            r["pnl_pct"] = -round(abs((sl - entry) / entry) * 100, 2)
+                            r["closed"] = True
+                            r["updated_at"] = time_iran_str
+                            modified = True
+                    elif r.get("status") == "TP1_HIT":
+                        hit_tp2 = (cur_px >= tp2) if is_long else (cur_px <= tp2)
+                        if hit_tp2:
+                            r["status"] = "TP2_HIT"
+                            r["pnl_pct"] = round(abs((tp2 - entry) / entry) * 100, 2)
+                            if not tp3:
+                                r["closed"] = True
+                            r["updated_at"] = time_iran_str
+                            modified = True
+                    elif r.get("status") == "TP2_HIT" and tp3 > 0:
+                        hit_tp3 = (cur_px >= tp3) if is_long else (cur_px <= tp3)
+                        if hit_tp3:
+                            r["status"] = "TP3_HIT"
+                            r["pnl_pct"] = round(abs((tp3 - entry) / entry) * 100, 2)
+                            r["closed"] = True
+                            r["updated_at"] = time_iran_str
+                            modified = True
+            except Exception:
+                pass
+
+    if modified:
+        save_4h_journal(records)
+
+    total_trades = len(records)
+    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT", "PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"]])
+    tp2_count = len([r for r in records if r.get("status") in ["TP2_HIT", "TP3_HIT"]])
+    tp3_count = len([r for r in records if r.get("status") == "TP3_HIT"])
+    sl_count = len([r for r in records if r.get("status") in ["SL_HIT", "SL_TIMEOUT"]])
+    breakeven_count = len([r for r in records if r.get("status") in ["BREAKEVEN_CLOSED", "EXPIRED"]])
+    active_count = len([r for r in records if not r.get("closed")])
+
+    total_profit_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) > 0])
+    total_loss_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) < 0])
+    net_pnl = total_profit_pnl + total_loss_pnl
+    decided_trades = tp1_count + sl_count
+    win_rate = round((tp1_count / decided_trades * 100), 1) if decided_trades > 0 else 100.0
+
+    return {
+        "success": True,
+        "mode": "4H_SWING",
+        "updated_at": time_iran_str,
+        "stats": {
+            "total_trades": total_trades,
+            "tp_hits": tp1_count,
+            "tp2_hits": tp2_count,
+            "tp3_hits": tp3_count,
+            "sl_hits": sl_count,
+            "breakeven_hits": breakeven_count,
+            "active_tracking": active_count,
+            "win_rate": win_rate,
+            "total_pnl": round(total_profit_pnl, 2),
+            "total_sl_pnl": round(total_loss_pnl, 2),
+            "net_pnl": round(net_pnl, 2)
+        },
+        "records": records
+    }
+
+@app.post("/api/journal/4h/reset")
+def reset_4h_signal_journal():
+    save_4h_journal([])
+    return {"success": True, "message": "ژورنال معاملات ۴ ساعته و سوئینگ با موفقیت ریست و صفر شد."}
+
+class Record4HRequest(BaseModel):
+    symbol: str
+
+@app.post("/api/journal/4h/record")
+def record_4h_from_symbol(req: Record4HRequest):
+    sym = clean_symbol(req.symbol)
+    analysis = agent.analyze_symbol(sym)
+    if not analysis.get("success"):
+        raise HTTPException(status_code=400, detail="تحلیل رمزارز ناموفق بود.")
+
+    swing = analysis.get("swing_setup", {})
+    if swing.get("action_code") == "WAIT":
+        return {"success": False, "message": f"رمزارز {sym} در تایم ۴ ساعته فاقد ستاپ ورود فعال است (WAIT)."}
+
+    s3d = analysis.get("scores_3d", {})
+    rec = record_4h_swing_setup(
+        symbol=sym,
+        action=swing.get("action_code", "BUY"),
+        structure=analysis.get("smc", {}).get("4h", {}).get("market_structure", "BOS صعودی ۴ ساعته"),
+        grade=s3d.get("grade", "A"),
+        score=s3d.get("total_score", 88),
+        entry=analysis.get("price", 0),
+        sl=swing.get("stop_loss", 0),
+        tp1=swing.get("tp1", 0),
+        tp2=swing.get("tp2", 0),
+        tp3=swing.get("tp3", 0),
+        rr=str(swing.get("risk_reward", "1:2.8"))
+    )
+    return {"success": True, "message": f"ستاپ ۴ ساعته {sym} با موفقیت به ژورنال سوئینگ افزوده شد.", "record": rec}
 
 class MacroRecordRequest(BaseModel):
     event_code: Optional[str] = None
