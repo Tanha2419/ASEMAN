@@ -1954,6 +1954,12 @@ def get_exchange_api_status():
 # CRYPTO INSTITUTIONAL ORDER FLOW & WALL STREET PLATFORM SUITE
 # =============================================================================
 import crypto_orderflow_engine as coe
+import crypto_sniper_engine as cse
+
+
+@app.get("/api/crypto/sniper-signal")
+def get_crypto_sniper_signal(symbol: str = Query("BTC")):
+    return cse.evaluate_sniper_confluence(symbol)
 
 @app.get("/api/crypto/bookmap")
 def get_crypto_bookmap(symbol: str = Query("BTC"), timeframe: str = Query("15m")):
