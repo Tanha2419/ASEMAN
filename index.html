@@ -12336,23 +12336,36 @@ ${s3d.action_advice || ''}
           return h - (norm * (h - 40) + 20);
         };
 
-        // Grid & Price Watermarks
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                // Grid & Ultra-Crisp Price Axis
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
         ctx.lineWidth = 1;
         const pStep = Math.max(10, Math.round((maxP - minP) / 6 / 10) * 10);
         const startP = Math.floor(minP / pStep) * pStep;
         for (let p = startP; p <= maxP; p += pStep) {
           const y = getY(p);
-          if (y >= 12 && y <= h - 12) {
+          if (y >= 16 && y <= h - 16) {
             ctx.beginPath();
             ctx.moveTo(0, y);
             ctx.lineTo(chartW, y);
             ctx.stroke();
 
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-            ctx.font = '9px monospace';
+            // High-Contrast Bold Price Badge on Axis
+            const pStr = '$' + Number(Math.round(p)).toLocaleString();
+            ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
+            const tw = ctx.measureText(pStr).width;
+            
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(chartW - tw - 16, y - 9, tw + 12, 17, 3);
+            else ctx.rect(chartW - tw - 16, y - 9, tw + 12, 17);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'right';
-            ctx.fillText(Number(p).toLocaleString(), chartW - 6, y - 3);
+            ctx.fillText(pStr, chartW - 10, y + 4);
           }
         }
 
@@ -12363,33 +12376,55 @@ ${s3d.action_advice || ''}
           const vol = Number(a.volume_btc || a.volume_lots || 120);
           const beamH = Math.min(24, Math.max(7, (vol / 25) * pulse));
           const grad = ctx.createLinearGradient(0, y, chartW, y);
-          grad.addColorStop(0, 'rgba(255, 51, 102, 0.05)');
-          grad.addColorStop(0.4, 'rgba(255, 140, 0, 0.3)');
-          grad.addColorStop(1, 'rgba(255, 215, 0, 0.75)');
+          grad.addColorStop(0, 'rgba(255, 51, 102, 0.12)');
+          grad.addColorStop(0.4, 'rgba(255, 140, 0, 0.4)');
+          grad.addColorStop(1, 'rgba(255, 215, 0, 0.88)');
 
           ctx.fillStyle = grad;
           ctx.fillRect(0, y - beamH / 2, chartW, beamH);
 
-          ctx.strokeStyle = 'rgba(255, 140, 0, 0.6)';
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(255, 140, 0, 0.75)';
+          ctx.lineWidth = 1.2;
           ctx.beginPath();
           ctx.moveTo(0, y);
           ctx.lineTo(chartW, y);
           ctx.stroke();
 
-          // Iceberg Badge
-          if (vol > 30) {
-            const bx = 20 + (i * 90);
-            ctx.fillStyle = 'rgba(10, 15, 29, 0.88)';
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(bx, y - 9, 74, 18);
-            ctx.fillRect(bx, y - 9, 74, 18);
+          // High-Visibility Ask Price & Volume Pill on Left Edge
+          const askPStr = `🔴 $${Number(a.price).toLocaleString()} (${Math.round(vol)} ${_cryptoBmSym})`;
+          ctx.font = 'bold 10px monospace';
+          const askTw = ctx.measureText(askPStr).width;
+          ctx.fillStyle = 'rgba(20, 10, 15, 0.94)';
+          ctx.strokeStyle = '#ff3366';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(10, y - 9, askTw + 12, 18, 4);
+          else ctx.rect(10, y - 9, askTw + 12, 18);
+          ctx.fill();
+          ctx.stroke();
 
-            ctx.fillStyle = '#ffd700';
-            ctx.font = 'bold 9px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText(`🧊 ${Math.round(vol)} ${_cryptoBmSym}`, bx + 37, y + 4);
+          ctx.fillStyle = '#ff6b8b';
+          ctx.textAlign = 'left';
+          ctx.fillText(askPStr, 16, y + 4);
+
+          // Iceberg Badge (Positioned safely)
+          if (vol > 30) {
+            const bx = 180 + (i * 95);
+            if (bx + 85 < chartW - 80) {
+              ctx.fillStyle = 'rgba(10, 15, 29, 0.94)';
+              ctx.strokeStyle = '#ffd700';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              if (ctx.roundRect) ctx.roundRect(bx, y - 9, 82, 18, 4);
+              else ctx.rect(bx, y - 9, 82, 18);
+              ctx.fill();
+              ctx.stroke();
+
+              ctx.fillStyle = '#ffd700';
+              ctx.font = 'bold 9px monospace';
+              ctx.textAlign = 'center';
+              ctx.fillText(`🧊 ${Math.round(vol)} ${_cryptoBmSym}`, bx + 41, y + 4);
+            }
           }
         });
 
@@ -12400,33 +12435,55 @@ ${s3d.action_advice || ''}
           const vol = Number(b.volume_btc || b.volume_lots || 120);
           const beamH = Math.min(24, Math.max(7, (vol / 25) * pulse));
           const grad = ctx.createLinearGradient(0, y, chartW, y);
-          grad.addColorStop(0, 'rgba(0, 210, 255, 0.05)');
-          grad.addColorStop(0.4, 'rgba(0, 230, 118, 0.3)');
-          grad.addColorStop(1, 'rgba(0, 210, 255, 0.75)');
+          grad.addColorStop(0, 'rgba(0, 210, 255, 0.12)');
+          grad.addColorStop(0.4, 'rgba(0, 230, 118, 0.4)');
+          grad.addColorStop(1, 'rgba(0, 210, 255, 0.88)');
 
           ctx.fillStyle = grad;
           ctx.fillRect(0, y - beamH / 2, chartW, beamH);
 
-          ctx.strokeStyle = 'rgba(0, 210, 255, 0.6)';
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(0, 210, 255, 0.75)';
+          ctx.lineWidth = 1.2;
           ctx.beginPath();
           ctx.moveTo(0, y);
           ctx.lineTo(chartW, y);
           ctx.stroke();
 
+          // High-Visibility Bid Price & Volume Pill on Left Edge
+          const bidPStr = `🟢 $${Number(b.price).toLocaleString()} (${Math.round(vol)} ${_cryptoBmSym})`;
+          ctx.font = 'bold 10px monospace';
+          const bidTw = ctx.measureText(bidPStr).width;
+          ctx.fillStyle = 'rgba(10, 20, 25, 0.94)';
+          ctx.strokeStyle = '#00e676';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(10, y - 9, bidTw + 12, 18, 4);
+          else ctx.rect(10, y - 9, bidTw + 12, 18);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#00e676';
+          ctx.textAlign = 'left';
+          ctx.fillText(bidPStr, 16, y + 4);
+
           // Bid Iceberg Badge
           if (vol > 30) {
-            const bx = 20 + (i * 90);
-            ctx.fillStyle = 'rgba(10, 15, 29, 0.88)';
-            ctx.strokeStyle = '#00d2ff';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(bx, y - 9, 74, 18);
-            ctx.fillRect(bx, y - 9, 74, 18);
+            const bx = 180 + (i * 95);
+            if (bx + 85 < chartW - 80) {
+              ctx.fillStyle = 'rgba(10, 15, 29, 0.94)';
+              ctx.strokeStyle = '#00d2ff';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              if (ctx.roundRect) ctx.roundRect(bx, y - 9, 82, 18, 4);
+              else ctx.rect(bx, y - 9, 82, 18);
+              ctx.fill();
+              ctx.stroke();
 
-            ctx.fillStyle = '#00d2ff';
-            ctx.font = 'bold 9px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText(`🧊 ${Math.round(vol)} ${_cryptoBmSym}`, bx + 37, y + 4);
+              ctx.fillStyle = '#00d2ff';
+              ctx.font = 'bold 9px monospace';
+              ctx.textAlign = 'center';
+              ctx.fillText(`🧊 ${Math.round(vol)} ${_cryptoBmSym}`, bx + 41, y + 4);
+            }
           }
         });
 
@@ -12434,7 +12491,7 @@ ${s3d.action_advice || ''}
         if (_cryptoBmLivePoints.length > 1) {
           ctx.beginPath();
           _cryptoBmLivePoints.forEach((p, idx) => {
-            const px = (idx / (_cryptoBmLivePoints.length - 1)) * (chartW - 30);
+            const px = (idx / (_cryptoBmLivePoints.length - 1)) * (chartW - 80);
             const py = getY(p.price);
             if (idx === 0) ctx.moveTo(px, py);
             else ctx.lineTo(px, py);
@@ -12442,95 +12499,128 @@ ${s3d.action_advice || ''}
           ctx.strokeStyle = '#00e676';
           ctx.lineWidth = 2.5;
           ctx.shadowColor = '#00e676';
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 10;
           ctx.stroke();
           ctx.shadowBlur = 0;
 
-          // Glowing Head Cursor
+          // Glowing Head Cursor & Crisp Price Badge
           const last = _cryptoBmLivePoints[_cryptoBmLivePoints.length - 1];
-          const headX = chartW - 30;
+          const headX = chartW - 80;
           const headY = getY(last.price);
+
+          // Horizontal dotted crosshair line
+          ctx.save();
+          ctx.setLineDash([3, 3]);
+          ctx.strokeStyle = 'rgba(0, 230, 118, 0.6)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(headX, headY);
+          ctx.lineTo(chartW, headY);
+          ctx.stroke();
+          ctx.restore();
+
+          // Dot
           ctx.fillStyle = '#fff';
           ctx.beginPath();
-          ctx.arc(headX, headY, 4, 0, Math.PI * 2);
+          ctx.arc(headX, headY, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#00e676';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Large High-Contrast Live Price Tag on chart edge
+          const curPriceStr = '$' + Number(Math.round(last.price)).toLocaleString();
+          ctx.font = 'bold 11px monospace';
+          const cpTw = ctx.measureText(curPriceStr).width;
+          ctx.fillStyle = '#00e676';
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(chartW - cpTw - 16, headY - 10, cpTw + 12, 20, 4);
+          else ctx.rect(chartW - cpTw - 16, headY - 10, cpTw + 12, 20);
           ctx.fill();
 
-          ctx.fillStyle = '#00e676';
-          ctx.font = 'bold 10px monospace';
-          ctx.textAlign = 'left';
-          ctx.fillText(`$${Number(Math.round(last.price)).toLocaleString()}`, headX + 6, headY + 3);
+          ctx.fillStyle = '#021206';
+          ctx.textAlign = 'center';
+          ctx.fillText(curPriceStr, chartW - cpTw / 2 - 10, headY + 4);
         }
 
         // Live Execution Bubbles
         _cryptoBmTrades.forEach((tr, i) => {
           const bx = 40 + (i * 45) + (Math.sin(t * 1.5 + i) * 6);
           const by = getY(tr.price);
-          const rad = Math.min(14, Math.max(4, tr.amount * 1.2));
+          const amt = Number(tr.amount || tr.volume_lots || 3.5);
+          const rad = Math.min(14, Math.max(5, amt * 1.3));
           const isBuy = tr.side === 'BUY';
 
           ctx.beginPath();
           ctx.arc(bx, by, rad, 0, Math.PI * 2);
-          ctx.fillStyle = isBuy ? 'rgba(0, 230, 118, 0.45)' : 'rgba(255, 51, 102, 0.45)';
+          ctx.fillStyle = isBuy ? 'rgba(0, 230, 118, 0.55)' : 'rgba(255, 51, 102, 0.55)';
           ctx.strokeStyle = isBuy ? '#00e676' : '#ff3366';
-          ctx.lineWidth = 1.2;
+          ctx.lineWidth = 1.5;
           ctx.fill();
           ctx.stroke();
 
-          if (tr.amount > 3.0) {
+          if (amt > 2.5) {
             ctx.fillStyle = '#fff';
-            ctx.font = '8px monospace';
+            ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(`${tr.amount}`, bx, by + 3);
+            ctx.fillText(`${amt}`, bx, by + 3);
           }
         });
 
         // Right-Side SuperDOM Column
-        ctx.fillStyle = 'rgba(10, 15, 29, 0.96)';
+        ctx.fillStyle = 'rgba(10, 15, 29, 0.98)';
         ctx.fillRect(chartW, 0, domW, h);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
         ctx.beginPath();
         ctx.moveTo(chartW, 0);
         ctx.lineTo(chartW, h);
         ctx.stroke();
 
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = 'bold 9px monospace';
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('SuperDOM L2', chartW + domW / 2, 14);
+        ctx.fillText('SuperDOM L2', chartW + domW / 2, 15);
 
-        // Draw sample depth bars in DOM
-        const curY = getY(_cryptoBmLivePoints[_cryptoBmLivePoints.length - 1]?.price || 82000);
+        // Draw sample depth bars in DOM with sharp numbers
         _cryptoBmAskWalls.forEach(a => {
           const ay = getY(a.price);
           const avol = Number(a.volume_btc || a.volume_lots || 60);
-          const barW = Math.min(domW - 10, (avol / 300) * (domW - 12) + 12);
-          ctx.fillStyle = 'rgba(255, 51, 102, 0.4)';
-          ctx.fillRect(chartW + 4, ay - 4, barW, 9);
-          ctx.fillStyle = '#ff3366';
-          ctx.font = '8px monospace';
+          const barW = Math.min(domW - 14, (avol / 300) * (domW - 20) + 16);
+          ctx.fillStyle = 'rgba(255, 51, 102, 0.45)';
+          ctx.fillRect(chartW + 4, ay - 5, barW, 11);
+          ctx.fillStyle = '#ff4d6d';
+          ctx.font = 'bold 9px monospace';
           ctx.textAlign = 'left';
-          ctx.fillText(`${Math.round(avol)}`, chartW + 6, ay + 3);
+          ctx.fillText(`${Math.round(avol)}`, chartW + 6, ay + 4);
         });
 
         _cryptoBmBidWalls.forEach(b => {
           const by = getY(b.price);
           const bvol = Number(b.volume_btc || b.volume_lots || 60);
-          const barW = Math.min(domW - 10, (bvol / 300) * (domW - 12) + 12);
-          ctx.fillStyle = 'rgba(0, 230, 118, 0.4)';
-          ctx.fillRect(chartW + 4, by - 4, barW, 9);
+          const barW = Math.min(domW - 14, (bvol / 300) * (domW - 20) + 16);
+          ctx.fillStyle = 'rgba(0, 230, 118, 0.45)';
+          ctx.fillRect(chartW + 4, by - 5, barW, 11);
           ctx.fillStyle = '#00e676';
-          ctx.font = '8px monospace';
+          ctx.font = 'bold 9px monospace';
           ctx.textAlign = 'left';
-          ctx.fillText(`${Math.round(bvol)}`, chartW + 6, by + 3);
+          ctx.fillText(`${Math.round(bvol)}`, chartW + 6, by + 4);
         });
 
-        // Price Pin in DOM
+        // Prominent Price Pin in DOM (High-Contrast Gold Banner)
+        const curY = getY(_cryptoBmLivePoints[_cryptoBmLivePoints.length - 1]?.price || 82000);
         ctx.fillStyle = '#ffd700';
-        ctx.fillRect(chartW, curY - 7, domW, 14);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(chartW + 2, curY - 9, domW - 4, 18, 3);
+        else ctx.rect(chartW + 2, curY - 9, domW - 4, 18);
+        ctx.fill();
+        ctx.stroke();
+
         ctx.fillStyle = '#000';
-        ctx.font = 'bold 9px monospace';
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`$${Number(Math.round(_cryptoBmLivePoints[_cryptoBmLivePoints.length - 1]?.price || 82000)).toLocaleString()}`, chartW + domW / 2, curY + 3);
+        ctx.fillText(`$${Number(Math.round(_cryptoBmLivePoints[_cryptoBmLivePoints.length - 1]?.price || 82000)).toLocaleString()}`, chartW + domW / 2, curY + 4);
 
         ctx.restore();
       }
