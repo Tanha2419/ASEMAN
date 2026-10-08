@@ -12378,7 +12378,6 @@ ${s3d.action_advice || ''}
           ctx.stroke();
 
           // Iceberg Badge
-          const vol = Number(a.volume_btc || a.volume_lots || 120);
           if (vol > 30) {
             const bx = 20 + (i * 90);
             ctx.fillStyle = 'rgba(10, 15, 29, 0.88)';
@@ -12416,7 +12415,6 @@ ${s3d.action_advice || ''}
           ctx.stroke();
 
           // Bid Iceberg Badge
-          const vol = Number(b.volume_btc || b.volume_lots || 120);
           if (vol > 30) {
             const bx = 20 + (i * 90);
             ctx.fillStyle = 'rgba(10, 15, 29, 0.88)';
