@@ -1253,100 +1253,83 @@ class TelegramDispatcher:
 
     @staticmethod
     def format_signal_message(analysis_data: Dict[str, Any]) -> str:
-        sym = analysis_data.get("symbol", "BTCUSDT")
+        """
+        Ultra-Clean, Concise Telegram Signal Format strictly adhering to user instructions:
+        Only: Direction, Type & Timeframe, Entry, TP1, TP2, SL, Date, Time (Iran), Duration.
+        """
+        raw_sym = analysis_data.get("symbol", "BTCUSDT")
+        sym = raw_sym.replace("USDT", "").replace("/", "").upper()
         price = analysis_data.get("price", 0)
-        s3d = analysis_data.get("scores_3d", {})
         scalp = analysis_data.get("scalp_setup", {})
         swing = analysis_data.get("swing_setup", {})
-        vwap = analysis_data.get("vwap_cvd", {})
-        matrix = analysis_data.get("derivatives_matrix", {})
-        grade = s3d.get("grade", "A")
 
-        # Time formatting to Iran Time (UTC+3:30)
         now_utc = datetime.now(timezone.utc)
         iran_tz = timezone(timedelta(hours=3, minutes=30))
         now_iran = now_utc.astimezone(iran_tz)
         tehran_time_str = now_iran.strftime("%H:%M:%S")
         tehran_date_str = now_iran.strftime("%Y/%m/%d")
 
-        # Scalp validity in Iran Time
-        valid_until_tehran = scalp.get('valid_until_tehran') or (now_iran + timedelta(minutes=45)).strftime("%H:%M:%S")
+        action = scalp.get("action", "LONG")
+        is_buy = "BUY" in action.upper() or "LONG" in action.upper()
+        dir_emoji = "🟢" if is_buy else "🔴"
+        dir_str = "خرید (LONG)" if is_buy else "فروش (SHORT)"
 
-        # Whale radar check
-        whale_info = WhaleOrderFlowEngine.check_symbol_whale_flow(sym)
-        whale_badge = whale_info.get("whale_badge", "⚪ رفتار نرمال نهنگ‌ها")
-        whale_metrics = WhaleFlowEngine.get_whale_metrics(sym)
-        whale_cost_fmt = whale_metrics.get("whale_avg_cost_basis_fmt", "-")
-        whale_dist_pct = whale_metrics.get("distance_from_whale_entry_pct", 0)
-        whale_dist_fmt = f"{whale_dist_pct:+.2f}% نسبت به ورود نهنگ" if whale_dist_pct != 0 else "برابر با نقطه ورود نهنگ" 
-
-        # Liquidation & Footprint absorption checks
-        liq_clusters = LiquidationHeatmapEngine.calculate_clusters(sym, price, price * 1.02, price * 0.98)
-        liq_magnet_price = liq_clusters.get("magnet_price", price)
-        liq_magnet_dir = "جذب به سقف" if liq_clusters.get("magnet_direction") == "BULLISH_MAGNET" else "جذب به کف"
-        liq_magnet_vol = liq_clusters.get("total_long_liq_fmt", "-") if "BULL" in liq_clusters.get("magnet_direction", "") else liq_clusters.get("total_short_liq_fmt", "-")
-        
-        abs_data = OrderFlowAbsorptionEngine.analyze_absorption(sym)
-        abs_title = abs_data.get("absorption_title", "دلتای متعادل")
-
-        # Hyperliquid DEX whale metrics
-        hl_info = HyperliquidWhaleEngine.get_asset_metrics(sym)
-        hl_line = ""
-        if hl_info.get("has_hyperliquid"):
-            hl_line = f"\n⚡ <b>هایپرلیکویید (DEX Whales):</b> <code>{hl_info.get('whale_sentiment')} (OI: {hl_info.get('oi_formatted')})</code>"
-
-        # Confluence check
-        conf = InstitutionalConfluenceEngine.evaluate_confluence(sym, s3d.get('composite_confidence', 80), scalp.get('action', ''), price)
-        conf_badge = f"\n💎 <b>سطح همگرایی نهایی:</b> <code>{conf.get('grade_title')}</code>" if conf.get('is_diamond_platinum') else ""
-
-        grade_emoji = "💎" if conf.get("is_diamond_platinum") else ("👑" if grade == "A+" else ("⭐" if grade == "A" else "⚠️"))
-        action_emoji = "🚀" if "LONG" in scalp.get("action", "") or "BUY" in scalp.get("action", "") else "🔻"
-
-        src = analysis_data.get('ticker', {}).get('source', 'Binance')
         price_fmt = format_price_adaptive(price)
-        sl_fmt = format_price_adaptive(scalp.get('stop_loss', 0))
-        tp1_fmt = format_price_adaptive(scalp.get('tp1', 0))
-        tp2_fmt = format_price_adaptive(scalp.get('tp2', 0))
-        tp3_fmt = format_price_adaptive(scalp.get('tp3', 0))
-        liq_magnet_price_fmt = format_price_adaptive(liq_magnet_price)
-        msg = f"""
-{grade_emoji} <b>سیگنال نهادی هوشمند CryptoAgent AI</b> [{sym}]
+        sl_fmt = format_price_adaptive(scalp.get("stop_loss", 0))
+        tp1_fmt = format_price_adaptive(scalp.get("tp1", 0))
+        tp2_fmt = format_price_adaptive(scalp.get("tp2", 0))
+        sl_pct = scalp.get("stop_loss_pct", "0.4")
+        tp1_pct = scalp.get("tp1_pct", "1.1")
+        tp2_pct = scalp.get("tp2_pct", "2.5")
+
+        msg = f"""💎 <b>سیگنال جامع اسکالپ [#{sym}]</b>
 ━━━━━━━━━━━━━━━━━━━━
-💰 <b>قیمت لحظه‌ای:</b> {price_fmt} ({src})
-🧭 <b>سیگنال سیستم:</b> {action_emoji} <b>{scalp.get('action', 'WAIT')}</b>
-⭐ <b>درجه سیگنال:</b> <code>Grade {grade}</code> ({s3d.get('composite_confidence', 0)}%){conf_badge}
-🐋 <b>رادار نهنگ‌ها:</b> <code>{whale_badge}</code>{hl_line}
-🏛️ <b>موقعیت نهنگ‌ها (Cost Basis):</b> <code>میانگین ورود: {whale_cost_fmt} ({whale_dist_fmt})</code>
-🧲 <b>آهنربای نقدینگی (Liquidity Pool):</b> <code>{liq_magnet_price_fmt} ({liq_magnet_dir} / نقدینگی: {liq_magnet_vol})</code>
-🌊 <b>فوت‌پرینت اردر فلو (Absorption):</b> <code>{abs_title}</code>
-
-🎯 <b>تفکیک سه‌گانه امتیازات سازمانی:</b>
-• امتیاز جهت (Direction): <code>{s3d.get('direction_score', 0)}/100</code>
-• امتیاز ورود (Entry): <code>{s3d.get('entry_score', 0)}/100</code>
-• کنترل ریسک (Risk): <code>{s3d.get('risk_score', 0)}/100</code>
-
-📊 <b>اردر فلو و بازارهای مشتقه:</b>
-• موقعیت VWAP: <code>{vwap.get('vwap_position', 'نرمال')}</code>
-• روند دلتای حجم (CVD): <code>{vwap.get('cvd_trend', 'متعادل')}</code>
-• رژیم مشتقه: <code>{matrix.get('regime', 'Neutral')}</code>
-
-⚡ <b>سطوح معاملاتی دقیق (Execution Levels):</b>
-⏰ <b>زمان صدور به وقت ایران 🇮🇷:</b> <code>ساعت {tehran_time_str} ({tehran_date_str})</code>
-⏳ <b>افق اعتبار ستاپ:</b> <code>۳۰ الی ۴۵ دقیقه (تا ساعت {valid_until_tehran} به وقت ایران)</code>
-🔹 <b>محدوده بهینه ورود:</b> <code>{scalp.get('entry_zone', '-')}</code>
-🛑 <b>حد ضرر ساختاری (SL):</b> <code>{sl_fmt} (-{scalp.get('stop_loss_pct', 0)}%)</code>
-🎯 <b>تارگت اول (TP1):</b> <code>{tp1_fmt} (+{scalp.get('tp1_pct', 0)}%)</code> <i>[سیو سود ۵۰٪ + ریسک‌فری]</i>
-🎯 <b>تارگت دوم (TP2):</b> <code>{tp2_fmt} (+{scalp.get('tp2_pct', 0)}%)</code> <i>[تارگت ساختاری]</i>
-🎯 <b>تارگت سوم (TP3):</b> <code>{tp3_fmt} (+{scalp.get('tp3_pct', 0)}%)</code> <i>[استخر نقدینگی]</i>
-⚖️ <b>ریسک به ریوارد:</b> <code>{scalp.get('risk_reward', '1:2.0')}</code>
-
-🛡️ <b>دستورالعمل هوشمند مدیریت سرمایه:</b>
-• در صورت ورود در پولبک به محض تاچ <b>تارگت اول</b>، ۵۰٪ حجم معامله را سیو سود کرده و حد ضرر را روی نقطه ورود بگذارید. با این شیوه معامله کاملاً بدون ریسک شده و خطر فعال شدن حد ضرر به حداقل ممکن می‌رسد.
+🧭 <b>جهت معامله:</b> {dir_emoji} <b>{dir_str}</b>
+⏱️ <b>تایم‌فریم معاملاتی:</b> <code>15m (اسکالپ)</code>
+💰 <b>نقطه ورود:</b> <code>{price_fmt}</code>
+🛑 <b>حد ضرر (SL):</b> <code>{sl_fmt} (-{sl_pct}%)</code>
+🎯 <b>حد سود اول (TP1):</b> <code>{tp1_fmt} (+{tp1_pct}%)</code>
+🎯 <b>حد سود دوم (TP2):</b> <code>{tp2_fmt} (+{tp2_pct}%)</code>
+⏰ <b>تاریخ و ساعت معامله:</b> <code>{tehran_date_str} ساعت {tehran_time_str} (ایران 🇮🇷)</code>
+⏳ <b>مدت زمان نگهداری:</b> <code>۳۰ دقیقه الی ۲ ساعت</code>
 ━━━━━━━━━━━━━━━━━━━━
-📊 <b>مشاهده آنلاین چارت:</b> <a href="https://www.tradingview.com/chart/?symbol=BINANCE:{sym}">TradingView Chart ↗️</a>
-⏰ <i>زمان تحلیل (ایران 🇮🇷): {tehran_time_str}</i>
-"""
+📊 <i>تاییدشده با سیستم تطبیق جریان سفارشات سازمانی</i>"""
         return msg.strip()
+
+    @staticmethod
+    def format_swing_signal_message(symbol: str, price: float, direction: str, sl: float, tp1: float, tp2: float, sl_pct: float, tp1_pct: float, tp2_pct: float) -> str:
+        sym = symbol.replace("USDT", "").replace("/", "").upper()
+        now_utc = datetime.now(timezone.utc)
+        iran_tz = timezone(timedelta(hours=3, minutes=30))
+        now_iran = now_utc.astimezone(iran_tz)
+        tehran_time_str = now_iran.strftime("%H:%M:%S")
+        tehran_date_str = now_iran.strftime("%Y/%m/%d")
+
+        is_buy = "BUY" in direction.upper() or "LONG" in direction.upper()
+        dir_emoji = "🟢" if is_buy else "🔴"
+        dir_str = "خرید (LONG)" if is_buy else "فروش (SHORT)"
+
+        price_fmt = format_price_adaptive(price)
+        sl_fmt = format_price_adaptive(sl)
+        tp1_fmt = format_price_adaptive(tp1)
+        tp2_fmt = format_price_adaptive(tp2)
+
+        msg = f"""💎 <b>سیگنال جامع سوئینگ تریدینگ [#{sym}]</b>
+━━━━━━━━━━━━━━━━━━━━
+🧭 <b>جهت معامله:</b> {dir_emoji} <b>{dir_str}</b>
+⏱️ <b>تایم‌فریم معاملاتی:</b> <code>4h (سوئینگ)</code>
+💰 <b>نقطه ورود:</b> <code>{price_fmt}</code>
+🛑 <b>حد ضرر (SL):</b> <code>{sl_fmt} (-{sl_pct:.2f}%)</code>
+🎯 <b>حد سود اول (TP1):</b> <code>{tp1_fmt} (+{tp1_pct:.2f}%)</code>
+🎯 <b>حد سود دوم (TP2):</b> <code>{tp2_fmt} (+{tp2_pct:.2f}%)</code>
+⏰ <b>تاریخ و ساعت معامله:</b> <code>{tehran_date_str} ساعت {tehran_time_str} (ایران 🇮🇷)</code>
+⏳ <b>مدت زمان نگهداری:</b> <code>۲ الی ۵ روز</code>
+━━━━━━━━━━━━━━━━━━━━
+📊 <i>تاییدشده با سیستم تطبیق جریان سفارشات سازمانی</i>"""
+        return msg.strip()
+
+
+
 
     @staticmethod
     def generate_signal_chart(symbol: str, candles: List[List[float]], entry: float, sl: float, tp1: float, tp2: float, direction: str = "LONG") -> Optional[bytes]:

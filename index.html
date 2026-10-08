@@ -2725,23 +2725,23 @@
       <!-- Tab Institutional Signal Matrix -->
       <div class="tab-content active" id="instTab">
 
-        <!-- ==================== GRADE-A+ SNIPER 90%+ WIN-RATE MATRIX ==================== -->
-        <div id="cryptoSniperCard" style="background: linear-gradient(135deg, rgba(16, 24, 39, 0.98), rgba(24, 18, 43, 0.96)); border: 2px solid #ffd700; border-radius: var(--radius); padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 12px 35px rgba(255, 215, 0, 0.15); position: relative; overflow: hidden;">
+        
+        <!-- ==================== UNIFIED DUAL SIGNALS (SCALP 15m & SWING 4h) ==================== -->
+        <div id="cryptoUnifiedSignalsCard" style="background: linear-gradient(135deg, rgba(16, 24, 39, 0.98), rgba(24, 18, 43, 0.96)); border: 2px solid #00d2ff; border-radius: var(--radius); padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 12px 35px rgba(0, 210, 255, 0.15); position: relative; overflow: hidden;">
           <!-- Top Accent Ribbon -->
-          <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #ffd700, #00e676, #00d2ff, #ffd700);"></div>
+          <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #00d2ff, #00e676, #ffd700, #c084fc);"></div>
 
           <!-- Header -->
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255, 215, 0, 0.2); padding-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 14px;">
             <div>
               <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 1.5rem;">🎯</span>
+                <span style="font-size: 1.5rem;">💎</span>
                 <div>
-                  <div style="font-size: 1.15rem; font-weight: 900; color: #ffd700; display: flex; align-items: center; gap: 8px;">
-                    سیستم سیگنال تک‌تیرانداز نهادی (Grade-A+ Sniper &bull; وین‌ریت ۹۰٪+)
-                    <span id="sniperScoreBadge" style="font-size: 0.76rem; background: rgba(0, 230, 118, 0.2); color: #00e676; border: 1px solid #00e676; padding: 2px 8px; border-radius: 4px; font-weight: 800;">امتیاز هم‌پوشانی: ۹۲/۱۰۰</span>
+                  <div style="font-size: 1.15rem; font-weight: 900; color: #00d2ff; display: flex; align-items: center; gap: 8px;">
+                    سیستم سیگنال‌های جامع دوگانه (Unified Scalp &bull; 15m | Unified Swing &bull; 4h)
                   </div>
                   <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 3px;">
-                    اعتبارسنجی همزمان ۶ گیت‌پاسخ (بوک‌مپ + نینجاتریدر + سیرا چارت + کوانت‌تاور + ATAS + وال‌استریت) برای فیلتر نویز و تضمین وین‌ریت بالا
+                    ترکیب تمامی ماژول‌های نقدینگی در دو سیگنال تفکیک‌شده و بدون سردرگمی: یک سیگنال قطعی برای اسکالپ و یک سیگنال قطعی برای سوئینگ تریدینگ
                   </div>
                 </div>
               </div>
@@ -2749,98 +2749,129 @@
 
             <!-- Action Badges -->
             <div style="display: flex; align-items: center; gap: 10px;">
-              <span id="sniperTimeBadge" style="font-size: 0.74rem; color: #94a3b8; font-family: monospace;">بروزرسانی: --:--:--</span>
-              <button onclick="fetchCryptoSniperSignal(true)" style="background: rgba(255, 215, 0, 0.15); border: 1px solid #ffd700; color: #ffd700; border-radius: 6px; padding: 5px 12px; font-size: 0.76rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                <span>⚡</span> پایش فوری ستاپ ۹۰٪
+              <span id="unifTimeBadge" style="font-size: 0.74rem; color: #94a3b8; font-family: monospace;">بروزرسانی: --:--:--</span>
+              <button onclick="fetchCryptoUnifiedSignals(true)" style="background: rgba(0, 210, 255, 0.15); border: 1px solid #00d2ff; color: #00d2ff; border-radius: 6px; padding: 5px 12px; font-size: 0.76rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <span>🔄</span> بروزرسانی سیگنال‌های جامع
               </button>
             </div>
           </div>
 
-          <!-- Active Signal Banner -->
-          <div id="sniperSignalContainer" style="background: rgba(0, 0, 0, 0.45); border: 1.5px solid rgba(0, 230, 118, 0.4); border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span id="sniperSignalIcon" style="font-size: 1.6rem;">🟢</span>
-                <div>
-                  <div id="sniperSignalTitle" style="font-size: 1.05rem; font-weight: 900; color: #00e676;">
-                    سیگنال قطعی تک‌تیرانداز: BUY / LONG (خرید با وین‌ریت ۹۱.۸٪)
-                  </div>
-                  <div id="sniperSignalSubtitle" style="font-size: 0.76rem; color: #cbd5e1; margin-top: 2px;">
-                    ستاپ بازگشتی جذب کوه یخ و شکست کلاستری (Whale Iceberg & Footprint Imbalance Reversal)
-                  </div>
+          <!-- Alignment Status Bar -->
+          <div id="unifAlignmentBar" style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.1rem;">⚖️</span>
+              <span id="unifAlignmentStatus" style="font-weight: 800; color: #00e676; font-size: 0.84rem;">همسویی کامل (Full Alignment 💎)</span>
+            </div>
+            <div id="unifAlignmentNote" style="font-size: 0.76rem; color: #cbd5e1;">
+              هر دو دیدگاه اسکالپ و سوئینگ هم‌جهت هستند؛ ستاپ در بالاترین سطح اعتبار و وین‌ریت سازمانی قرار دارد.
+            </div>
+          </div>
+
+          <!-- Dual Signals Grid (Scalp 15m vs Swing 4h) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; margin-bottom: 14px;">
+            
+            <!-- CARD 1: UNIFIED SCALP (15m) -->
+            <div style="background: rgba(0, 0, 0, 0.4); border: 1.5px solid rgba(0, 230, 118, 0.4); border-radius: 10px; padding: 16px; position: relative;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(0, 230, 118, 0.2); padding-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 1.2rem;">⚡</span>
+                  <strong style="color: #00e676; font-size: 0.92rem;">۱. سیگنال جامع اسکالپ (Scalp 15m)</strong>
                 </div>
-              </div>
-              <div style="text-align: left;">
-                <span id="sniperRrBadge" style="font-size: 0.82rem; font-weight: 900; background: rgba(255, 215, 0, 0.2); color: #ffd700; border: 1px solid #ffd700; padding: 4px 12px; border-radius: 6px;">
-                  ریسک به ریوارد: 1:7.0 💎
+                <span id="scalpDirectionBadge" style="background: #00e676; color: #000; padding: 3px 10px; border-radius: 6px; font-weight: 900; font-size: 0.82rem;">
+                  🟢 خرید (LONG)
                 </span>
               </div>
-            </div>
 
-            <!-- Parameters Grid (Entry, SL, TP1, TP2, TP3) -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; font-family: monospace;">
-              <!-- Entry -->
-              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 10px;">
-                <div style="font-size: 0.7rem; color: #94a3b8; font-family: var(--font-main);">نقطه ورود بهینه (Entry):</div>
-                <div id="sniperParamEntry" style="font-size: 0.95rem; font-weight: 900; color: #ffffff; margin-top: 2px;">$83,028</div>
-                <div style="font-size: 0.68rem; color: #00d2ff; font-family: var(--font-main);">پولبک به دیواره خرید</div>
+              <div style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
+                <strong>ماژول‌های ناظر:</strong> بوک‌مپ L2/L3 + نینجاتریدر ۸ + ATAS + سیرا چارت
               </div>
 
-              <!-- SL -->
-              <div style="background: rgba(255, 51, 102, 0.08); border: 1px solid rgba(255, 51, 102, 0.35); border-radius: 6px; padding: 8px 10px;">
-                <div style="font-size: 0.7rem; color: #ff6b8b; font-family: var(--font-main);">میکرو استاپ (Micro SL 🛡️):</div>
-                <div id="sniperParamSl" style="font-size: 0.95rem; font-weight: 900; color: #ff3366; margin-top: 2px;">$82,660</div>
-                <div id="sniperParamSlPct" style="font-size: 0.68rem; color: #ff6b8b; font-family: var(--font-main);">-0.40% (پشت کوه یخ ۳۴۰ BTC)</div>
+              <!-- Scalp Parameters -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: monospace; margin-bottom: 12px;">
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 0.68rem; color: #94a3b8; font-family: var(--font-main);">نقطه ورود (Entry):</div>
+                  <div id="scalpEntryVal" style="font-size: 0.95rem; font-weight: 800; color: #fff;">$82,488.0</div>
+                </div>
+                <div style="background: rgba(255, 51, 102, 0.08); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 0.68rem; color: #ff6b8b; font-family: var(--font-main);">میکرو استاپ (Micro SL):</div>
+                  <div id="scalpSlVal" style="font-size: 0.95rem; font-weight: 800; color: #ff3366;">$82,158.0 (-0.40%)</div>
+                </div>
+                <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 0.68rem; color: #00e676; font-family: var(--font-main);">تارگت اول (TP1):</div>
+                  <div id="scalpTp1Val" style="font-size: 0.95rem; font-weight: 800; color: #00e676;">$83,395.4 (+1.10%)</div>
+                  <div style="font-size: 0.64rem; color: #00e676; font-family: var(--font-main);">سیو ۶۰٪ + ریسک‌فری فوری</div>
+                </div>
+                <div style="background: rgba(0, 210, 255, 0.08); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 0.68rem; color: #00d2ff; font-family: var(--font-main);">تارگت دوم (TP2):</div>
+                  <div id="scalpTp2Val" style="font-size: 0.95rem; font-weight: 800; color: #00d2ff;">$84,550.2 (+2.50%)</div>
+                  <div style="font-size: 0.64rem; color: #00d2ff; font-family: var(--font-main);">خروج کامل معامله</div>
+                </div>
               </div>
 
-              <!-- TP1 -->
-              <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.35); border-radius: 6px; padding: 8px 10px;">
-                <div style="font-size: 0.7rem; color: #00e676; font-family: var(--font-main);">تارگت ۱ (قفل سود + ریسک‌فری):</div>
-                <div id="sniperParamTp1" style="font-size: 0.95rem; font-weight: 900; color: #00e676; margin-top: 2px;">$83,905</div>
-                <div id="sniperParamTp1Pct" style="font-size: 0.68rem; color: #00e676; font-family: var(--font-main);">+1.10% (نقد کردن ۶۰٪ پوزیشن)</div>
-              </div>
-
-              <!-- TP2 -->
-              <div style="background: rgba(0, 210, 255, 0.08); border: 1px solid rgba(0, 210, 255, 0.35); border-radius: 6px; padding: 8px 10px;">
-                <div style="font-size: 0.7rem; color: #00d2ff; font-family: var(--font-main);">تارگت ۲ (سقف ارزش VAH):</div>
-                <div id="sniperParamTp2" style="font-size: 0.95rem; font-weight: 900; color: #00d2ff; margin-top: 2px;">$85,315</div>
-                <div id="sniperParamTp2Pct" style="font-size: 0.68rem; color: #00d2ff; font-family: var(--font-main);">+2.80% (خروج ۳۰٪ باقی‌مانده)</div>
-              </div>
-
-              <!-- TP3 -->
-              <div style="background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.35); border-radius: 6px; padding: 8px 10px;">
-                <div style="font-size: 0.7rem; color: #ffd700; font-family: var(--font-main);">تارگت ۳ (جهش ماکرو ۱۰x):</div>
-                <div id="sniperParamTp3" style="font-size: 0.95rem; font-weight: 900; color: #ffd700; margin-top: 2px;">$87,340</div>
-                <div id="sniperParamTp3Pct" style="font-size: 0.68rem; color: #ffd700; font-family: var(--font-main);">+5.20% (رانر بدون ریسک)</div>
+              <!-- Scalp Meta -->
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #cbd5e1; background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 6px;">
+                <span>⏳ مدت نگهداری: <strong id="scalpHoldingVal" style="color: #ffd700;">۳۰ دقیقه الی ۲ ساعت</strong></span>
+                <span>⏱️ تایم‌فریم: <strong style="color: #00e676;">15 دقیقه (15m)</strong></span>
               </div>
             </div>
+
+            <!-- CARD 2: UNIFIED SWING (4h) -->
+            <div style="background: rgba(0, 0, 0, 0.4); border: 1.5px solid rgba(168, 85, 247, 0.4); border-radius: 10px; padding: 16px; position: relative;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(168, 85, 247, 0.2); padding-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 1.2rem;">🌊</span>
+                  <strong style="color: #c084fc; font-size: 0.92rem;">۲. سیگنال جامع سوئینگ تریدینگ (Swing 4h)</strong>
+                </div>
+                <span id="swingDirectionBadge" style="background: #c084fc; color: #000; padding: 3px 10px; border-radius: 6px; font-weight: 900; font-size: 0.82rem;">
+                  🟢 خرید (LONG)
+                </span>
+              </div>
+
+              <div style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
+                <strong>ماژول‌های ناظر:</strong> کوانت‌تاور ۴H + تعهدات CME CoT + گزارشات ۵ بانک + اسپات ETF + رادار ژئوپلیتیک
+              </div>
+
+              <!-- Swing Parameters -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: monospace; margin-bottom: 12px;">
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 0.68rem; color: #94a3b8; font-family: var(--font-main);">نقطه ورود ساختاری:</div>
+                  <div id="swingEntryVal" style="font-size: 0.95rem; font-weight: 800; color: #fff;">$82,488.0</div>
+                </div>
+                <div style="background: rgba(255, 51, 102, 0.08); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 0.68rem; color: #ff6b8b; font-family: var(--font-main);">حد ضرر ماکرو (Macro SL):</div>
+                  <div id="swingSlVal" style="font-size: 0.95rem; font-weight: 800; color: #ff3366;">$81,003.2 (-1.80%)</div>
+                </div>
+                <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 0.68rem; color: #00e676; font-family: var(--font-main);">تارگت اول (TP1):</div>
+                  <div id="swingTp1Val" style="font-size: 0.95rem; font-weight: 800; color: #00e676;">$85,375.1 (+3.50%)</div>
+                  <div style="font-size: 0.64rem; color: #00e676; font-family: var(--font-main);">سقف ارزش VAH کوانت‌تاور</div>
+                </div>
+                <div style="background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 6px; padding: 6px 10px;">
+                  <div style="font-size: 0.68rem; color: #ffd700; font-family: var(--font-main);">تارگت دوم (TP2):</div>
+                  <div id="swingTp2Val" style="font-size: 0.95rem; font-weight: 800; color: #ffd700;">$88,674.6 (+7.50%)</div>
+                  <div style="font-size: 0.64rem; color: #ffd700; font-family: var(--font-main);">تارگت اجماع بانک‌های وال‌استریت</div>
+                </div>
+              </div>
+
+              <!-- Swing Meta -->
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #cbd5e1; background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 6px;">
+                <span>⏳ مدت نگهداری: <strong id="swingHoldingVal" style="color: #ffd700;">۲ الی ۵ روز</strong></span>
+                <span>⏱️ تایم‌فریم: <strong style="color: #c084fc;">۴ ساعته (4h)</strong></span>
+              </div>
+            </div>
+
           </div>
 
-          <!-- 6 Gatekeepers Verification Radar -->
-          <div style="margin-bottom: 14px;">
-            <div style="font-size: 0.82rem; font-weight: 800; color: #ffd700; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-              <span style="display: flex; align-items: center; gap: 6px;">
-                <span>🛡️</span> وضعیت گذرگاه‌های اعتبارسنجی شش‌گانه (Order Flow Gating Matrix):
-              </span>
-              <span id="sniperPassedGatesText" style="font-size: 0.75rem; color: #00e676; font-family: monospace;">۵ از ۶ گذرگاه تایید شده</span>
-            </div>
-            
-            <div id="sniperGatesGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px; font-size: 0.76rem;">
-              <!-- Gates will be populated by JS -->
-            </div>
-          </div>
-
-          <!-- 4 Golden Rules for 90% Win Rate -->
-          <div style="background: rgba(255, 215, 0, 0.04); border: 1px dashed rgba(255, 215, 0, 0.25); border-radius: 8px; padding: 10px 14px; font-size: 0.76rem; color: #cbd5e1; line-height: 1.8;">
-            <strong style="color: #ffd700;">📌 دستورالعمل اجرایی برای حفظ تضمینی وین‌ریت بالای ۹۰٪:</strong><br>
-            • <strong>قانون ۱ (غیرممکن کردن ضرر):</strong> با لمس TP1، ۶۰٪ پوزیشن را سیو سود کنید و استاپ را روی نقطه ورود (Breakeven) بگذارید تا ضرر غیرممکن شود.<br>
-            • <strong>قانون ۲ (احترام به استاپ لیمیت):</strong> حد ضرر در امنیت کامل پشت کوه یخ بوک‌مپ قرار دارد؛ هرگز آن را دستکاری نکنید.<br>
-            • <strong>قانون ۳ (لوریج معقول):</strong> لوریج ۵ الی ۱۰ برابر برای کسب سودهای ۲۵٪ تا ۵۰٪ بدون استرس مارجین کال کاملاً کافی است.<br>
-            • <strong>قانون ۴ (فیوز اخبار کلان):</strong> به هنگام هشدار قرمز اخبار کلان (CPI/FOMC)، سیستم به‌طور خودکار مسدود می‌شود تا سودها حفظ گردند.
+          <!-- Bottom Operational Guidance -->
+          <div style="background: rgba(0, 210, 255, 0.05); border: 1px dashed rgba(0, 210, 255, 0.3); border-radius: 8px; padding: 10px 14px; font-size: 0.76rem; color: #cbd5e1; line-height: 1.8;">
+            <strong style="color: #00d2ff;">💡 نحوه انتخاب بین اسکالپ و سوئینگ بدون سردرگمی:</strong><br>
+            • <strong>اگر زمان پای چارت نشستن دارید:</strong> از <strong>سیگنال اسکالپ (15m)</strong> استفاده کنید. این معامله سریع است، استاپ بسیار باریکی دارد (حدود ۰.۴٪) و ظرف ۳۰ دقیقه تا ۲ ساعت با سود بسته می‌شود.<br>
+            • <strong>اگر شاغل هستید یا حوصله پای چارت نشستن ندارید:</strong> از <strong>سیگنال سوئینگ تریدینگ (4h)</strong> استفاده کنید. پوزیشن ۲ تا ۵ روز باز می‌ماند و اهداف سودآوری بزرگ چند درصدی را شکار می‌کند.
           </div>
         </div>
 
-        <!-- Collapsible Plain-Language Decision Drawer (اتاق فرمان و ترجمه سیگنال در یک نگاه به زبان خودمانی) -->
+
+<!-- Collapsible Plain-Language Decision Drawer (اتاق فرمان و ترجمه سیگنال در یک نگاه به زبان خودمانی) -->
         <details id="instPlainDrawer" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92)); border: 2px solid #00d2ff; border-radius: var(--radius); margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.45); overflow: hidden;" open>
           <summary style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; cursor: pointer; user-select: none; background: rgba(0, 210, 255, 0.08); transition: background 0.2s;">
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -4809,14 +4840,14 @@
                 <tr style="background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border-color); color: var(--text-dim);">
                   <th style="padding: 12px 14px;">#</th>
                   <th style="padding: 12px 14px;">نماد و جهت</th>
-                  <th style="padding: 12px 14px;">گرید / نمره</th>
+                  <th style="padding: 12px 14px;">نوع و تایم‌فریم</th>
                   <th style="padding: 12px 14px;">نقطه ورود</th>
                   <th style="padding: 12px 14px;">حد ضرر (SL)</th>
                   <th style="padding: 12px 14px;">تارگت اول (TP1)</th>
                   <th style="padding: 12px 14px;">تارگت دوم (TP2)</th>
-                  <th style="padding: 12px 14px; color: #c084fc;">تارگت سوم (TP3)</th>
-                  <th style="padding: 12px 14px;">وضعیت پایش زنده</th>
-                  <th style="padding: 12px 14px;">بازدهی ستاپ</th>
+                  <th style="padding: 12px 14px;">مدت نگهداری</th>
+                  <th style="padding: 12px 14px;">وضعیت پایش</th>
+                  <th style="padding: 12px 14px;">بازدهی</th>
                   <th style="padding: 12px 14px;">زمان ثبت (ایران 🇮🇷)</th>
                   <th style="padding: 12px 14px; text-align: center;">عملیات آنالیز</th>
                 </tr>
@@ -7062,15 +7093,15 @@
               </div>
             </td>
             <td style="padding: 10px 14px;">
-              <span style="background: rgba(255,215,0,0.12); color: #ffd700; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 0.75rem;">
-                ${r.grade || 'A'} (${r.score || 85})
-              </span>
+              ${(r.timeframe === '4h' || (r.signal_type || '').includes('SWING'))
+                ? '<span style="background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid #c084fc; padding: 2px 7px; border-radius: 4px; font-weight: 800; font-size: 0.72rem;">🌊 سوئینگ (4h)</span>'
+                : '<span style="background: rgba(0,210,255,0.2); color: #00d2ff; border: 1px solid #00d2ff; padding: 2px 7px; border-radius: 4px; font-weight: 800; font-size: 0.72rem;">⚡ اسکالپ (15m)</span>'}
             </td>
             <td style="padding: 10px 14px; color: #fff; font-weight: 600;">${entryFmt}</td>
             <td style="padding: 10px 14px; color: #ff3366; font-weight: 600;">${slFmt}</td>
             <td style="padding: 10px 14px; color: #00e676; font-weight: 600;">${tp1Fmt}</td>
             <td style="padding: 10px 14px; color: #ffd700; font-weight: 600;">${tp2Fmt}</td>
-            <td style="padding: 10px 14px; color: #c084fc; font-weight: 800; text-shadow: 0 0 8px rgba(192, 132, 252, 0.35);">${tp3Fmt}</td>
+            <td style="padding: 10px 14px; color: #ffd700; font-size: 0.74rem; font-weight: 700;">${r.holding_duration || ((r.timeframe === '4h' || (r.signal_type || '').includes('SWING')) ? '۲ الی ۵ روز' : '۳۰ دقیقه الی ۲ ساعت')}</td>
             <td style="padding: 10px 14px;">${statusBadge}</td>
             <td style="padding: 10px 14px;">${pnlBadge}</td>
             <td style="padding: 10px 14px; color: #cbd5e1; font-size: 0.75rem; direction: ltr; text-align: right;">${r.time_iran || '-'}</td>
@@ -12223,7 +12254,84 @@ ${s3d.action_advice || ''}
     }
 
     
+    
     /* --------------------------------------------------------------------
+       0. UNIFIED DUAL SIGNALS (SCALP 15m & SWING 4h) ENGINE
+       -------------------------------------------------------------------- */
+    async function fetchCryptoUnifiedSignals(force = false) {
+      try {
+        const curSym = typeof _cryptoBmSym !== 'undefined' ? _cryptoBmSym : 'BTC';
+        const res = await fetch(`/api/crypto/unified-signals?symbol=${curSym}`);
+        const data = await res.json();
+        if (!data || !data.ok) return;
+
+        // Timestamp
+        const tb = document.getElementById('unifTimeBadge');
+        if (tb) tb.innerText = `بروزرسانی: ${data.updated_at_iran}`;
+
+        // Alignment Bar
+        const alignStatus = document.getElementById('unifAlignmentStatus');
+        const alignNote = document.getElementById('unifAlignmentNote');
+        const alignBar = document.getElementById('unifAlignmentBar');
+
+        if (alignStatus) alignStatus.innerText = data.alignment_status;
+        if (alignNote) alignNote.innerText = data.alignment_note;
+        if (alignBar) {
+          if (data.is_aligned) {
+            alignBar.style.background = 'rgba(0, 230, 118, 0.08)';
+            alignBar.style.borderColor = 'rgba(0, 230, 118, 0.3)';
+            if (alignStatus) alignStatus.style.color = '#00e676';
+          } else {
+            alignBar.style.background = 'rgba(255, 215, 0, 0.08)';
+            alignBar.style.borderColor = 'rgba(255, 215, 0, 0.3)';
+            if (alignStatus) alignStatus.style.color = '#ffd700';
+          }
+        }
+
+        // SCALP (15m)
+        const sc = data.scalp || {};
+        const scBadge = document.getElementById('scalpDirectionBadge');
+        if (scBadge) {
+          scBadge.innerText = `${sc.direction_emoji || '🟢'} ${sc.direction || 'خرید (LONG)'}`;
+          scBadge.style.background = sc.direction_code === 'LONG' ? '#00e676' : '#ff3366';
+          scBadge.style.color = sc.direction_code === 'LONG' ? '#000' : '#fff';
+        }
+        const scEntry = document.getElementById('scalpEntryVal');
+        if (scEntry) scEntry.innerText = sc.entry_fmt || '-';
+        const scSl = document.getElementById('scalpSlVal');
+        if (scSl) scSl.innerText = sc.stop_loss_fmt || '-';
+        const scTp1 = document.getElementById('scalpTp1Val');
+        if (scTp1) scTp1.innerText = sc.tp1_fmt || '-';
+        const scTp2 = document.getElementById('scalpTp2Val');
+        if (scTp2) scTp2.innerText = sc.tp2_fmt || '-';
+        const scHold = document.getElementById('scalpHoldingVal');
+        if (scHold) scHold.innerText = sc.holding_duration || '۳۰ دقیقه الی ۲ ساعت';
+
+        // SWING (4h)
+        const sw = data.swing || {};
+        const swBadge = document.getElementById('swingDirectionBadge');
+        if (swBadge) {
+          swBadge.innerText = `${sw.direction_emoji || '🟢'} ${sw.direction || 'خرید (LONG)'}`;
+          swBadge.style.background = sw.direction_code === 'LONG' ? '#c084fc' : '#ff3366';
+          swBadge.style.color = sw.direction_code === 'LONG' ? '#000' : '#fff';
+        }
+        const swEntry = document.getElementById('swingEntryVal');
+        if (swEntry) swEntry.innerText = sw.entry_fmt || '-';
+        const swSl = document.getElementById('swingSlVal');
+        if (swSl) swSl.innerText = sw.stop_loss_fmt || '-';
+        const swTp1 = document.getElementById('swingTp1Val');
+        if (swTp1) swTp1.innerText = sw.tp1_fmt || '-';
+        const swTp2 = document.getElementById('swingTp2Val');
+        if (swTp2) swTp2.innerText = sw.tp2_fmt || '-';
+        const swHold = document.getElementById('swingHoldingVal');
+        if (swHold) swHold.innerText = sw.holding_duration || '۲ الی ۵ روز';
+
+      } catch (err) {
+        console.error('Error fetching Unified Signals:', err);
+      }
+    }
+
+/* --------------------------------------------------------------------
        0. INSTITUTIONAL SNIPER 90%+ WIN-RATE ENGINE
        -------------------------------------------------------------------- */
     async function fetchCryptoSniperSignal(force = false) {
@@ -12348,6 +12456,7 @@ ${s3d.action_advice || ''}
         }
       });
       fetchCryptoBookmap(true);
+      fetchCryptoUnifiedSignals(true);
       fetchCryptoSniperSignal(true);
       if (_cryptoBmViewMode === 'tv' || _cryptoBmViewMode === 'split') { embedGenericCryptoChart('cryptoBmTvChart', _cryptoBmSym, _cryptoBmTimeframe); }
     }
@@ -12356,6 +12465,7 @@ ${s3d.action_advice || ''}
       const el = document.getElementById('cryptoBmSymbolSelect');
       if (el) _cryptoBmSym = el.value;
       fetchCryptoBookmap(true);
+      fetchCryptoUnifiedSignals(true);
       fetchCryptoSniperSignal(true);
       if (_cryptoBmViewMode === 'tv' || _cryptoBmViewMode === 'split') { embedGenericCryptoChart('cryptoBmTvChart', _cryptoBmSym, _cryptoBmTimeframe); }
     }

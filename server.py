@@ -415,6 +415,9 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, 
         "id": f"SIG-{int(time.time())}-{symbol.upper()}",
         "symbol": symbol.upper(),
         "action": action.upper(),
+        "signal_type": kwargs.get("signal_type", "SCALP"),
+        "timeframe": kwargs.get("timeframe", "15m"),
+        "holding_duration": kwargs.get("holding_duration", "۳۰ دقیقه الی ۲ ساعت"),
         "grade": grade,
         "score": score,
         "entry": _round_signal_val(entry_f),
@@ -818,11 +821,10 @@ def live_whale_execution_monitor_loop():
                                         whale_cost_basis=cost_basis,
                                         dist_pct=dist_pct
                                     )
-                                    TelegramDispatcher.send_raw_text(bot_token, chat_id, msg)
-                                    _sentinel_stats["alerts_sent"] += 1
+                                    # Whale monitoring logged locally to prevent spamming Telegram with duplicate alerts
                                     _sentinel_stats["last_alert"] = f"🐋 وال {base} ({side} ${usd_val/1e3:.0f}K)"
                                     _sentinel_stats["last_run"] = datetime.now(timezone(timedelta(hours=3, minutes=30))).strftime("%H:%M:%S (ایران)")
-                                    print(f"[WHALE MONITOR] Dispatched alert for {base}: {side} ${usd_val:,.0f} at ${px:,.2f}")
+                                    print(f"[WHALE MONITOR] Logged whale trade for {base}: {side} ${usd_val:,.0f} at ${px:,.2f}")
                                     break
                     except Exception as ex_coin:
                         pass
@@ -968,9 +970,19 @@ def auto_sentinel_loop():
                         if top_50_active and norm_sym not in TOP_50_ELITE_SET:
                             continue
 
-                        # Cooldown check: don't alert same symbol within 2 hours (7200 seconds)
+                        # Anti-Duplicate & Anti-Spam Gate:
+                        # 1. Do NOT re-alert if symbol is ALREADY active in live tracking
+                        with _trackers_lock:
+                            is_open_trade = any(
+                                _normalize_cooldown_sym(t.get("symbol", "")) == norm_sym and not t.get("closed")
+                                for t in _active_signal_trackers
+                            )
+                        if is_open_trade:
+                            continue
+
+                        # 2. Strict 3-Hour (10800s) cooldown per symbol
                         last_sent = _sent_cooldown.get(norm_sym, 0)
-                        if score >= min_score and (now - last_sent > 7200):
+                        if score >= min_score and (now - last_sent > 10800):
                             # BTC Trend Filter: If BTC is in freefall and this is an altcoin, protect capital
                             if btc_dumping and "BTC" not in sym.upper():
                                 print(f"[SENTINEL] Skipping {sym} because BTC is dumping heavily.")
@@ -1955,7 +1967,13 @@ def get_exchange_api_status():
 # =============================================================================
 import crypto_orderflow_engine as coe
 import crypto_sniper_engine as cse
+import crypto_unified_signals as cus
 
+
+
+@app.get("/api/crypto/unified-signals")
+def get_crypto_unified_signals(symbol: str = Query("BTC")):
+    return cus.get_unified_signals(symbol)
 
 @app.get("/api/crypto/sniper-signal")
 def get_crypto_sniper_signal(symbol: str = Query("BTC")):

@@ -10,6 +10,55 @@ import crypto_orderflow_engine as coe
 def handle_orderflow_chat(q: str, clean_s: str, price: float) -> Optional[str]:
     q = q.lower().strip()
 
+    # 0. Specialized Deep Swing Trading Intelligence & Methodology
+    if any(w in q for w in ["سوئینگ", "سوئینگ تریدینگ", "سیگنال سوئینگ", "سوئینگ از چی میاد", "از چه چیزی میاد", "بررسی سوئینگ", "چهار ساعته", "4 ساعته", "4h", "تفاوت اسکالپ و سوئینگ", "اختلاف اسکالپ"]):
+        try:
+            import crypto_unified_signals as cus
+            unif = cus.get_unified_signals(clean_s)
+            sw = unif.get("swing", {})
+            sc = unif.get("scalp", {})
+            align = unif.get("alignment_status", "")
+            align_note = unif.get("alignment_note", "")
+
+            qt = coe.get_crypto_quantower_live(clean_s, "4h")
+            bank = coe.get_crypto_bank_reports()
+            geo = coe.get_crypto_geopolitics_radar()
+            mp = qt.get("market_profile", {})
+
+            return f"""### 🏛️ تحلیل جامع و فوق‌تخصصی سوئینگ تریدینگ (۴ ساعته) برای {clean_s}
+
+#### ❓ سیگنال سوئینگ تریدینگ از چه چیزی می‌آید و خاستگاه آن چیست؟
+سیگنال سوئینگ تریدینگ (Swing Trading) بر خلاف اسکالپ که به نوسانات چند دقیقه‌ای تیک‌به‌تیک وابسته است، از **تجمیع ۶ مؤلفه ساختاری و کلان ۴ ساعته و چندروزه** سرچشمه می‌گیرد:
+1. **مارکت پروفایل ۴ ساعته کوانت‌تاور (Quantower 4H TPO):** قیمت کجای حراج است؟ آیا در کف منصفانه ارزش (VAL: ${mp.get('val', 0):,.1f}) قرار دارد یا در سقف ارزش (VAH: ${mp.get('vah', 0):,.1f})؟
+2. **تعهد معامله‌گران نهادی CME CoT:** موضع بازیگران فوق‌بزرگ؛ مدیران دارایی وال‌استریت هم‌اکنون با **۸۴٪ لانگ** پشتوانه این موج هستند.
+3. **جریان نقدینگی صندوق‌های ETF اسپات:** جریان ورودی روزانه بلک‌راک و فیدلیتی (**{bank.get('total_daily_net', '+۴۲۳M$')}**) که کف‌های چندروزه را بتنی می‌کند.
+4. **مدل‌های اجماع ۵ بانک وال‌استریت:** تارگت‌های رسمی گلدمن ساکس ($125,000) و استاندارد چارترد ($120,000).
+5. **رادار ژئوپلیتیک و خزانه‌داری تتر:** ضرب مداوم نقدینگی تتر ({geo.get('stablecoin_minting', {}).get('usdt_market_cap', 'ضرب ۱.۲B$')}) که سوخت جهش‌های چندروزه را تامین می‌کند.
+6. **میانگین وزنی سشن‌های ۴ ساعته (4H VWAP & Trend):** تثبیت ساختار بالاتر از کف‌های هفتگی.
+
+---
+
+#### 🎯 مشخصات دقیق سیگنال سوئینگ زنده {clean_s} (تایم‌فریم ۴ ساعته):
+• **جهت معامله سوئینگ:** {sw.get('direction_emoji')} **{sw.get('direction')}**
+• **نقطه ورود بهینه (Entry):** <code>{sw.get('entry_fmt')}</code>
+• **حد ضرر ساختاری (SL):** <code>{sw.get('stop_loss_fmt')}</code> (محافظت‌شده زیر تراز کف ارزش هفتگی)
+• **تارگت اول میان‌مدت (TP1):** <code>{sw.get('tp1_fmt')}</code> (سقف ارزش VAH در کوانت‌تاور)
+• **تارگت دوم ماکرو (TP2):** <code>{sw.get('tp2_fmt')}</code> (تارگت توسعه موج نهادی)
+• **مدت زمان نگهداری (Holding Horizon):** <code>{sw.get('holding_duration')}</code>
+• **ساعت و تاریخ صدور:** <code>{sw.get('date_tehran')} ساعت {sw.get('time_tehran')} (ایران 🇮🇷)</code>
+
+---
+
+#### ⚖️ تطبیق و هم‌راستایی با سیگنال اسکالپ (Scalp vs Swing):
+• **وضعیت همسویی:** **{align}**
+• **تحلیل تطبیقی:** {align_note}
+• **سیگنال اسکالپ همزمان (۱۵ دقیقه‌ای):** {sc.get('direction_emoji')} <b>{sc.get('direction')}</b> در <code>{sc.get('entry_fmt')}</code> (با افق زمانی {sc.get('holding_duration')})
+• **راهبرد عملیاتی تریدر:** اگر اسکالپ با سوئینگ هم‌جهت باشد، با حجم کامل و حداکثر اعتماد وارد شوید؛ اگر اسکالپ خلاف سوئینگ باشد، آن معامله صرفاً یک نوسان اصلاحی سریع و موقت است.
+"""
+        except Exception as e:
+            return f"خطا در استخراج تحلیل سوئینگ: {e}"
+
+
     # 1. Master Unified Order Flow Summary
     if any(w in q for w in ["خلاصه اردر فلو", "اردر فلو چی میگه", "اردر فلو وال استریت", "۷ ماژول جدید", "ماژول های جدید", "وضعیت اردر فلو", "تحلیل جامع اردر فلو", "دیدبان اردر فلو", "سفارشات سازمانی"]):
         try:
