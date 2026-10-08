@@ -62,6 +62,15 @@ class AgentAdvisor:
         p_dec = 2 if price >= 100 else (4 if price >= 1 else 6)
         formatted_price = f"${price:,.{p_dec}f}"
 
+        # Check specialized Order Flow, Bookmap, NinjaTrader, ATAS, Quantower, Sierra Chart, Geopolitics, Bank Reports
+        try:
+            from crypto_chat_orderflow_helper import handle_orderflow_chat
+            of_reply = handle_orderflow_chat(q, clean_s, price)
+            if of_reply:
+                return of_reply
+        except Exception:
+            pass
+
         scalp = analysis.get("scalp_setup", {})
         swing = analysis.get("swing_setup", {})
         ob = analysis.get("orderbook", {})
@@ -75,7 +84,7 @@ class AgentAdvisor:
         if any(w in q for w in ["زیر و بم", "تمام بخش", "امکانات سایت", "بخش های سایت", "بخش‌های سایت", "معرفی سایت", "چیا داره", "چه بخش هایی", "امکانات ترمینال", "راهنمای سایت", "معرفی کامل", "کل سایت"]):
             return (
                 "### 🌐 اطلس جامع معماری و کالبدشکافی تمام زیر و بم ترمینال آسمان\n\n"
-                "این پلتفرم یک **ترمینال نهادی هوشمند (Institutional Trading Terminal)** بر پایه ۶ ستون اصلی تحلیل داده‌ها است که ۲۲ ماژول فوق‌تخصصی را در اختیار تریدر قرار می‌دهد:\n\n"
+                "این پلتفرم یک **ترمینال نهادی هوشمند (Institutional Trading Terminal)** بر پایه ۷ ستون اصلی تحلیل داده‌ها است که ۲۹ ماژول فوق‌تخصصی و ترمینال‌های تراز اول وال‌استریت را در اختیار تریدر قرار می‌دهد:\n\n"
                 "#### 🏛️ ۱. ترمینال ۳ بعدی اسمارت مانی و اردر فلو (3D Core Engine):\n"
                 "- **ستاپ‌های اسکالپ و سوئینگ زنده:** نقطه ورود، ۳ تارگت سود، حد ضرر ساختاری و اهرم پیشنهادی.\n"
                 "- **ردپای ICT / SMC:** شناسایی دقیق خلاء نقدینگی (FVG)، اردربلاک‌ها (OB)، تغییر ساختار (CHoCH/BOS)، استخرهای BSL/SSL و سوییپ استاپ‌ها.\n"
