@@ -57,45 +57,32 @@ app.add_middleware(
 # Enable instant GZip Compression for ultrafast response payload transfer
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
-# Enterprise Cybersecurity & SSL Protocol Middleware
+# Enterprise Cybersecurity & Headers Middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
-    # 1. Enforce HTTPS upgrade behind Reverse Proxies (Render, Cloudflare, AWS)
-    # Eliminates Chrome "Not Secure" warning when users visit via plain HTTP
-    proto = request.headers.get("x-forwarded-proto", "").lower()
-    if proto == "http":
-        https_url = request.url.replace(scheme="https")
-        return RedirectResponse(url=str(https_url), status_code=301)
-
     response = await call_next(request)
 
-    # 2. HTTP Strict Transport Security (HSTS) - Mandates HTTPS for 2 years & preloading
-    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
-
-    # 3. Prevent MIME Sniffing & XSS Exploits
+    # Prevent MIME Sniffing & XSS Exploits
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
 
-    # 4. Strict Referrer Policy
+    # Strict Referrer Policy
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
-    # 5. Restrict Dangerous Browser Permissions (Zero Camera, Mic, Geolocation, Payment)
+    # Permissive Permissions Policy
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
 
-    # 6. Content Security Policy (CSP) - Permits local resources, Google Fonts, TradingView, and secure websockets
+    # Content Security Policy (CSP) - Permits preview iframes, Google Fonts, TradingView, and websockets
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; "
-        "img-src 'self' https: data: blob:; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: https://s3.tradingview.com; "
-        "style-src 'self' 'unsafe-inline' https: https://fonts.googleapis.com; "
-        "font-src 'self' https: data: https://fonts.gstatic.com; "
-        "connect-src 'self' https: wss:; "
-        "frame-src 'self' https: https://s.tradingview.com https://www.tradingview.com;"
+        "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: http: data: blob:; "
+        "img-src 'self' https: http: data: blob:; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http: https://s3.tradingview.com; "
+        "style-src 'self' 'unsafe-inline' https: http: https://fonts.googleapis.com; "
+        "font-src 'self' https: http: data: https://fonts.gstatic.com; "
+        "connect-src 'self' https: http: wss: ws:; "
+        "frame-src 'self' https: http: https://s.tradingview.com https://www.tradingview.com; "
+        "frame-ancestors *;"
     )
-
-    # 7. Cross-Origin Opener Policy for popups
-    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
 
     return response
 
