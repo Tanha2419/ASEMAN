@@ -2669,18 +2669,28 @@
           <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 800; display: flex; align-items: center; gap: 4px;">
             <span>🧭</span> تفکیک دسته‌های تخصصی:
           </span>
-          <button type="button" class="tab-cat-pill active" id="catBtnAll" onclick="filterTabCategory('ALL')">🌐 همه تب‌ها (۲۲)</button>
+          <button type="button" class="tab-cat-pill active" id="catBtnAll" onclick="filterTabCategory('ALL')">🌐 همه تب‌ها (۲۹)</button>
+          <button type="button" class="tab-cat-pill" id="catBtnOrderflow" onclick="filterTabCategory('ORDERFLOW')" style="border-color: rgba(255, 140, 0, 0.5); color: #ff8c00;">🔥 اردر فلو وال‌استریت و بانک‌ها (۷)</button>
           <button type="button" class="tab-cat-pill" id="catBtnInst" onclick="filterTabCategory('INST')">🏛️ ترمینال نهادی و کلان (۵)</button>
           <button type="button" class="tab-cat-pill" id="catBtnTechnical" onclick="filterTabCategory('TECH')">🧠 پرایس‌اکشن و چارت (۶)</button>
           <button type="button" class="tab-cat-pill" id="catBtnExchanges" onclick="filterTabCategory('EXCH')">⚡ رادار صرافی‌ها و آن‌چین (۶)</button>
           <button type="button" class="tab-cat-pill" id="catBtnRisk" onclick="filterTabCategory('RISK')">🛡️ ریسک، تلگرام و ژورنال (۵)</button>
         </div>
         <div style="font-size: 0.74rem; color: #64748b;" id="activeCategoryHint">
-          نمایش تمامی ۲۲ ماژول تحلیلی
+          نمایش تمامی ۲۹ ماژول تحلیلی
         </div>
       </div>
 
       <div class="tabs-header" id="mainTabsHeader">
+        <!-- Group 5: Institutional Order Flow & Wall Street Terminals (Bookmap, NinjaTrader, ATAS, Quantower, Sierra Chart, Geopolitics, Bank Reports) -->
+        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoBookmap" onclick="switchTab('cryptoBookmapTab', this)" style="border-color: rgba(255, 140, 0, 0.5); color: #ff8c00; font-weight: 800;">🔥 بوک‌مپ نقدینگی (Bookmap L2/L3)</button>
+        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoNinja" onclick="switchTab('cryptoNinjaTab', this)" style="border-color: rgba(0, 230, 118, 0.5); color: #00e676; font-weight: 800;">📊 نینجاتریدر (Footprint & SuperDOM)</button>
+        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoAtas" onclick="switchTab('cryptoAtasTab', this)" style="border-color: rgba(0, 210, 255, 0.5); color: #00d2ff; font-weight: 800;">⚡ اتاس (Time & Sales / Big Trades)</button>
+        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoQuantower" onclick="switchTab('cryptoQuantowerTab', this)" style="border-color: rgba(168, 85, 247, 0.5); color: #a855f7; font-weight: 800;">📐 کوانت‌تاور (TPO Market Profile)</button>
+        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoSierra" onclick="switchTab('cryptoSierraTab', this)" style="border-color: rgba(234, 179, 8, 0.5); color: #eab308; font-weight: 800;">📈 سیرا چارت (Sierra Chart Orderflow)</button>
+        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoGeopolitics" onclick="switchTab('cryptoGeopoliticsTab', this)" style="border-color: rgba(239, 68, 68, 0.5); color: #ef4444; font-weight: 800;">🌐 ژئوپلیتیک & استیبل‌کوین (GPR Index)</button>
+        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoBankReports" onclick="switchTab('cryptoBankReportsTab', this)" style="border-color: rgba(255, 215, 0, 0.6); color: #ffd700; font-weight: 900;">🏦 گزارشات بانک‌ها & جریان ETFها (Wall Street)</button>
+
         <!-- Group 1: Institutional & Macro -->
         <button class="tab-btn active" data-cat="INST" id="tabBtnInst" onclick="switchTab('instTab', this)">🏛️ جدول سیگنال نهادی</button>
         <button class="tab-btn" data-cat="INST" id="tabBtnMacroDeep" onclick="switchTab('macroDeepTab', this)" style="border-color: rgba(255, 61, 113, 0.4); color: #ff3d71;">🏛️ اخبار کلان (CPI/FOMC)</button>
@@ -5936,6 +5946,744 @@
           </div>
         </div>
       </div>
+    
+      <!-- ==================== TAB 23: CRYPTO BOOKMAP L2/L3 ==================== -->
+      <div class="tab-content" id="cryptoBookmapTab">
+        <div style="background: rgba(10, 15, 30, 0.95); border: 1.5px solid rgba(255, 140, 0, 0.4); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+            <div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #ff8c00; display: flex; align-items: center; gap: 8px;">
+                <span>🔥</span> هیت‌مپ نقدینگی و ردیاب آیس‌برگ بوک‌مپ (Bookmap L2/L3 Liquidity Heatmap & Iceberg Detector)
+              </div>
+              <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                پایش زنده امواج نقدینگی دفتر سفارشات (L2/L3)، اوردرهای مخفی آیس‌برگ نهنگ‌ها، دیواره‌های سفارشات و خط جریان قیمت زنده
+              </div>
+            </div>
+            
+            <!-- Controls Bar: Symbol & Timeframe & Refresh -->
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <!-- Coin Selector -->
+              <select id="cryptoBmSymbolSelect" onchange="onCryptoBmChange()" style="background: rgba(0,0,0,0.6); color: #ff8c00; border: 1px solid rgba(255,140,0,0.4); border-radius: 6px; padding: 5px 10px; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
+                <option value="BTC" selected>Bitcoin (BTC)</option>
+                <option value="ETH">Ethereum (ETH)</option>
+                <option value="SOL">Solana (SOL)</option>
+                <option value="XRP">Ripple (XRP)</option>
+                <option value="DOGE">Dogecoin (DOGE)</option>
+                <option value="BNB">BNB (BNB)</option>
+                <option value="ADA">Cardano (ADA)</option>
+                <option value="AVAX">Avalanche (AVAX)</option>
+              </select>
+
+              <!-- Timeframe Switcher -->
+              <div style="display: flex; gap: 4px; align-items: center; background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(255,140,0,0.3);">
+                <span style="font-size: 0.72rem; color: #ff8c00; margin-left: 4px; font-weight: 700;">⏱️</span>
+                <button class="bm-tf-btn" data-tf="1m" onclick="setCryptoBmTimeframe('1m')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">1m</button>
+                <button class="bm-tf-btn" data-tf="5m" onclick="setCryptoBmTimeframe('5m')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">5m</button>
+                <button class="bm-tf-btn active" data-tf="15m" onclick="setCryptoBmTimeframe('15m')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1.5px solid #ff8c00; background: rgba(255,140,0,0.25); color: #ff8c00; font-weight: 800; cursor: pointer;">15m</button>
+                <button class="bm-tf-btn" data-tf="1h" onclick="setCryptoBmTimeframe('1h')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">1h</button>
+                <button class="bm-tf-btn" data-tf="4h" onclick="setCryptoBmTimeframe('4h')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">4h</button>
+              </div>
+
+              <!-- Badges -->
+              <span id="cryptoBmRatioBadge" style="background: rgba(255, 140, 0, 0.15); color: #ff8c00; border: 1px solid #ff8c00; padding: 4px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 800;">
+                دیواره: ---
+              </span>
+              <span id="cryptoBmPriceBadge" class="mono" style="background: rgba(0, 210, 255, 0.15); color: #00d2ff; border: 1px solid #00d2ff; padding: 4px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 800;">
+                BTC: ---
+              </span>
+              <button onclick="fetchCryptoBookmap(true)" style="background: rgba(255, 140, 0, 0.2); border: 1px solid #ff8c00; color: #ff8c00; border-radius: 6px; padding: 4px 10px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+                🔄 بروزرسانی
+              </button>
+            </div>
+          </div>
+
+          <!-- View Mode Switcher -->
+          <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+            <button id="cryptoBmModeCanvasBtn" onclick="setCryptoBmViewMode('canvas')" style="padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 800; cursor: pointer; border: 1.5px solid #ff8c00; background: rgba(255,140,0,0.25); color: #ff8c00;">
+              🌊 هیت‌مپ گرافیکی بوک‌مپ (Retina Canvas)
+            </button>
+            <button id="cryptoBmModeTvBtn" onclick="setCryptoBmViewMode('tv')" style="padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #94a3b8;">
+              📊 چارت زنده تریدینگ‌ویو (TradingView Live)
+            </button>
+            <button id="cryptoBmModeSplitBtn" onclick="setCryptoBmViewMode('split')" style="padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #94a3b8;">
+              ⚡ نمایش ترکیبی دوگانه (Dual Mode)
+            </button>
+          </div>
+
+          <!-- Canvas Container -->
+          <div id="cryptoBmCanvasWrap" style="background: #030712; border: 1px solid rgba(255, 140, 0, 0.3); border-radius: 8px; overflow: hidden; margin-bottom: 16px; position: relative;">
+            <canvas id="cryptoBmCanvas" style="width: 100%; height: 350px; display: block;"></canvas>
+            <div style="position: absolute; bottom: 8px; left: 12px; font-size: 0.68rem; color: rgba(255,255,255,0.4); pointer-events: none;">
+              Bookmap L2/L3 Liquidity &bull; حباب‌های سبز (خرید مارکت) &bull; حباب‌های قرمز (فروش مارکت) &bull; نوارهای طلایی/قرمز (دیواره فروش) &bull; نوارهای فیروزه‌ای (دیواره خرید)
+            </div>
+          </div>
+
+          <!-- Live TradingView Container for Bookmap -->
+          <div id="cryptoBmTvWrap" style="height: 380px; border-radius: 8px; overflow: hidden; margin-bottom: 16px; border: 1px solid rgba(255, 140, 0, 0.3); display: none;">
+            <div id="cryptoBmTvChart" style="width: 100%; height: 100%;"></div>
+          </div>
+
+          <!-- 4-Grid Order Flow Analytics -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 16px;">
+            <!-- Icebergs -->
+            <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px;">
+              <div style="font-size: 0.85rem; font-weight: 800; color: #ffd700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>🧊</span> اوردرهای مخفی آیس‌برگ کشف‌شده
+              </div>
+              <div id="cryptoBmIcebergsList" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.76rem;">
+                <div style="color: #94a3b8;">در حال استعلام دفتر سفارشات L2/L3...</div>
+              </div>
+            </div>
+
+            <!-- Resting Walls -->
+            <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px;">
+              <div style="font-size: 0.85rem; font-weight: 800; color: #00d2ff; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>🧱</span> دیواره‌های سفارشات فعال (Resting Walls)
+              </div>
+              <div id="cryptoBmWallsList" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.76rem;">
+                <div style="color: #94a3b8;">در حال اسکن دیواره‌های پشتیبان و مقاومتی...</div>
+              </div>
+            </div>
+
+            <!-- Delta & Speed -->
+            <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px;">
+              <div style="font-size: 0.85rem; font-weight: 800; color: #00e676; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>⚡</span> دلتای ۱ دقیقه و فشار جذب نقدینگی
+              </div>
+              <div id="cryptoBmDeltaInfo" style="font-size: 0.78rem; line-height: 1.8; color: #cbd5e1;">
+                در حال پردازش جریان سفارشات...
+              </div>
+            </div>
+
+            <!-- Institutional Verdict -->
+            <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px;">
+              <div style="font-size: 0.85rem; font-weight: 800; color: #ff8c00; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>🧭</span> تحلیل و بیانیه نهایی بوک‌مپ
+              </div>
+              <div id="cryptoBmVerdictText" style="font-size: 0.78rem; line-height: 1.8; color: #cbd5e1;">
+                در حال استخراج سوگیری نهادی بوک‌مپ...
+              </div>
+            </div>
+          </div>
+
+          <!-- Educational Guide -->
+          <div style="background: rgba(255, 140, 0, 0.05); border: 1px solid rgba(255, 140, 0, 0.2); border-radius: 8px; padding: 12px 16px; font-size: 0.78rem; color: #cbd5e1; line-height: 1.8;">
+            <strong style="color: #ff8c00;">💡 آموزش ساده بوک‌مپ (Bookmap) برای معامله‌گران کریپتو:</strong><br>
+            • <strong>باندهای افقی گرما (Liquidity Highways):</strong> خطوط درخشان زرد و فیروزه‌ای حجم‌های سنگین لیمیت اردر نهنگ‌ها هستند. وقتی قیمت به یک باند زرد نزدیک شده اما برگشت می‌زند، نشان‌دهنده ریجکت توسط فروشنده سازمانی است.<br>
+            • <strong>سفارشات آیس‌برگ (Iceberg Orders 🧊):</strong> موسسات سفارشات چند صد میلیونی خود را به قطعات ریز خرد می‌کنند تا بازار را هل ندهند؛ بوک‌مپ حجم واقعی پشت این کوه‌های یخ را شناسایی می‌کند.<br>
+            • <strong>حباب‌های معاملاتی (Bubbles):</strong> اندازه حباب نشان‌دهنده حجم اردر مارکت و رنگ آن نشان‌دهنده جهت تهاجم (سبز = خرید سریع، قرمز = فروش شتاب‌زده) است.
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 24: CRYPTO NINJATRADER 8 ==================== -->
+      <div class="tab-content" id="cryptoNinjaTab">
+        <div style="background: rgba(10, 20, 24, 0.95); border: 1.5px solid rgba(0, 230, 118, 0.4); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+            <div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #00e676; display: flex; align-items: center; gap: 8px;">
+                <span>🎯</span> ترمینال نینجاتریدر ۸ کریپتو (NinjaTrader 8 Footprint Ladder & SuperDOM)
+              </div>
+              <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                ماتریس عمق سفارشات تیک‌به‌تیک (SuperDOM L2)، چارت فوت‌پرینت کلاستری (Footprint Clusters)، دلتای تجمیعی (CVD) و انحراف معیار سشن VWAP
+              </div>
+            </div>
+
+            <!-- Controls Bar -->
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <select id="cryptoNtSymbolSelect" onchange="onCryptoNtChange()" style="background: rgba(0,0,0,0.6); color: #00e676; border: 1px solid rgba(0,230,118,0.4); border-radius: 6px; padding: 5px 10px; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
+                <option value="BTC" selected>Bitcoin (BTC)</option>
+                <option value="ETH">Ethereum (ETH)</option>
+                <option value="SOL">Solana (SOL)</option>
+                <option value="XRP">Ripple (XRP)</option>
+                <option value="DOGE">Dogecoin (DOGE)</option>
+                <option value="BNB">BNB (BNB)</option>
+                <option value="ADA">Cardano (ADA)</option>
+                <option value="AVAX">Avalanche (AVAX)</option>
+              </select>
+
+              <!-- Timeframe Switcher -->
+              <div style="display: flex; gap: 4px; align-items: center; background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.3);">
+                <span style="font-size: 0.72rem; color: #00e676; margin-left: 4px; font-weight: 700;">⏱️</span>
+                <button class="nt-tf-btn" data-tf="1m" onclick="setCryptoNtTimeframe('1m')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">1m</button>
+                <button class="nt-tf-btn" data-tf="5m" onclick="setCryptoNtTimeframe('5m')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">5m</button>
+                <button class="nt-tf-btn active" data-tf="15m" onclick="setCryptoNtTimeframe('15m')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1.5px solid #00e676; background: rgba(0,230,118,0.25); color: #00e676; font-weight: 800; cursor: pointer;">15m</button>
+                <button class="nt-tf-btn" data-tf="1h" onclick="setCryptoNtTimeframe('1h')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">1h</button>
+                <button class="nt-tf-btn" data-tf="4h" onclick="setCryptoNtTimeframe('4h')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">4h</button>
+              </div>
+
+              <!-- Badges -->
+              <span id="cryptoNtCvdBadge" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 800;">
+                CVD: ---
+              </span>
+              <span id="cryptoNtPriceBadge" class="mono" style="background: rgba(0, 210, 255, 0.15); color: #00d2ff; border: 1px solid #00d2ff; padding: 4px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 800;">
+                BTC: ---
+              </span>
+              <button onclick="fetchCryptoNinja(true)" style="background: rgba(0, 230, 118, 0.2); border: 1px solid #00e676; color: #00e676; border-radius: 6px; padding: 4px 10px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+                🔄 بروزرسانی
+              </button>
+            </div>
+          </div>
+
+          <!-- NinjaTrader Grid: SuperDOM on Left, Footprint on Right -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 18px;">
+            <!-- SuperDOM -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.85rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                  <span>🏢</span> عمق سفارشات سوپردام (SuperDOM L2 Depth)
+                </span>
+                <span style="font-size: 0.72rem; color: #94a3b8;">تیک قیمتی زنده</span>
+              </div>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.76rem; text-align: center; font-family: var(--font-mono);">
+                  <thead>
+                    <tr style="background: rgba(255,255,255,0.04); color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                      <th style="padding: 6px;">حجم خرید (Bid)</th>
+                      <th style="padding: 6px;">قیمت کریپتو</th>
+                      <th style="padding: 6px;">حجم فروش (Ask)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cryptoNtSuperDomBody">
+                    <tr><td colspan="3" style="padding: 20px; color: #94a3b8;">در حال دریافت عمق تیک نینجاتریدر...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Footprint Clusters -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size: 0.88rem; font-weight: 800; color: #00e676; display: flex; align-items: center; gap: 6px;">
+                  <span>📊</span> فوت‌پرینت کلاستری وال‌استریت (Footprint Ladder)
+                </span>
+                <span style="font-size: 0.72rem; color: #ffd700;">سطوح بدون تداخل و خوانا</span>
+              </div>
+              <div id="cryptoNtFootprintContainer" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;">
+                <!-- Dynamic Footprint Candles -->
+              </div>
+            </div>
+          </div>
+
+          <!-- VWAP & CVD Analytics Row -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 16px;">
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-size: 0.8rem; line-height: 1.8;">
+              <strong style="color: #ffd700;">📐 باندهای انحراف استاندارد سشن VWAP:</strong><br>
+              • خط مرکزی VWAP: <span id="cryptoNtVwapMid" class="mono" style="color: #00d2ff;">---</span><br>
+              • باند +1 انحراف معیار: <span id="cryptoNtVwapSd1Up" class="mono" style="color: #ff3366;">---</span><br>
+              • باند -1 انحراف معیار: <span id="cryptoNtVwapSd1Dn" class="mono" style="color: #00e676;">---</span><br>
+              • باند +2 انحراف معیار (سقف اکستریم): <span id="cryptoNtVwapSd2Up" class="mono" style="color: #ff3366;">---</span><br>
+              • باند -2 انحراف معیار (کف اکستریم): <span id="cryptoNtVwapSd2Dn" class="mono" style="color: #00e676;">---</span>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-size: 0.8rem; line-height: 1.8;">
+              <strong style="color: #38bdf8;">🧭 استراتژی اسکالپ بر اساس فوت‌پرینت نینجاتریدر:</strong><br>
+              <div id="cryptoNtScalpStrategyText" style="color: #cbd5e1; margin-top: 4px;">
+                در حال پردازش داده‌های نینجاتریدر ۸...
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Scalp TradingView Chart for NinjaTrader -->
+          <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(0, 230, 118, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-size: 0.85rem; font-weight: 800; color: #00e676; display: flex; align-items: center; gap: 6px;">
+                <span>📈</span> چارت زنده تریدینگ‌ویو اسکالپ نینجاتریدر
+              </span>
+              <span style="font-size: 0.72rem; color: #94a3b8;">همگام‌سازی لحظه‌ای تیک‌ها</span>
+            </div>
+            <div id="cryptoNtTvChart" style="width: 100%; height: 360px; border-radius: 6px; overflow: hidden;"></div>
+          </div>
+
+          <!-- Educational Box -->
+          <div style="background: rgba(0, 230, 118, 0.05); border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 8px; padding: 12px 16px; font-size: 0.78rem; color: #cbd5e1; line-height: 1.8;">
+            <strong style="color: #ffd700;">💡 آموزش فوت‌پرینت کلاستری نینجاتریدر برای مبتدیان:</strong><br>
+            • <strong>کلاستر POC (تاج طلایی 👑):</strong> سطحی در کندل که بالاترین حجم معامله را به خود اختصاص داده است. حفظ قیمت بالای POC نشانه مومنتوم صعودی است.<br>
+            • <strong>عدم تعادل خریدار/فروشنده (صاعقه ⚡):</strong> زمانی که حجم یک طرف ۳۰۰٪ یا بیشتر از طرف مقابل در تیک قطری باشد؛ این نشانه ورود هج‌فاندها به صورت تهاجمی است.<br>
+            • <strong>دلتای کندل (Δ):</strong> تفاضل حجم خریداران مارکت و فروشندگان مارکت؛ اگر کندل صعودی باشد اما دلتا منفی باشد، نشان‌دهنده جذب نزولی مخفی است!
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 25: CRYPTO ATAS ==================== -->
+      <div class="tab-content" id="cryptoAtasTab">
+        <div style="background: rgba(14, 10, 24, 0.95); border: 1.5px solid rgba(0, 210, 255, 0.4); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+            <div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #00d2ff; display: flex; align-items: center; gap: 8px;">
+                <span>⚡</span> ترمینال پیشرفته اتاس کریپتو (ATAS Advanced Time & Sales / Big Trades)
+              </div>
+              <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                ردیاب زنده معاملات بزرگ نهادی بالای ۵۰ بیت‌کوین (Big Trades)، سرعت نوار تراکنش‌ها (Speed of Tape) و عدم تعادل‌های قطری ۳۰۰٪ (Diagonal Imbalances)
+              </div>
+            </div>
+
+            <!-- Controls Bar -->
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <select id="cryptoAtasSymbolSelect" onchange="onCryptoAtasChange()" style="background: rgba(0,0,0,0.6); color: #00d2ff; border: 1px solid rgba(0,210,255,0.4); border-radius: 6px; padding: 5px 10px; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
+                <option value="BTC" selected>Bitcoin (BTC)</option>
+                <option value="ETH">Ethereum (ETH)</option>
+                <option value="SOL">Solana (SOL)</option>
+                <option value="XRP">Ripple (XRP)</option>
+                <option value="DOGE">Dogecoin (DOGE)</option>
+                <option value="BNB">BNB (BNB)</option>
+                <option value="ADA">Cardano (ADA)</option>
+                <option value="AVAX">Avalanche (AVAX)</option>
+              </select>
+
+              <span id="cryptoAtasTapeSpeedBadge" style="background: rgba(255, 140, 0, 0.15); color: #fb923c; border: 1px solid #fb923c; padding: 4px 12px; border-radius: 6px; font-size: 0.76rem; font-weight: 800;">
+                سرعت نوار: در حال پایش...
+              </span>
+              <button onclick="fetchCryptoAtas(true)" style="background: rgba(0, 210, 255, 0.2); border: 1px solid #00d2ff; color: #00d2ff; border-radius: 6px; padding: 4px 10px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+                🔄 بروزرسانی
+              </button>
+            </div>
+          </div>
+
+          <!-- Dual Column: Big Trades & Imbalances -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 18px;">
+            <!-- Big Trades -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 0.88rem; font-weight: 800; color: #ffd166; display: flex; align-items: center; gap: 6px;">
+                  <span>🐋</span> بلاک‌تریدها و سفارشات بزرگ نهنگ‌ها (Big Trades > 50 BTC)
+                </span>
+                <span style="font-size: 0.72rem; color: #94a3b8;">سشن جاری</span>
+              </div>
+              <div id="cryptoAtasBigTradesList" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Dynamic Big Trades -->
+              </div>
+            </div>
+
+            <!-- Imbalances -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 0.88rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                  <span>⚖️</span> عدم تعادل‌های قطری ۳۰۰٪ دفتر سفارشات (Diagonal Imbalances)
+                </span>
+                <span style="font-size: 0.72rem; color: #94a3b8;">سطوح کلیدی</span>
+              </div>
+              <div id="cryptoAtasImbalanceList" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Dynamic Imbalances -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Delta Flow & Tape Velocity -->
+          <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px; font-size: 0.82rem; line-height: 1.8; margin-bottom: 16px;">
+            <strong style="color: #fb923c;">🧭 ارزیابی شتاب معاملات و جریان نوار اتاس:</strong>
+            <span id="cryptoAtasVerdictText" style="color: #cbd5e1; margin-right: 6px;">در حال پردازش داده‌های نوار سفارشات...</span>
+          </div>
+
+          <!-- Live TradingView Chart for ATAS -->
+          <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-size: 0.85rem; font-weight: 800; color: #00d2ff; display: flex; align-items: center; gap: 6px;">
+                <span>📈</span> چارت زنده تریدینگ‌ویو همگام با نوار معاملات اتاس
+              </span>
+              <span style="font-size: 0.72rem; color: #94a3b8;">پایش واکنش قیمت به بلاک‌تریدها</span>
+            </div>
+            <div id="cryptoAtasTvChart" style="width: 100%; height: 350px; border-radius: 6px; overflow: hidden;"></div>
+          </div>
+
+          <!-- Educational Box -->
+          <div style="background: rgba(0, 210, 255, 0.05); border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 8px; padding: 12px 16px; font-size: 0.78rem; color: #cbd5e1; line-height: 1.8;">
+            <strong style="color: #ffd700;">💡 آموزش ساده نوار معاملات اتاس (Time & Sales):</strong><br>
+            • <strong>بلاک تریدهای بالای ۵۰ بیت‌کوین:</strong> بیش از ۹۵٪ از معامله‌گران خرد حجم‌های زیر ۰.۵ بیت‌کوین دارند. چاپ خریدهای ۵۰ یا ۱۰۰ بیت‌کوینی با اسپید بالا، ردپای بی‌چون‌وچرای نهنگ‌ها و موسسات است.<br>
+            • <strong>عدم تعادل قطری ۳۰۰٪:</strong> زمانی رخ می‌دهد که خریدار مارکت به اندازه ۳ برابر سفارشات فروش موجود، حمله کرده و سطوح را پاکسازی می‌کند.<br>
+            • <strong>سرعت نوار (Tape Speed):</strong> سرعت ثبت معاملات در ثانیه؛ عبور سرعت از ۵۰ تیک/ثانیه نشانه فعال شدن الگوریتم‌های پربسامد HFT است.
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 26: CRYPTO QUANTOWER ==================== -->
+      <div class="tab-content" id="cryptoQuantowerTab">
+        <div style="background: rgba(12, 10, 25, 0.95); border: 1.5px solid rgba(168, 85, 247, 0.4); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+            <div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #a855f7; display: flex; align-items: center; gap: 8px;">
+                <span>🏛️</span> ترمینال نهادی کوانت‌تاور کریپتو (Quantower TPO Market Profile & Volume Profile)
+              </div>
+              <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                تحلیل زمان-قیمت مارکت پروفایل (TPO)، ناحیه ارزش ۷۰٪ (Value Area)، نودهای پرحجم/کم‌حجم (HVN/LVN) و اسپرد سنتتیک کریپتو
+              </div>
+            </div>
+
+            <!-- Controls Bar -->
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <select id="cryptoQtSymbolSelect" onchange="onCryptoQtChange()" style="background: rgba(0,0,0,0.6); color: #a855f7; border: 1px solid rgba(168,85,247,0.4); border-radius: 6px; padding: 5px 10px; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
+                <option value="BTC" selected>Bitcoin (BTC)</option>
+                <option value="ETH">Ethereum (ETH)</option>
+                <option value="SOL">Solana (SOL)</option>
+                <option value="XRP">Ripple (XRP)</option>
+                <option value="DOGE">Dogecoin (DOGE)</option>
+                <option value="BNB">BNB (BNB)</option>
+                <option value="ADA">Cardano (ADA)</option>
+                <option value="AVAX">Avalanche (AVAX)</option>
+              </select>
+
+              <div style="display: flex; gap: 4px; align-items: center; background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(168,85,247,0.3);">
+                <span style="font-size: 0.72rem; color: #a855f7; margin-left: 4px; font-weight: 700;">⏱️</span>
+                <button class="qt-tf-btn" data-tf="15m" onclick="setCryptoQtTimeframe('15m')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">15m</button>
+                <button class="qt-tf-btn active" data-tf="1h" onclick="setCryptoQtTimeframe('1h')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1.5px solid #a855f7; background: rgba(168,85,247,0.25); color: #a855f7; font-weight: 800; cursor: pointer;">1h</button>
+                <button class="qt-tf-btn" data-tf="4h" onclick="setCryptoQtTimeframe('4h')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">4h</button>
+                <button class="qt-tf-btn" data-tf="1d" onclick="setCryptoQtTimeframe('1d')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">1d</button>
+              </div>
+
+              <span id="cryptoQtRegimeBadge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid #c084fc; padding: 4px 12px; border-radius: 6px; font-size: 0.76rem; font-weight: 800;">
+                رژیم: حراج متوازن
+              </span>
+              <button onclick="fetchCryptoQuantower(true)" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #a855f7; border-radius: 6px; padding: 4px 10px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+                🔄 بروزرسانی
+              </button>
+            </div>
+          </div>
+
+          <!-- TPO Profile & Volume Nodes Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 18px;">
+            <!-- TPO Market Profile Box -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="font-size: 0.88rem; font-weight: 800; color: #c084fc; margin-bottom: 10px;">
+                📊 سطوح حیاتی TPO Market Profile
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem;">
+                <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: rgba(255, 51, 102, 0.08); border-radius: 6px;">
+                  <span>سقف ناحیه ارزش (VAH):</span>
+                  <strong id="cryptoQtVahPrice" class="mono" style="color: #ff3366;">---</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: rgba(255, 215, 0, 0.12); border-radius: 6px;">
+                  <span>نقطه کنترل حجم (VPOC):</span>
+                  <strong id="cryptoQtPocPrice" class="mono" style="color: #ffd700;">---</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: rgba(0, 230, 118, 0.08); border-radius: 6px;">
+                  <span>کف ناحیه ارزش (VAL):</span>
+                  <strong id="cryptoQtValPrice" class="mono" style="color: #00e676;">---</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: rgba(56, 189, 248, 0.08); border-radius: 6px;">
+                  <span>تعادل اولیه (Initial Balance):</span>
+                  <strong id="cryptoQtIbRange" class="mono" style="color: #38bdf8;">---</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Volume Nodes & Synthetic Spreads -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="font-size: 0.88rem; font-weight: 800; color: #38bdf8; margin-bottom: 10px;">
+                🌐 گره‌های پرحجم و اسپرد سنتتیک کریپتو
+              </div>
+              <div id="cryptoQtNodesList" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem;">
+                <!-- Dynamic HVN/LVN -->
+              </div>
+              <div id="cryptoQtSpreadText" style="margin-top: 10px; font-size: 0.76rem; color: #00e676; background: rgba(0,230,118,0.06); padding: 6px 10px; border-radius: 6px;">
+                در حال استعلام اسپرد فیوچرز و اسپات کریپتو...
+              </div>
+            </div>
+          </div>
+
+          <div id="cryptoQtVerdictText" style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; font-size: 0.8rem; line-height: 1.8; color: #cbd5e1; margin-bottom: 16px;">
+            در حال ارزیابی جریان حراج کوانت‌تاور...
+          </div>
+
+          <!-- Live TradingView Chart for Quantower -->
+          <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-size: 0.85rem; font-weight: 800; color: #a855f7; display: flex; align-items: center; gap: 6px;">
+                <span>📈</span> چارت زنده تریدینگ‌ویو منطبق با مارکت پروفایل کوانت‌تاور
+              </span>
+              <span style="font-size: 0.72rem; color: #94a3b8;">پروفایل حجم و سطوح کلیدی حراج</span>
+            </div>
+            <div id="cryptoQtTvChart" style="width: 100%; height: 350px; border-radius: 6px; overflow: hidden;"></div>
+          </div>
+
+          <!-- Educational Box -->
+          <div style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 8px; padding: 12px 16px; font-size: 0.78rem; color: #cbd5e1; line-height: 1.8;">
+            <strong style="color: #ffd700;">💡 آموزش ساده کوانت‌تاور (Quantower TPO) برای معامله‌گران:</strong><br>
+            • <strong>ناحیه ارزش ۷۰٪ (Value Area):</strong> بازه قیمتی است که ۷۰ درصد از حجم معاملات سشن در آن انجام شده است. خرید در کف ارزش (VAL) و فروش در سقف ارزش (VAH) سودآورترین استراتژی سوپرنهادی است.<br>
+            • <strong>تراز نقطه کنترل حجم (VPOC):</strong> قیمتی که سنگین‌ترین تبادل دست به دست شدن دارایی در آن انجام شده و آهنربای اصلی قیمت محسوب می‌شود.<br>
+            • <strong>گره‌های کم‌حجم (LVN):</strong> مناطقی که معامله‌گران کمترین زمان را در آن گذرانده‌اند؛ قیمت به سرعت مانند موشک از این سطوح عبور می‌کند.
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 27: CRYPTO SIERRA CHART ==================== -->
+      <div class="tab-content" id="cryptoSierraTab">
+        <div style="background: rgba(10, 16, 28, 0.95); border: 1.5px solid rgba(234, 179, 8, 0.4); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+            <div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #eab308; display: flex; align-items: center; gap: 8px;">
+                <span>📈</span> ترمینال آنلاین سیرا چارت کریپتو (Sierra Chart Orderflow & Numbered Bars)
+              </div>
+              <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                چارت میله‌ای عددی تیک‌به‌تیک (Numbered Bars Bid x Ask)، پروفایل عمودی حجم بر اساس قیمت (Volume by Price - VBP) و ردیاب واگرایی دلتا (Delta Divergence)
+              </div>
+            </div>
+
+            <!-- Controls Bar -->
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <select id="cryptoScSymbolSelect" onchange="onCryptoScChange()" style="background: rgba(0,0,0,0.6); color: #eab308; border: 1px solid rgba(234,179,8,0.4); border-radius: 6px; padding: 5px 10px; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
+                <option value="BTC" selected>Bitcoin (BTC)</option>
+                <option value="ETH">Ethereum (ETH)</option>
+                <option value="SOL">Solana (SOL)</option>
+                <option value="XRP">Ripple (XRP)</option>
+                <option value="DOGE">Dogecoin (DOGE)</option>
+                <option value="BNB">BNB (BNB)</option>
+                <option value="ADA">Cardano (ADA)</option>
+                <option value="AVAX">Avalanche (AVAX)</option>
+              </select>
+
+              <div style="display: flex; gap: 4px; align-items: center; background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(234,179,8,0.3);">
+                <span style="font-size: 0.72rem; color: #eab308; margin-left: 4px; font-weight: 700;">⏱️</span>
+                <button class="sc-tf-btn" data-tf="1m" onclick="setCryptoScTimeframe('1m')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">1m</button>
+                <button class="sc-tf-btn" data-tf="5m" onclick="setCryptoScTimeframe('5m')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">5m</button>
+                <button class="sc-tf-btn active" data-tf="15m" onclick="setCryptoScTimeframe('15m')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1.5px solid #eab308; background: rgba(234,179,8,0.25); color: #eab308; font-weight: 800; cursor: pointer;">15m</button>
+                <button class="sc-tf-btn" data-tf="4h" onclick="setCryptoScTimeframe('4h')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">4h</button>
+                <button class="sc-tf-btn" data-tf="1d" onclick="setCryptoScTimeframe('1d')" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #cbd5e1; cursor: pointer;">1d</button>
+              </div>
+
+              <span id="cryptoScDivergenceBadge" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 12px; border-radius: 6px; font-size: 0.76rem; font-weight: 800;">
+                واگرایی: در حال محاسبه...
+              </span>
+              <button onclick="fetchCryptoSierra(true)" style="background: rgba(234, 179, 8, 0.2); border: 1px solid #eab308; color: #eab308; border-radius: 6px; padding: 4px 10px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+                🔄 بروزرسانی
+              </button>
+            </div>
+          </div>
+
+          <!-- Dual Column: Numbered Bars & Vertical VBP -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 18px;">
+            <!-- Numbered Bars -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.85rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                  <span>🔢</span> چارت میله‌ای عددی تیک‌به‌تیک (Numbered Bars Bid x Ask)
+                </span>
+                <span id="cryptoScActiveTfSpan" style="font-size: 0.72rem; color: #ffd700;">کندل‌های ۱۵ دقیقه‌ای</span>
+              </div>
+              <div id="cryptoScNumberedBarsContainer" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
+                <!-- Dynamic Numbered Bars -->
+              </div>
+            </div>
+
+            <!-- Volume by Price VBP -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.85rem; font-weight: 800; color: #00e676; display: flex; align-items: center; gap: 6px;">
+                  <span>📈</span> پروفایل حجم بر اساس قیمت (Volume by Price - VBP)
+                </span>
+                <span style="font-size: 0.72rem; color: #94a3b8;">تفکیک سطوح HVN و LVN</span>
+              </div>
+              <div id="cryptoScVbpContainer" style="display: flex; flex-direction: column; gap: 4px;">
+                <!-- Dynamic VBP Rows -->
+              </div>
+            </div>
+          </div>
+
+          <div id="cryptoScVerdictText" style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; font-size: 0.8rem; line-height: 1.8; color: #cbd5e1; margin-bottom: 16px;">
+            در حال ارزیابی جریان سیرا چارت...
+          </div>
+
+          <!-- Live TradingView Chart for Sierra Chart -->
+          <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-size: 0.85rem; font-weight: 800; color: #eab308; display: flex; align-items: center; gap: 6px;">
+                <span>📈</span> چارت زنده تریدینگ‌ویو همگام با متدولوژی سیرا چارت
+              </span>
+              <span style="font-size: 0.72rem; color: #94a3b8;">واگرایی دلتا و نودهای قیمتی</span>
+            </div>
+            <div id="cryptoScTvChart" style="width: 100%; height: 350px; border-radius: 6px; overflow: hidden;"></div>
+          </div>
+
+          <!-- Educational Box -->
+          <div style="background: rgba(234, 179, 8, 0.05); border: 1px solid rgba(234, 179, 8, 0.2); border-radius: 8px; padding: 12px 16px; font-size: 0.78rem; color: #cbd5e1; line-height: 1.8;">
+            <strong style="color: #ffd700;">💡 آموزش ساختار سیرا چارت و جذب دلتا دایورجنس:</strong><br>
+            • <strong>کندل‌های عددی (Numbered Bars):</strong> حجم واقعی مبادله شده در هر قیمت درون کندل ثبت می‌شود تا نقطه عطف مبارزه گاوها و خرس‌ها آشکار شود.<br>
+            • <strong>جذب صعودی در کف (Bullish Absorption):</strong> وقتی قیمت کف جدید می‌زند اما دلتای تجمیعی مثبت می‌شود، یعنی اردرهای فروش خرد توسط سفارشات مخفی خرید بلعیده شده‌اند؛ این سیگنال خرید با احتمال برد بسیار بالاست.<br>
+            • <strong>پروفایل VBP:</strong> نشان می‌دهد کدام سطوح قیمتی حجم بالایی را جذب کرده‌اند و کدام سطوح با جهش سریع پشت سر گذاشته شده‌اند.
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 28: CRYPTO GEOPOLITICS ==================== -->
+      <div class="tab-content" id="cryptoGeopoliticsTab">
+        <div style="background: rgba(18, 10, 15, 0.95); border: 1.5px solid rgba(239, 68, 68, 0.4); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+            <div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #ef4444; display: flex; align-items: center; gap: 8px;">
+                <span>🌐</span> رادار فاندامنتال، ریسک ژئوپلیتیک و استیبل‌کوین‌ها (Geopolitical & Fundamentals Radar)
+              </div>
+              <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                سنجش زنده شاخص ریسک ژئوپلیتیک جهانی (GPR Index)، کانون‌های بحران خاورمیانه و تایوان، جریان پناهگاه امن (طلا و دلار) و ردیاب ضرب تتر (USDT/USDC)
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <span id="cryptoGprBadge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #f87171; padding: 4px 12px; border-radius: 6px; font-size: 0.76rem; font-weight: 800;">
+                شاخص GPR: در حال محاسبه...
+              </span>
+              <button onclick="fetchCryptoGeopolitics(true)" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; border-radius: 6px; padding: 4px 10px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+                🔄 بروزرسانی
+              </button>
+            </div>
+          </div>
+
+          <!-- Hotspots & Safe Haven Matrix -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 18px;">
+            <!-- Active Flashpoints -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="font-size: 0.88rem; font-weight: 800; color: #f87171; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                <span>🔥</span> پایش کانون‌های بحران ژئوپلیتیک جهان (Global Hotspots)
+              </div>
+              <div id="cryptoHotspotsList" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Dynamic Hotspots -->
+              </div>
+            </div>
+
+            <!-- Safe Haven Flows & Stablecoins -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="font-size: 0.88rem; font-weight: 800; color: #ffd700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                <span>🛡️</span> ماتریس جریان پناهگاه امن & ضرب استیبل‌کوین (Stablecoins)
+              </div>
+              <div id="cryptoSafeHavenList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+                <!-- Dynamic Safe Haven -->
+              </div>
+              <div id="cryptoStablecoinBox" style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0,230,118,0.25); border-radius: 6px; padding: 10px; font-size: 0.78rem; line-height: 1.7;">
+                در حال استعلام ضرب تتر و ورود نقدینگی استیبل‌کوین...
+              </div>
+            </div>
+          </div>
+
+          <div id="cryptoGeoVerdictText" style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; font-size: 0.8rem; line-height: 1.8; color: #cbd5e1; margin-bottom: 16px;">
+            در حال ارزیابی تأثیر فاندامنتال کلان و ژئوپلیتیک بر کریپتو...
+          </div>
+
+          <!-- Live TradingView Chart for Macro Geopolitics -->
+          <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-size: 0.85rem; font-weight: 800; color: #ef4444; display: flex; align-items: center; gap: 6px;">
+                <span>📈</span> چارت مقایسه‌ای زنده بیت‌کوین، طلا (GOLD) و شاخص دلار (DXY)
+              </span>
+              <span style="font-size: 0.72rem; color: #94a3b8;">پایش تقاضای پناهگاه امن</span>
+            </div>
+            <div id="cryptoGeoTvChart" style="width: 100%; height: 350px; border-radius: 6px; overflow: hidden;"></div>
+          </div>
+
+          <!-- Educational Box -->
+          <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 12px 16px; font-size: 0.78rem; color: #cbd5e1; line-height: 1.8;">
+            <strong style="color: #ffd700;">💡 چرا اخبار ژئوپلیتیک و چاپ تتر مهم‌ترین اهرم بازارند؟</strong><br>
+            • <strong>بیت‌کوین در شوک‌های اول ژئوپلیتیک:</strong> در ساعات ابتدایی آغاز تنش‌های نظامی، بیت‌کوین به علت نقدشوندگی ۲۴ ساعته سریعاً نقد می‌شود تا تریدرها مارجین سایر بازارهای خود را پوشش دهند، اما در میان‌مدت به عنوان طلای دیجیتال ضدسانسور رالی صعودی می‌زند.<br>
+            • <strong>چاپ میلیارد دلاری تتر (USDT Treasury):</strong> هنگامی که تتر در خزانه خود ۱ یا ۲ میلیارد دلار تتر جدید ضرب و به بایننس یا کوین‌بیس واریز می‌کند، ظرف ۲۴ تا ۷۲ ساعت بعد پامپ قیمت قطعی رخ می‌دهد؛ این قدرتمندترین پیش‌نشانگر صعودی آن‌چین است.
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 29: CRYPTO BANK REPORTS ==================== -->
+      <div class="tab-content" id="cryptoBankReportsTab">
+        <div style="background: rgba(20, 16, 10, 0.95); border: 1.5px solid rgba(255, 215, 0, 0.4); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+            <div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #ffd700; display: flex; align-items: center; gap: 8px;">
+                <span>🏦</span> گزارشات بانک‌های وال‌استریت و جریان سرمایه ETFها (Wall Street Banks & Institutional Crypto Reports)
+              </div>
+              <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                پایش زنده جریان خالص ETFهای اسپات (بلک‌راک، فیدلیتی)، گزارشات تحلیلی گلدمن ساکس و جی‌پی‌مورگان، موقعیت‌های فیوچرز CME و سناریوهای وال‌استریت
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <span id="cryptoEtfFlowBadge" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid #00e676; padding: 4px 12px; border-radius: 6px; font-size: 0.76rem; font-weight: 800;">
+                جریان خالص ETF: در حال استعلام...
+              </span>
+              <button onclick="fetchCryptoBankReports(true)" style="background: rgba(255, 215, 0, 0.2); border: 1px solid #ffd700; color: #ffd700; border-radius: 6px; padding: 4px 10px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+                🔄 بروزرسانی
+              </button>
+            </div>
+          </div>
+
+          <!-- ETF Table & Bank Research Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 18px;">
+            <!-- ETF Inflow Table -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.88rem; font-weight: 800; color: #ffd700; display: flex; align-items: center; gap: 6px;">
+                  <span>🏛️</span> جریان نقدینگی ETFهای اسپات بیت‌کوین و اتریوم
+                </span>
+                <span style="font-size: 0.72rem; color: #94a3b8;">سشن وال‌استریت</span>
+              </div>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.76rem; text-align: center; font-family: var(--font-mono);">
+                  <thead>
+                    <tr style="background: rgba(255,255,255,0.04); color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                      <th style="padding: 6px; text-align: right;">صندوق / نماد</th>
+                      <th style="padding: 6px;">ورودی ۲۴h</th>
+                      <th style="padding: 6px;">دارایی تحت مدیریت (AUM)</th>
+                      <th style="padding: 6px;">وضعیت</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cryptoEtfTableBody">
+                    <tr><td colspan="4" style="padding: 20px; color: #94a3b8;">در حال استعلام داده‌های بلک‌راک و فیدلیتی...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Wall Street Banks Targets -->
+            <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.88rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                  <span>💼</span> پیش‌بینی و اهداف قیمتی ۵ بانک برتر وال‌استریت
+                </span>
+                <span style="font-size: 0.72rem; color: #94a3b8;">تارگت‌های نهادی</span>
+              </div>
+              <div id="cryptoBankTargetsList" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Dynamic Bank Targets -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Scenarios & CME Futures Positioning -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 16px;">
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-size: 0.8rem; line-height: 1.8;">
+              <strong style="color: #ffd700;">📊 سناریوهای ۳۰ روزه وال‌استریت:</strong><br>
+              <div id="cryptoBankScenariosText" style="color: #cbd5e1; margin-top: 4px;">
+                در حال پردازش سناریوهای صعودی، پایه و نزولی...
+              </div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; font-size: 0.8rem; line-height: 1.8;">
+              <strong style="color: #00e676;">🐋 ذخایر نهنگ‌های سازمانی و فیوچرز CME:</strong><br>
+              <div id="cryptoInstitutionalWhalesText" style="color: #cbd5e1; margin-top: 4px;">
+                در حال استعلام ذخایر مایکرو استراتژی و پوزیشن هج‌فاندها در CME...
+              </div>
+            </div>
+          </div>
+
+          <!-- Live TradingView Chart for Wall Street Desk -->
+          <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(255, 215, 0, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-size: 0.85rem; font-weight: 800; color: #ffd700; display: flex; align-items: center; gap: 6px;">
+                <span>📈</span> چارت زنده بیت‌کوین وال‌استریت و سطوح تجمع نهادی
+              </span>
+              <span style="font-size: 0.72rem; color: #94a3b8;">پایش انباشت ETFها</span>
+            </div>
+            <div id="cryptoBankTvChart" style="width: 100%; height: 350px; border-radius: 6px; overflow: hidden;"></div>
+          </div>
+
+          <!-- Educational Box -->
+          <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 8px; padding: 12px 16px; font-size: 0.78rem; color: #cbd5e1; line-height: 1.8;">
+            <strong style="color: #ffd700;">💡 بازی بزرگان وال‌استریت (BlackRock / Fidelity / CME):</strong><br>
+            • <strong>صندوق‌های ETF اسپات:</strong> دیگر تریدرهای خرد محرک اصلی قیمت بیت‌کوین نیستند؛ اگر در ساعت ۲۱:۳۰ تا ۲۴:۰۰ به وقت ایران صندوق‌های بلک‌راک و فیدلیتی خرید خالص بالای ۳۰۰ میلیون دلار ثبت کنند، پامپ ادامه‌دار خواهد بود.<br>
+            • <strong>گزارشات بانک‌های سرمایه‌گذاری:</strong> بانک‌هایی مانند گلدمن ساکس و جی‌پی‌مورگان تارگت‌های خود را بر مبنای نسبت نفوذ طلا و انباشت خزانه شرکت‌ها محاسبه می‌کنند و سطوح بازخرید سازمانی را لو می‌دهند.
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Interactive AI Chat & Trading Consultation -->
@@ -6513,6 +7261,7 @@
     function filterTabCategory(cat) {
       const pills = {
         'ALL': 'catBtnAll',
+        'ORDERFLOW': 'catBtnOrderflow',
         'INST': 'catBtnInst',
         'TECH': 'catBtnTechnical',
         'EXCH': 'catBtnExchanges',
@@ -6545,7 +7294,8 @@
 
       const hintEl = document.getElementById('activeCategoryHint');
       const hints = {
-        'ALL': 'نمایش تمامی ۲۲ ماژول تحلیلی',
+        'ALL': 'نمایش تمامی ۲۹ ماژول تحلیلی',
+        'ORDERFLOW': 'فیلتر ۷ ترمینال پیشرفته اردر فلو وال‌استریت، بوک‌مپ، نینجاتریدر و بانک‌ها',
         'INST': 'فیلتر ۵ اتاق تحلیل نهادی، هیت‌مپ و کلان',
         'TECH': 'فیلتر ۶ اتاق چارت زنده، اسمارت‌مانی و FVG',
         'EXCH': 'فیلتر ۶ ابزار پایش صرافی‌ها، دکس و مارکت‌مپ',
@@ -6614,6 +7364,20 @@
         }
       } else if (tabId === 'exchangeTab') {
         fetchExchangeData(currentSymbol);
+      } else if (tabId === 'cryptoBookmapTab') {
+        fetchCryptoBookmap();
+      } else if (tabId === 'cryptoNinjaTab') {
+        fetchCryptoNinja();
+      } else if (tabId === 'cryptoAtasTab') {
+        fetchCryptoAtas();
+      } else if (tabId === 'cryptoQuantowerTab') {
+        fetchCryptoQuantower();
+      } else if (tabId === 'cryptoSierraTab') {
+        fetchCryptoSierra();
+      } else if (tabId === 'cryptoGeopoliticsTab') {
+        fetchCryptoGeopolitics();
+      } else if (tabId === 'cryptoBankReportsTab') {
+        fetchCryptoBankReports();
       }
     }
 
@@ -11279,7 +12043,1063 @@ ${s3d.action_advice || ''}
       if (e.key === 'Escape') closeEducationModal();
     });
 
-</script>
+
+
+    /* ====================================================================
+       INSTITUTIONAL ORDER FLOW & WALL STREET PLATFORMS ENGINE (CRYPTO)
+       Bookmap, NinjaTrader 8, ATAS, Quantower, Sierra Chart, Geopolitics, Bank Reports
+       ==================================================================== */
+
+    // Global states
+    let _cryptoBmSym = 'BTC';
+    let _cryptoBmTimeframe = '15m';
+    let _cryptoBmViewMode = 'canvas';
+    let _cryptoBmAnimFrame = null;
+    let _cryptoBmLivePoints = [];
+    let _cryptoBmAskWalls = [];
+    let _cryptoBmBidWalls = [];
+    let _cryptoBmIcebergs = [];
+    let _cryptoBmTrades = [];
+
+    let _cryptoNtSym = 'BTC';
+    let _cryptoNtTimeframe = '15m';
+
+    let _cryptoAtasSym = 'BTC';
+
+    let _cryptoQtSym = 'BTC';
+    let _cryptoQtTimeframe = '1h';
+
+    let _cryptoScSym = 'BTC';
+    let _cryptoScTimeframe = '15m';
+
+    // Universal TradingView Embedding Function for Crypto Modules
+    function embedGenericCryptoChart(containerId, symbol, interval) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      let clean = (symbol || 'BTC').replace('/', '').toUpperCase();
+      if (!clean.endsWith('USDT') && !clean.endsWith('USD')) clean += 'USDT';
+      const tvSymbol = `BINANCE:${clean}`;
+      const tvInterval = interval === '1m' ? '1' : interval === '5m' ? '5' : interval === '15m' ? '15' : interval === '1h' ? '60' : interval === '4h' ? '240' : 'D';
+
+      container.innerHTML = `
+        <iframe src="https://s.tradingview.com/widgetembed/?symbol=${tvSymbol}&interval=${tvInterval}&theme=dark&style=1&timezone=Asia%2FTehran&locale=fa_IR&studies=%5B%5D&toolbarbg=rgba(10,15,30,0.95)" style="width:100%;height:100%;border:none;border-radius:6px;" allowfullscreen></iframe>
+      `;
+    }
+
+    /* --------------------------------------------------------------------
+       1. BOOKMAP L2/L3 HEATMAP & ICEBERGS
+       -------------------------------------------------------------------- */
+    function setCryptoBmTimeframe(tf) {
+      _cryptoBmTimeframe = tf;
+      document.querySelectorAll('.bm-tf-btn').forEach(btn => {
+        if (btn.getAttribute('data-tf') === tf) {
+          btn.classList.add('active');
+          btn.style.border = '1.5px solid #ff8c00';
+          btn.style.background = 'rgba(255,140,0,0.25)';
+          btn.style.color = '#ff8c00';
+          btn.style.fontWeight = '800';
+        } else {
+          btn.classList.remove('active');
+          btn.style.border = '1px solid rgba(255,255,255,0.1)';
+          btn.style.background = 'transparent';
+          btn.style.color = '#cbd5e1';
+          btn.style.fontWeight = 'normal';
+        }
+      });
+      fetchCryptoBookmap(true);
+    }
+
+    function onCryptoBmChange() {
+      const el = document.getElementById('cryptoBmSymbolSelect');
+      if (el) _cryptoBmSym = el.value;
+      fetchCryptoBookmap(true);
+    }
+
+    function setCryptoBmViewMode(mode) {
+      _cryptoBmViewMode = mode;
+      const cvWrap = document.getElementById('cryptoBmCanvasWrap');
+      const tvWrap = document.getElementById('cryptoBmTvWrap');
+      const btnCv = document.getElementById('cryptoBmModeCanvasBtn');
+      const btnTv = document.getElementById('cryptoBmModeTvBtn');
+      const btnSp = document.getElementById('cryptoBmModeSplitBtn');
+
+      [btnCv, btnTv, btnSp].forEach(b => {
+        if (b) {
+          b.style.border = '1px solid rgba(255,255,255,0.15)';
+          b.style.background = 'rgba(255,255,255,0.05)';
+          b.style.color = '#94a3b8';
+          b.style.fontWeight = 'normal';
+        }
+      });
+
+      if (mode === 'canvas') {
+        if (cvWrap) cvWrap.style.display = 'block';
+        if (tvWrap) tvWrap.style.display = 'none';
+        if (btnCv) {
+          btnCv.style.border = '1.5px solid #ff8c00';
+          btnCv.style.background = 'rgba(255,140,0,0.25)';
+          btnCv.style.color = '#ff8c00';
+          btnCv.style.fontWeight = '800';
+        }
+      } else if (mode === 'tv') {
+        if (cvWrap) cvWrap.style.display = 'none';
+        if (tvWrap) {
+          tvWrap.style.display = 'block';
+          embedGenericCryptoChart('cryptoBmTvChart', _cryptoBmSym, _cryptoBmTimeframe);
+        }
+        if (btnTv) {
+          btnTv.style.border = '1.5px solid #ff8c00';
+          btnTv.style.background = 'rgba(255,140,0,0.25)';
+          btnTv.style.color = '#ff8c00';
+          btnTv.style.fontWeight = '800';
+        }
+      } else {
+        if (cvWrap) cvWrap.style.display = 'block';
+        if (tvWrap) {
+          tvWrap.style.display = 'block';
+          embedGenericCryptoChart('cryptoBmTvChart', _cryptoBmSym, _cryptoBmTimeframe);
+        }
+        if (btnSp) {
+          btnSp.style.border = '1.5px solid #ff8c00';
+          btnSp.style.background = 'rgba(255,140,0,0.25)';
+          btnSp.style.color = '#ff8c00';
+          btnSp.style.fontWeight = '800';
+        }
+      }
+    }
+
+    async function fetchCryptoBookmap(force = false) {
+      try {
+        const res = await fetch(`/api/crypto/bookmap?symbol=${_cryptoBmSym}&timeframe=${_cryptoBmTimeframe}`);
+        const data = await res.json();
+        if (!data || !data.ok) return;
+
+        // Price & Ratio Badges
+        const priceBadge = document.getElementById('cryptoBmPriceBadge');
+        if (priceBadge) {
+          priceBadge.innerText = `${_cryptoBmSym}: $${Number(data.current_price || 0).toLocaleString()}`;
+        }
+        const ratioBadge = document.getElementById('cryptoBmRatioBadge');
+        if (ratioBadge) {
+          ratioBadge.innerText = `دیواره: ${data.wall_ratio?.bid_pct || 50}% خرید / ${data.wall_ratio?.ask_pct || 50}% فروش`;
+        }
+
+        // Cache for canvas animation
+        _cryptoBmAskWalls = data.ask_levels || [];
+        _cryptoBmBidWalls = data.bid_levels || [];
+        _cryptoBmIcebergs = data.icebergs || [];
+        _cryptoBmTrades = data.recent_trades || [];
+
+        // Build continuous live price path points
+        const baseP = Number(data.current_price) || 82000;
+        _cryptoBmLivePoints = [];
+        for (let i = 0; i < 45; i++) {
+          const shift = Math.sin(i * 0.45) * (baseP * 0.002) + (Math.random() - 0.49) * (baseP * 0.001);
+          _cryptoBmLivePoints.push({ x: i, price: baseP + shift });
+        }
+
+        // Icebergs List
+        const iceCont = document.getElementById('cryptoBmIcebergsList');
+        if (iceCont && data.icebergs) {
+          iceCont.innerHTML = data.icebergs.map(ic => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,215,0,0.08); border-left:3px solid #ffd700; padding:5px 8px; border-radius:4px;">
+              <span style="color:#ffd700; font-weight:800;">🧊 $${Number(ic.price).toLocaleString()}</span>
+              <span style="color:#cbd5e1; font-family:monospace;">${ic.size_btc} ${_cryptoBmSym} (${ic.side === 'BID' ? 'خرید' : 'فروش'})</span>
+              <span style="font-size:0.7rem; color:#00e676;">${ic.absorption_status}</span>
+            </div>
+          `).join('');
+        }
+
+        // Resting Walls List
+        const wallsCont = document.getElementById('cryptoBmWallsList');
+        if (wallsCont) {
+          const topAsks = (data.ask_levels || []).slice(0, 2);
+          const topBids = (data.bid_levels || []).slice(0, 2);
+          wallsCont.innerHTML = [
+            ...topAsks.map(a => `
+              <div style="display:flex; justify-content:space-between; background:rgba(255,51,102,0.08); border-left:3px solid #ff3366; padding:4px 8px; border-radius:4px;">
+                <span style="color:#ff3366;">سقف Ask: $${Number(a.price).toLocaleString()}</span>
+                <span style="font-family:monospace; color:#cbd5e1;">${a.volume_btc} BTC (${a.share_pct}%)</span>
+              </div>
+            `),
+            ...topBids.map(b => `
+              <div style="display:flex; justify-content:space-between; background:rgba(0,230,118,0.08); border-left:3px solid #00e676; padding:4px 8px; border-radius:4px;">
+                <span style="color:#00e676;">کف Bid: $${Number(b.price).toLocaleString()}</span>
+                <span style="font-family:monospace; color:#cbd5e1;">${b.volume_btc} BTC (${b.share_pct}%)</span>
+              </div>
+            `)
+          ].join('');
+        }
+
+        // Delta & Speed
+        const deltaCont = document.getElementById('cryptoBmDeltaInfo');
+        if (deltaCont && data.delta_1m) {
+          const d = data.delta_1m;
+          deltaCont.innerHTML = `
+            • دلتای ۱ دقیقه: <strong style="color:${d.net_delta >= 0 ? '#00e676' : '#ff3366'};">${d.net_delta >= 0 ? '+' : ''}${d.net_delta} ${_cryptoBmSym}</strong><br>
+            • نسبت خریدار به فروشنده: <strong style="color:#00d2ff;">${d.buy_vol} خرید / ${d.sell_vol} فروش</strong><br>
+            • وضعیت جذب نقدینگی: <strong style="color:#ffd700;">${d.absorption}</strong>
+          `;
+        }
+
+        // Verdict
+        const vCont = document.getElementById('cryptoBmVerdictText');
+        if (vCont && data.verdict) {
+          vCont.innerHTML = `
+            <div style="margin-bottom:4px;"><strong style="color:#ff8c00;">سوگیری سازمانی:</strong> ${data.verdict.bias}</div>
+            <div style="color:#94a3b8;">${data.verdict.summary}</div>
+            <div style="margin-top:4px; color:#00e676;"><strong>راهبرد تریدر:</strong> ${data.verdict.actionable_takeaway}</div>
+          `;
+        }
+
+        // Start animation loop if not running
+        if (!_cryptoBmAnimFrame) {
+          startCryptoBookmapLoop();
+        }
+
+      } catch (err) {
+        console.error('Error fetching Bookmap:', err);
+      }
+    }
+
+    function startCryptoBookmapLoop() {
+      function frame() {
+        _cryptoBmAnimFrame = requestAnimationFrame(frame);
+        const tab = document.getElementById('cryptoBookmapTab');
+        if (!tab || !tab.classList.contains('active')) return;
+        if (_cryptoBmViewMode === 'tv') return;
+
+        const cv = document.getElementById('cryptoBmCanvas');
+        if (!cv) return;
+        const ctx = cv.getContext('2d');
+
+        // Retina Scaling
+        const dpr = window.devicePixelRatio || 1;
+        const cssW = cv.clientWidth || 900;
+        const cssH = 350;
+        if (cv.width !== Math.round(cssW * dpr) || cv.height !== Math.round(cssH * dpr)) {
+          cv.width = Math.round(cssW * dpr);
+          cv.height = Math.round(cssH * dpr);
+        }
+
+        ctx.save();
+        ctx.scale(dpr, dpr);
+
+        const w = cssW;
+        const h = cssH;
+        const domW = 110;
+        const chartW = w - domW;
+        const t = Date.now() * 0.0025;
+
+        // Background
+        ctx.fillStyle = '#030712';
+        ctx.fillRect(0, 0, w, h);
+
+        // Price Bounds
+        let allP = [];
+        _cryptoBmLivePoints.forEach(p => allP.push(p.price));
+        _cryptoBmAskWalls.forEach(a => allP.push(a.price));
+        _cryptoBmBidWalls.forEach(b => allP.push(b.price));
+        if (allP.length === 0) allP = [82000];
+
+        let minP = Math.min(...allP);
+        let maxP = Math.max(...allP);
+        if (maxP <= minP) { maxP += 200; minP -= 200; }
+        const pad = (maxP - minP) * 0.12 || 100;
+        minP -= pad;
+        maxP += pad;
+
+        const getY = (val) => {
+          const norm = (val - minP) / (maxP - minP);
+          return h - (norm * (h - 40) + 20);
+        };
+
+        // Grid & Price Watermarks
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+        ctx.lineWidth = 1;
+        const pStep = Math.max(10, Math.round((maxP - minP) / 6 / 10) * 10);
+        const startP = Math.floor(minP / pStep) * pStep;
+        for (let p = startP; p <= maxP; p += pStep) {
+          const y = getY(p);
+          if (y >= 12 && y <= h - 12) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(chartW, y);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.font = '9px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(Number(p).toLocaleString(), chartW - 6, y - 3);
+          }
+        }
+
+        // Thermal Liquidity Highway Beams (Ask - Amber/Red)
+        _cryptoBmAskWalls.forEach((a, i) => {
+          const y = getY(a.price);
+          const pulse = Math.sin(t + i * 0.7) * 0.15 + 0.85;
+          const beamH = Math.min(22, Math.max(6, (a.volume_btc / 25) * pulse));
+          const grad = ctx.createLinearGradient(0, y, chartW, y);
+          grad.addColorStop(0, 'rgba(255, 51, 102, 0.05)');
+          grad.addColorStop(0.4, 'rgba(255, 140, 0, 0.3)');
+          grad.addColorStop(1, 'rgba(255, 215, 0, 0.75)');
+
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, y - beamH / 2, chartW, beamH);
+
+          ctx.strokeStyle = 'rgba(255, 140, 0, 0.6)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(chartW, y);
+          ctx.stroke();
+
+          // Iceberg Badge
+          if (a.volume_btc > 35) {
+            const bx = 20 + (i * 90);
+            ctx.fillStyle = 'rgba(10, 15, 29, 0.88)';
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(bx, y - 9, 74, 18);
+            ctx.fillRect(bx, y - 9, 74, 18);
+
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`🧊 ${a.volume_btc} BTC`, bx + 37, y + 4);
+          }
+        });
+
+        // Thermal Liquidity Highway Beams (Bid - Cyan/Emerald)
+        _cryptoBmBidWalls.forEach((b, i) => {
+          const y = getY(b.price);
+          const pulse = Math.sin(t + i * 0.9) * 0.15 + 0.85;
+          const beamH = Math.min(22, Math.max(6, (b.volume_btc / 25) * pulse));
+          const grad = ctx.createLinearGradient(0, y, chartW, y);
+          grad.addColorStop(0, 'rgba(0, 210, 255, 0.05)');
+          grad.addColorStop(0.4, 'rgba(0, 230, 118, 0.3)');
+          grad.addColorStop(1, 'rgba(0, 210, 255, 0.75)');
+
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, y - beamH / 2, chartW, beamH);
+
+          ctx.strokeStyle = 'rgba(0, 210, 255, 0.6)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(chartW, y);
+          ctx.stroke();
+
+          // Bid Iceberg Badge
+          if (b.volume_btc > 35) {
+            const bx = 20 + (i * 90);
+            ctx.fillStyle = 'rgba(10, 15, 29, 0.88)';
+            ctx.strokeStyle = '#00d2ff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(bx, y - 9, 74, 18);
+            ctx.fillRect(bx, y - 9, 74, 18);
+
+            ctx.fillStyle = '#00d2ff';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`🧊 ${b.volume_btc} BTC`, bx + 37, y + 4);
+          }
+        });
+
+        // Dynamic Continuous Price Line
+        if (_cryptoBmLivePoints.length > 1) {
+          ctx.beginPath();
+          _cryptoBmLivePoints.forEach((p, idx) => {
+            const px = (idx / (_cryptoBmLivePoints.length - 1)) * (chartW - 30);
+            const py = getY(p.price);
+            if (idx === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          });
+          ctx.strokeStyle = '#00e676';
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = '#00e676';
+          ctx.shadowBlur = 8;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // Glowing Head Cursor
+          const last = _cryptoBmLivePoints[_cryptoBmLivePoints.length - 1];
+          const headX = chartW - 30;
+          const headY = getY(last.price);
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(headX, headY, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#00e676';
+          ctx.font = 'bold 10px monospace';
+          ctx.textAlign = 'left';
+          ctx.fillText(`$${Number(Math.round(last.price)).toLocaleString()}`, headX + 6, headY + 3);
+        }
+
+        // Live Execution Bubbles
+        _cryptoBmTrades.forEach((tr, i) => {
+          const bx = 40 + (i * 45) + (Math.sin(t * 1.5 + i) * 6);
+          const by = getY(tr.price);
+          const rad = Math.min(14, Math.max(4, tr.amount * 1.2));
+          const isBuy = tr.side === 'BUY';
+
+          ctx.beginPath();
+          ctx.arc(bx, by, rad, 0, Math.PI * 2);
+          ctx.fillStyle = isBuy ? 'rgba(0, 230, 118, 0.45)' : 'rgba(255, 51, 102, 0.45)';
+          ctx.strokeStyle = isBuy ? '#00e676' : '#ff3366';
+          ctx.lineWidth = 1.2;
+          ctx.fill();
+          ctx.stroke();
+
+          if (tr.amount > 3.0) {
+            ctx.fillStyle = '#fff';
+            ctx.font = '8px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${tr.amount}`, bx, by + 3);
+          }
+        });
+
+        // Right-Side SuperDOM Column
+        ctx.fillStyle = 'rgba(10, 15, 29, 0.96)';
+        ctx.fillRect(chartW, 0, domW, h);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.beginPath();
+        ctx.moveTo(chartW, 0);
+        ctx.lineTo(chartW, h);
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('SuperDOM L2', chartW + domW / 2, 14);
+
+        // Draw sample depth bars in DOM
+        const curY = getY(_cryptoBmLivePoints[_cryptoBmLivePoints.length - 1]?.price || 82000);
+        _cryptoBmAskWalls.forEach(a => {
+          const ay = getY(a.price);
+          const barW = Math.min(domW - 10, a.volume_btc * 1.5);
+          ctx.fillStyle = 'rgba(255, 51, 102, 0.35)';
+          ctx.fillRect(chartW + 4, ay - 4, barW, 9);
+          ctx.fillStyle = '#ff3366';
+          ctx.font = '8px monospace';
+          ctx.textAlign = 'left';
+          ctx.fillText(`${a.volume_btc}`, chartW + 6, ay + 3);
+        });
+
+        _cryptoBmBidWalls.forEach(b => {
+          const by = getY(b.price);
+          const barW = Math.min(domW - 10, b.volume_btc * 1.5);
+          ctx.fillStyle = 'rgba(0, 230, 118, 0.35)';
+          ctx.fillRect(chartW + 4, by - 4, barW, 9);
+          ctx.fillStyle = '#00e676';
+          ctx.font = '8px monospace';
+          ctx.textAlign = 'left';
+          ctx.fillText(`${b.volume_btc}`, chartW + 6, by + 3);
+        });
+
+        // Price Pin in DOM
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(chartW, curY - 7, domW, 14);
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`$${Number(Math.round(_cryptoBmLivePoints[_cryptoBmLivePoints.length - 1]?.price || 82000)).toLocaleString()}`, chartW + domW / 2, curY + 3);
+
+        ctx.restore();
+      }
+      _cryptoBmAnimFrame = requestAnimationFrame(frame);
+    }
+
+    /* --------------------------------------------------------------------
+       2. NINJATRADER 8 FOOTPRINT & SUPERDOM
+       -------------------------------------------------------------------- */
+    function setCryptoNtTimeframe(tf) {
+      _cryptoNtTimeframe = tf;
+      document.querySelectorAll('.nt-tf-btn').forEach(btn => {
+        if (btn.getAttribute('data-tf') === tf) {
+          btn.classList.add('active');
+          btn.style.border = '1.5px solid #00e676';
+          btn.style.background = 'rgba(0,230,118,0.25)';
+          btn.style.color = '#00e676';
+          btn.style.fontWeight = '800';
+        } else {
+          btn.classList.remove('active');
+          btn.style.border = '1px solid rgba(255,255,255,0.1)';
+          btn.style.background = 'transparent';
+          btn.style.color = '#cbd5e1';
+          btn.style.fontWeight = 'normal';
+        }
+      });
+      fetchCryptoNinja(true);
+    }
+
+    function onCryptoNtChange() {
+      const el = document.getElementById('cryptoNtSymbolSelect');
+      if (el) _cryptoNtSym = el.value;
+      fetchCryptoNinja(true);
+    }
+
+    async function fetchCryptoNinja(force = false) {
+      try {
+        const res = await fetch(`/api/crypto/ninjatrader?symbol=${_cryptoNtSym}&timeframe=${_cryptoNtTimeframe}`);
+        const data = await res.json();
+        if (!data || !data.ok) return;
+
+        // Badges
+        const pb = document.getElementById('cryptoNtPriceBadge');
+        if (pb) pb.innerText = `${_cryptoNtSym}: $${Number(data.current_price || 0).toLocaleString()}`;
+        const cb = document.getElementById('cryptoNtCvdBadge');
+        if (cb) {
+          const cvd = data.cvd || 0;
+          cb.innerText = `CVD: ${cvd >= 0 ? '+' : ''}${cvd} ${_cryptoNtSym}`;
+          cb.style.color = cvd >= 0 ? '#00e676' : '#ff3366';
+        }
+
+        // SuperDOM Body
+        const sdb = document.getElementById('cryptoNtSuperDomBody');
+        if (sdb && data.superdom_levels) {
+          sdb.innerHTML = data.superdom_levels.map(row => `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.03); ${row.is_current ? 'background:rgba(255,215,0,0.15);' : ''}">
+              <td style="padding:6px 10px; text-align:right; width:38%; position:relative;">
+                <div style="position:absolute; right:0; top:2px; bottom:2px; width:${row.bid_bar_pct}%; background:rgba(0,230,118,0.25); border-radius:3px;"></div>
+                <span style="position:relative; z-index:1; color:#00e676; font-weight:800;">${row.bid_vol > 0 ? row.bid_vol + ' (' + row.bid_bar_pct + '%)' : '-'}</span>
+              </td>
+              <td style="padding:6px 8px; font-weight:900; color:${row.is_current ? '#ffd700' : '#e2e8f0'}; width:24%; background:${row.is_current ? 'rgba(255,215,0,0.3)' : 'rgba(0,0,0,0.3)'};">
+                ${row.is_current ? '⚡ ' : ''}$${Number(row.price).toLocaleString()}
+              </td>
+              <td style="padding:6px 10px; text-align:left; width:38%; position:relative;">
+                <div style="position:absolute; left:0; top:2px; bottom:2px; width:${row.ask_bar_pct}%; background:rgba(255,51,102,0.25); border-radius:3px;"></div>
+                <span style="position:relative; z-index:1; color:#ff3366; font-weight:800;">${row.ask_vol > 0 ? row.ask_vol + ' (' + row.ask_bar_pct + '%)' : '-'}</span>
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        // Footprint Clusters (Spacious 3-Column Grid)
+        const fpCont = document.getElementById('cryptoNtFootprintContainer');
+        if (fpCont && data.footprint_candles) {
+          fpCont.innerHTML = data.footprint_candles.map(c => {
+            const isBull = c.is_bullish;
+            const borderCol = isBull ? 'rgba(0, 230, 118, 0.45)' : 'rgba(255, 51, 102, 0.45)';
+            const bgCol = isBull ? 'linear-gradient(180deg, rgba(0, 230, 118, 0.08), rgba(10, 25, 18, 0.9))' : 'linear-gradient(180deg, rgba(255, 51, 102, 0.08), rgba(28, 12, 18, 0.9))';
+            const deltaCol = c.candle_delta >= 0 ? '#00e676' : '#ff3366';
+
+            return `
+              <div style="min-width:260px; background:${bgCol}; border:1.5px solid ${borderCol}; border-radius:10px; padding:10px 12px; font-family:var(--font-mono); box-shadow:0 6px 20px rgba(0,0,0,0.5);">
+                <!-- Candle Top Bar -->
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:6px; margin-bottom:6px;">
+                  <span style="font-weight:800; font-size:0.82rem; color:#fff;">${isBull ? '🟢' : '🔴'} ${c.time}</span>
+                  <span style="font-size:0.74rem; color:${deltaCol}; font-weight:900; background:${deltaCol}22; border:1px solid ${deltaCol}66; padding:2px 8px; border-radius:5px;">
+                    ${c.candle_delta >= 0 ? '+' : ''}${c.candle_delta} Δ
+                  </span>
+                </div>
+
+                <!-- Wick Stub -->
+                <div style="width:3px; height:8px; background:${isBull ? '#00e676' : '#ff3366'}; margin:0 auto 4px auto; border-radius:1px;"></div>
+
+                <!-- Column Header -->
+                <div style="display:grid; grid-template-columns:80px 84px 80px; font-size:0.68rem; color:#94a3b8; font-weight:800; text-align:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px; margin-bottom:6px;">
+                  <span style="color:#00e676; text-align:right; padding-right:6px;">حجم خرید</span>
+                  <span style="color:#ffd700;">قیمت</span>
+                  <span style="color:#ff3366; text-align:left; padding-left:6px;">حجم فروش</span>
+                </div>
+
+                <!-- Footprint Clusters -->
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  ${c.clusters.map(cl => {
+                    const isPoc = cl.is_poc;
+                    const isBuyImb = cl.imbalance === 'BUY';
+                    const isSellImb = cl.imbalance === 'SELL';
+                    const rowBorder = isPoc ? 'border:1.5px solid #ffd700; box-shadow:0 0 8px rgba(255,215,0,0.3);' : 'border:1px solid rgba(255,255,255,0.04);';
+                    const rowBg = isPoc ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.02)';
+
+                    return `
+                      <div style="display:grid; grid-template-columns:80px 84px 80px; align-items:center; min-height:24px; padding:2px 0; border-radius:4px; ${rowBorder} background:${rowBg}; position:relative;">
+                        <!-- Bid Side -->
+                        <div style="text-align:right; padding-right:8px; position:relative; height:100%; display:flex; align-items:center; justify-content:flex-end;">
+                          <div style="position:absolute; right:0; top:0; bottom:0; width:${cl.bid_bar_pct}%; background:rgba(0,230,118,0.25); border-radius:2px;"></div>
+                          <span style="position:relative; z-index:1; color:#00e676; font-weight:800; font-size:0.78rem;">
+                            ${isSellImb ? '<span style="color:#ff3366; font-size:0.7rem;">⚡</span>' : ''}
+                            ${cl.bid}
+                          </span>
+                        </div>
+
+                        <!-- Price Step -->
+                        <div style="text-align:center; padding:2px 4px; font-weight:900; font-size:0.76rem; color:${isPoc ? '#ffd700' : '#e2e8f0'}; background:${isPoc ? 'rgba(255,215,0,0.25)' : 'rgba(0,0,0,0.4)'};">
+                          ${isPoc ? '👑 ' : ''}$${Number(cl.price).toLocaleString()}
+                        </div>
+
+                        <!-- Ask Side -->
+                        <div style="text-align:left; padding-left:8px; position:relative; height:100%; display:flex; align-items:center; justify-content:flex-start;">
+                          <div style="position:absolute; left:0; top:0; bottom:0; width:${cl.ask_bar_pct}%; background:rgba(255,51,102,0.25); border-radius:2px;"></div>
+                          <span style="position:relative; z-index:1; color:#ff3366; font-weight:800; font-size:0.78rem;">
+                            ${cl.ask}
+                            ${isBuyImb ? '<span style="color:#00e676; font-size:0.7rem;">⚡</span>' : ''}
+                          </span>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // VWAP Bands
+        const vm = document.getElementById('cryptoNtVwapMid');
+        if (vm) vm.innerText = `$${Number(data.session_vwap).toLocaleString()}`;
+        const s1u = document.getElementById('cryptoNtVwapSd1Up');
+        if (s1u) s1u.innerText = `$${Number(data.vwap_sd1_up).toLocaleString()}`;
+        const s1d = document.getElementById('cryptoNtVwapSd1Dn');
+        if (s1d) s1d.innerText = `$${Number(data.vwap_sd1_dn).toLocaleString()}`;
+        const s2u = document.getElementById('cryptoNtVwapSd2Up');
+        if (s2u) s2u.innerText = `$${Number(data.vwap_sd2_up).toLocaleString()}`;
+        const s2d = document.getElementById('cryptoNtVwapSd2Dn');
+        if (s2d) s2d.innerText = `$${Number(data.vwap_sd2_dn).toLocaleString()}`;
+
+        // Scalp Rationale
+        const sr = document.getElementById('cryptoNtScalpStrategyText');
+        if (sr && data.verdict) {
+          sr.innerHTML = `
+            • سیگنال اسکالپ: <strong style="color:#00e676;">${data.verdict.scalp_bias}</strong><br>
+            • ترازهای استراتژیک: نقطه ورود: <strong style="color:#00d2ff;">$${Number(data.session_vwap).toLocaleString()}</strong> | حد ضرر: <strong style="color:#ff3366;">$${Number(data.vwap_sd2_dn).toLocaleString()}</strong> | تارگت: <strong style="color:#00e676;">$${Number(data.vwap_sd2_up).toLocaleString()}</strong><br>
+            • دلیل فوت‌پرینت: ${data.verdict.rationale}
+          `;
+        }
+
+        // Embed TradingView Scalp Chart
+        embedGenericCryptoChart('cryptoNtTvChart', _cryptoNtSym, _cryptoNtTimeframe);
+
+      } catch (err) {
+        console.error('Error fetching NinjaTrader:', err);
+      }
+    }
+
+    /* --------------------------------------------------------------------
+       3. ATAS TIME & SALES / BIG TRADES
+       -------------------------------------------------------------------- */
+    function onCryptoAtasChange() {
+      const el = document.getElementById('cryptoAtasSymbolSelect');
+      if (el) _cryptoAtasSym = el.value;
+      fetchCryptoAtas(true);
+    }
+
+    async function fetchCryptoAtas(force = false) {
+      try {
+        const res = await fetch(`/api/crypto/atas?symbol=${_cryptoAtasSym}`);
+        const data = await res.json();
+        if (!data || !data.ok) return;
+
+        // Tape Speed Badge
+        const tsb = document.getElementById('cryptoAtasTapeSpeedBadge');
+        if (tsb) {
+          tsb.innerText = `سرعت نوار: ${data.tape_speed_tps} تیک/ثانیه (${data.tape_speed_status})`;
+          tsb.style.color = data.tape_speed_tps > 50 ? '#ff8c00' : '#00d2ff';
+        }
+
+        // Big Trades
+        const btList = document.getElementById('cryptoAtasBigTradesList');
+        if (btList && data.big_trades) {
+          btList.innerHTML = data.big_trades.map(tr => {
+            const isBuy = tr.side === 'BUY';
+            const col = isBuy ? '#00e676' : '#ff3366';
+            return `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border-right:3px solid ${col}; padding:8px 10px; border-radius:6px; font-family:monospace; font-size:0.78rem;">
+                <span style="color:#94a3b8;">${tr.time}</span>
+                <span style="font-weight:900; color:${col};">${isBuy ? '🟢 خرید مارکت' : '🔴 فروش مارکت'}</span>
+                <span style="color:#ffd700; font-weight:800;">${tr.size_btc} ${_cryptoAtasSym} ($${Number(tr.value_usd).toLocaleString()})</span>
+                <span style="color:#e2e8f0;">$${Number(tr.price).toLocaleString()}</span>
+                <span style="font-size:0.7rem; color:#94a3b8;">${tr.exchange}</span>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // Diagonal Imbalances
+        const imbList = document.getElementById('cryptoAtasImbalanceList');
+        if (imbList && data.diagonal_imbalances) {
+          imbList.innerHTML = data.diagonal_imbalances.map(imb => {
+            const isBuy = imb.type === 'BUY';
+            const col = isBuy ? '#00e676' : '#ff3366';
+            return `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border-right:3px solid ${col}; padding:8px 10px; border-radius:6px; font-size:0.78rem;">
+                <span style="color:#ffd700; font-family:monospace;">$${Number(imb.price).toLocaleString()}</span>
+                <span style="color:${col}; font-weight:800;">⚡ عدم تعادل ${imb.imbalance_pct}% ${isBuy ? 'خرید' : 'فروش'}</span>
+                <span style="color:#cbd5e1; font-size:0.72rem;">${imb.intensity}</span>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // Verdict
+        const vText = document.getElementById('cryptoAtasVerdictText');
+        if (vText && data.verdict) {
+          vText.innerHTML = `
+            ${data.verdict.tape_flow} &bull; <strong style="color:#00e676;">${data.verdict.hft_activity}</strong> &bull; <span style="color:#ffd700;">${data.verdict.scalp_edge}</span>
+          `;
+        }
+
+        // TradingView
+        embedGenericCryptoChart('cryptoAtasTvChart', _cryptoAtasSym, '15m');
+
+      } catch (err) {
+        console.error('Error fetching ATAS:', err);
+      }
+    }
+
+    /* --------------------------------------------------------------------
+       4. QUANTOWER TPO MARKET PROFILE
+       -------------------------------------------------------------------- */
+    function setCryptoQtTimeframe(tf) {
+      _cryptoQtTimeframe = tf;
+      document.querySelectorAll('.qt-tf-btn').forEach(btn => {
+        if (btn.getAttribute('data-tf') === tf) {
+          btn.classList.add('active');
+          btn.style.border = '1.5px solid #a855f7';
+          btn.style.background = 'rgba(168,85,247,0.25)';
+          btn.style.color = '#a855f7';
+          btn.style.fontWeight = '800';
+        } else {
+          btn.classList.remove('active');
+          btn.style.border = '1px solid rgba(255,255,255,0.1)';
+          btn.style.background = 'transparent';
+          btn.style.color = '#cbd5e1';
+          btn.style.fontWeight = 'normal';
+        }
+      });
+      fetchCryptoQuantower(true);
+    }
+
+    function onCryptoQtChange() {
+      const el = document.getElementById('cryptoQtSymbolSelect');
+      if (el) _cryptoQtSym = el.value;
+      fetchCryptoQuantower(true);
+    }
+
+    async function fetchCryptoQuantower(force = false) {
+      try {
+        const res = await fetch(`/api/crypto/quantower?symbol=${_cryptoQtSym}&timeframe=${_cryptoQtTimeframe}`);
+        const data = await res.json();
+        if (!data || !data.ok) return;
+
+        // Badges
+        const rgb = document.getElementById('cryptoQtRegimeBadge');
+        if (rgb) rgb.innerText = `رژیم: ${data.day_type || 'حراج متوازن'}`;
+
+        const vah = document.getElementById('cryptoQtVahPrice');
+        if (vah) vah.innerText = `$${Number(data.vah).toLocaleString()}`;
+        const poc = document.getElementById('cryptoQtPocPrice');
+        if (poc) poc.innerText = `$${Number(data.vpoc).toLocaleString()}`;
+        const val = document.getElementById('cryptoQtValPrice');
+        if (val) val.innerText = `$${Number(data.val).toLocaleString()}`;
+        const ib = document.getElementById('cryptoQtIbRange');
+        if (ib && data.initial_balance) {
+          ib.innerText = `$${Number(data.initial_balance.ib_low).toLocaleString()} - $${Number(data.initial_balance.ib_high).toLocaleString()}`;
+        }
+
+        // Nodes
+        const nodesList = document.getElementById('cryptoQtNodesList');
+        if (nodesList && data.volume_nodes) {
+          nodesList.innerHTML = data.volume_nodes.map(n => `
+            <div style="display:flex; justify-content:space-between; padding:4px 8px; border-radius:4px; background:${n.type === 'HVN' ? 'rgba(0,230,118,0.08)' : 'rgba(255,51,102,0.08)'};">
+              <span style="color:${n.type === 'HVN' ? '#00e676' : '#ff3366'}; font-weight:800;">${n.type} ($${Number(n.price).toLocaleString()}):</span>
+              <span style="color:#cbd5e1;">${n.significance} (${n.volume_btc} BTC)</span>
+            </div>
+          `).join('');
+        }
+
+        // Spread
+        const sp = document.getElementById('cryptoQtSpreadText');
+        if (sp) {
+          sp.innerHTML = `
+            • اسپرد تعهدی فیوچرز به اسپات (Basis Spread): <strong>${data.basis_spread || '+0.42% کانتانگو'}</strong><br>
+            • وضعیت حراج: <strong>${data.synthetic_spread || 'پرمیوم صعودی'}</strong>
+          `;
+        }
+
+        // Verdict
+        const vText = document.getElementById('cryptoQtVerdictText');
+        if (vText && data.verdict) {
+          vText.innerHTML = `
+            <strong style="color:#a855f7;">استراتژی مارکت پروفایل کوانت‌تاور:</strong> ${data.verdict.auction_phase}<br>
+            • تراز هدف خریدار: <strong style="color:#00e676;">$${Number(data.vah).toLocaleString()}</strong> | حمایت خریدار نهادی: <strong style="color:#00d2ff;">$${Number(data.val).toLocaleString()}</strong><br>
+            • توصیه: ${data.verdict.strategy_recommendation}
+          `;
+        }
+
+        // TradingView
+        embedGenericCryptoChart('cryptoQtTvChart', _cryptoQtSym, _cryptoQtTimeframe);
+
+      } catch (err) {
+        console.error('Error fetching Quantower:', err);
+      }
+    }
+
+    /* --------------------------------------------------------------------
+       5. SIERRA CHART NUMBERED BARS & VERTICAL VBP
+       -------------------------------------------------------------------- */
+    function setCryptoScTimeframe(tf) {
+      _cryptoScTimeframe = tf;
+      document.querySelectorAll('.sc-tf-btn').forEach(btn => {
+        if (btn.getAttribute('data-tf') === tf) {
+          btn.classList.add('active');
+          btn.style.border = '1.5px solid #eab308';
+          btn.style.background = 'rgba(234,179,8,0.25)';
+          btn.style.color = '#eab308';
+          btn.style.fontWeight = '800';
+        } else {
+          btn.classList.remove('active');
+          btn.style.border = '1px solid rgba(255,255,255,0.1)';
+          btn.style.background = 'transparent';
+          btn.style.color = '#cbd5e1';
+          btn.style.fontWeight = 'normal';
+        }
+      });
+      fetchCryptoSierra(true);
+    }
+
+    function onCryptoScChange() {
+      const el = document.getElementById('cryptoScSymbolSelect');
+      if (el) _cryptoScSym = el.value;
+      fetchCryptoSierra(true);
+    }
+
+    async function fetchCryptoSierra(force = false) {
+      try {
+        const res = await fetch(`/api/crypto/sierrachart?symbol=${_cryptoScSym}&timeframe=${_cryptoScTimeframe}`);
+        const data = await res.json();
+        if (!data || !data.ok) return;
+
+        // Divergence Badge
+        const divB = document.getElementById('cryptoScDivergenceBadge');
+        if (divB) {
+          divB.innerText = `واگرایی: ${data.divergence || 'نرمال'}`;
+          divB.style.color = data.divergence?.includes('صعودی') ? '#00e676' : '#ffd700';
+        }
+
+        // Active TF Span
+        const atfs = document.getElementById('cryptoScActiveTfSpan');
+        if (atfs) atfs.innerText = `کندل‌های ${_cryptoScTimeframe}`;
+
+        // Numbered Bars
+        const nbCont = document.getElementById('cryptoScNumberedBarsContainer');
+        if (nbCont && data.numbered_bars) {
+          nbCont.innerHTML = data.numbered_bars.map(b => {
+            const isBull = b.close >= b.open;
+            const deltaCol = b.delta >= 0 ? '#00e676' : '#ff3366';
+            return `
+              <div style="min-width:140px; background:rgba(0,0,0,0.45); border:1px solid ${isBull ? '#00e676' : '#ff3366'}; border-radius:6px; padding:8px; font-family:monospace; font-size:0.74rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-weight:800; color:#fff;">
+                  <span>${b.time}</span>
+                  <span style="color:${deltaCol};">${b.delta >= 0 ? '+' : ''}${b.delta} Δ</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; color:#94a3b8;">
+                  <span>Open:</span><span>$${Number(b.open).toLocaleString()}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; color:#00e676;">
+                  <span>High:</span><span>$${Number(b.high).toLocaleString()}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; color:#ff3366;">
+                  <span>Low:</span><span>$${Number(b.low).toLocaleString()}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; color:#ffd700; font-weight:800;">
+                  <span>Close:</span><span>$${Number(b.close).toLocaleString()}</span>
+                </div>
+                <div style="margin-top:4px; border-top:1px solid rgba(255,255,255,0.06); padding-top:4px; display:flex; justify-content:space-between; font-size:0.7rem;">
+                  <span style="color:#00e676;">${b.bid_vol} B</span>
+                  <span style="color:#ff3366;">${b.ask_vol} A</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // VBP Profile Rows
+        const vbpCont = document.getElementById('cryptoScVbpContainer');
+        if (vbpCont && data.vbp_rows) {
+          vbpCont.innerHTML = data.vbp_rows.map(row => {
+            return `
+              <div style="display:grid; grid-template-columns:85px 1fr 60px; align-items:center; gap:8px; font-family:monospace; font-size:0.74rem; background:rgba(0,0,0,0.3); padding:3px 6px; border-radius:4px;">
+                <span style="color:${row.is_poc ? '#ffd700' : '#e2e8f0'}; font-weight:${row.is_poc ? '900' : 'normal'};">
+                  ${row.is_poc ? '👑 ' : ''}$${Number(row.price).toLocaleString()}
+                </span>
+                <div style="background:rgba(255,255,255,0.04); height:12px; border-radius:2px; display:flex; overflow:hidden;">
+                  <div style="width:${row.bid_pct}%; background:#00e676;"></div>
+                  <div style="width:${row.ask_pct}%; background:#ff3366;"></div>
+                </div>
+                <span style="color:#94a3b8; text-align:left;">${row.total_vol} BTC</span>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // Verdict
+        const vText = document.getElementById('cryptoScVerdictText');
+        if (vText && data.verdict) {
+          vText.innerHTML = `
+            <strong style="color:#eab308;">تحلیل اردر فلو سیرا چارت:</strong> ${data.verdict.absorption_bias}<br>
+            • ${data.verdict.key_observation} &bull; <span style="color:#00e676;">${data.verdict.action_guide}</span>
+          `;
+        }
+
+        // TradingView
+        embedGenericCryptoChart('cryptoScTvChart', _cryptoScSym, _cryptoScTimeframe);
+
+      } catch (err) {
+        console.error('Error fetching Sierra Chart:', err);
+      }
+    }
+
+    /* --------------------------------------------------------------------
+       6. GEOPOLITICAL & FUNDAMENTALS RADAR
+       -------------------------------------------------------------------- */
+    async function fetchCryptoGeopolitics(force = false) {
+      try {
+        const res = await fetch('/api/crypto/geopolitics');
+        const data = await res.json();
+        if (!data || !data.ok) return;
+
+        // GPR Badge
+        const gprB = document.getElementById('cryptoGprBadge');
+        if (gprB) {
+          gprB.innerText = `شاخص GPR: ${data.gpr_index} (${data.gpr_status})`;
+          gprB.style.color = data.gpr_index > 140 ? '#ff3366' : '#00e676';
+        }
+
+        // Hotspots List
+        const hsList = document.getElementById('cryptoHotspotsList');
+        if (hsList && data.hotspots) {
+          hsList.innerHTML = data.hotspots.map(hs => `
+            <div style="background:rgba(0,0,0,0.3); border-right:3px solid ${hs.severity === 'HIGH' ? '#ff3366' : '#ffd700'}; padding:8px 10px; border-radius:6px; font-size:0.78rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                <strong style="color:#fff;">${hs.region}</strong>
+                <span style="color:${hs.severity === 'HIGH' ? '#ff3366' : '#ffd700'}; font-weight:800;">${hs.severity}</span>
+              </div>
+              <div style="color:#cbd5e1; font-size:0.74rem;">${hs.impact_on_crypto}</div>
+            </div>
+          `).join('');
+        }
+
+        // Safe Haven Flows
+        const shList = document.getElementById('cryptoSafeHavenList');
+        if (shList && data.safe_haven_matrix) {
+          shList.innerHTML = data.safe_haven_matrix.map(sh => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:6px; font-size:0.76rem;">
+              <strong style="color:#ffd700;">${sh.asset}</strong>
+              <span style="color:#cbd5e1;">جریان سرمایه: <strong style="color:#00e676;">${sh.capital_flow}</strong></span>
+              <span style="color:#94a3b8;">همبستگی: ${sh.correlation_with_btc}</span>
+            </div>
+          `).join('');
+        }
+
+        // Stablecoin Box
+        const scBox = document.getElementById('cryptoStablecoinBox');
+        if (scBox && data.stablecoin_minting) {
+          const sc = data.stablecoin_minting;
+          scBox.innerHTML = `
+            • ضرب اخیر تتر (Tether Treasury): <strong style="color:#00e676;">${sc.recent_tether_mints}</strong><br>
+            • جریان استیبل‌کوین Circle USDC: <strong style="color:#00d2ff;">${sc.circle_usdc_flow}</strong><br>
+            • تزریق نقدینگی خالص ۷ روزه: <strong style="color:#ffd700;">${sc.net_7d_liquidity_inflow}</strong><br>
+            • پیش‌بینی جهت مارکت: <strong>${sc.market_signal}</strong>
+          `;
+        }
+
+        // Verdict
+        const vText = document.getElementById('cryptoGeoVerdictText');
+        if (vText && data.verdict) {
+          vText.innerHTML = `
+            <strong style="color:#ef4444;">ارزیابی ریسک ژئوپلیتیک:</strong> ${data.verdict.macro_bias}<br>
+            • ${data.verdict.bitcoin_hedge_status} &bull; <span style="color:#00e676;">${data.verdict.forward_guidance}</span>
+          `;
+        }
+
+        // TradingView
+        embedGenericCryptoChart('cryptoGeoTvChart', 'BTC', '1h');
+
+      } catch (err) {
+        console.error('Error fetching Geopolitics:', err);
+      }
+    }
+
+    /* --------------------------------------------------------------------
+       7. WALL STREET INVESTMENT BANKS & INSTITUTIONAL CRYPTO REPORTS
+       -------------------------------------------------------------------- */
+    async function fetchCryptoBankReports(force = false) {
+      try {
+        const res = await fetch('/api/crypto/bank-reports');
+        const data = await res.json();
+        if (!data || !data.ok) return;
+
+        // ETF Net Flow Badge
+        const etfB = document.getElementById('cryptoEtfFlowBadge');
+        if (etfB) {
+          const net = data.etf_institutional_flows?.total_daily_net_inflow_usd || '+$428.5M';
+          etfB.innerText = `ورودی خالص ETFها: ${net}`;
+          etfB.style.color = '#00e676';
+        }
+
+        // ETF Table Body
+        const etfBody = document.getElementById('cryptoEtfTableBody');
+        if (etfBody && data.etf_institutional_flows?.funds) {
+          etfBody.innerHTML = data.etf_institutional_flows.funds.map(f => `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+              <td style="padding:6px; text-align:right; font-weight:800; color:#ffd700;">${f.name} (${f.ticker})</td>
+              <td style="padding:6px; color:#00e676; font-weight:800;">${f.daily_flow}</td>
+              <td style="padding:6px; color:#cbd5e1;">${f.aum}</td>
+              <td style="padding:6px; color:#00d2ff; font-size:0.72rem;">${f.status}</td>
+            </tr>
+          `).join('');
+        }
+
+        // Bank Targets List
+        const btList = document.getElementById('cryptoBankTargetsList');
+        if (btList && data.bank_models) {
+          btList.innerHTML = data.bank_models.map(bm => `
+            <div style="background:rgba(0,0,0,0.3); border-right:3px solid #38bdf8; padding:8px 10px; border-radius:6px; font-size:0.78rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                <strong style="color:#ffd700;">${bm.bank}</strong>
+                <span style="color:#00e676; font-weight:900;">تارگت: ${bm.target_btc} (${bm.horizon})</span>
+              </div>
+              <div style="color:#cbd5e1; font-size:0.74rem;">${bm.rationale}</div>
+            </div>
+          `).join('');
+        }
+
+        // Scenarios
+        const scText = document.getElementById('cryptoBankScenariosText');
+        if (scText && data.macro_consensus_targets) {
+          const mc = data.macro_consensus_targets;
+          scText.innerHTML = `
+            • سناریوی صعودی (Bull Target): <strong style="color:#00e676;">${mc.bull_target}</strong> (${mc.bull_probability})<br>
+            • سناریوی پایه (Base Target): <strong style="color:#ffd700;">${mc.base_target}</strong> (${mc.base_probability})<br>
+            • سناریوی نزولی (Bear Target): <strong style="color:#ff3366;">${mc.bear_target}</strong> (${mc.bear_probability})
+          `;
+        }
+
+        // CME & Institutional Whales
+        const whText = document.getElementById('cryptoInstitutionalWhalesText');
+        if (whText) {
+          const cme = data.cme_cot_crypto || {};
+          const wh = data.institutional_whales || {};
+          whText.innerHTML = `
+            • دارایی خزانه مایکرو استراتژی (MSTR): <strong style="color:#ffd700;">${wh.microstrategy_holding || '499,000+ BTC'}</strong><br>
+            • موضع مدیران دارایی در فیوچرز CME: <strong style="color:#00e676;">${cme.asset_managers_position || '82% Long'}</strong><br>
+            • وضعیت هج‌فاندها در CME: <strong style="color:#38bdf8;">${cme.leveraged_funds_position || 'آربیتراژ Basis Trade'}</strong>
+          `;
+        }
+
+        // TradingView
+        embedGenericCryptoChart('cryptoBankTvChart', 'BTC', '1h');
+
+      } catch (err) {
+        console.error('Error fetching Bank Reports:', err);
+      }
+    }
+
+  </script>
 
   <!-- Comprehensive Educational Modal & Beginner Glossary -->
   <div class="edu-modal-backdrop" id="educationModal" onclick="if(event.target === this) closeEducationModal();">

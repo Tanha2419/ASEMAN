@@ -1963,6 +1963,39 @@ def get_lbank_gems(limit: int = Query(8, description="Number of gems")):
 def get_exchange_api_status():
     return ExchangeDataEngine.get_api_status_report()
 
+# =============================================================================
+# CRYPTO INSTITUTIONAL ORDER FLOW & WALL STREET PLATFORM SUITE
+# =============================================================================
+import crypto_orderflow_engine as coe
+
+@app.get("/api/crypto/bookmap")
+def get_crypto_bookmap(symbol: str = Query("BTC"), timeframe: str = Query("15m")):
+    return coe.get_crypto_bookmap_data(symbol, timeframe)
+
+@app.get("/api/crypto/ninjatrader")
+def get_crypto_ninjatrader(symbol: str = Query("BTC"), timeframe: str = Query("15m")):
+    return coe.get_crypto_ninjatrader_live(symbol, timeframe)
+
+@app.get("/api/crypto/atas")
+def get_crypto_atas(symbol: str = Query("BTC")):
+    return coe.get_crypto_atas_live(symbol)
+
+@app.get("/api/crypto/quantower")
+def get_crypto_quantower(symbol: str = Query("BTC"), timeframe: str = Query("1h")):
+    return coe.get_crypto_quantower_live(symbol, timeframe)
+
+@app.get("/api/crypto/sierrachart")
+def get_crypto_sierrachart(symbol: str = Query("BTC"), timeframe: str = Query("15m")):
+    return coe.get_crypto_sierrachart_data(symbol, timeframe)
+
+@app.get("/api/crypto/geopolitics")
+def get_crypto_geopolitics():
+    return coe.get_crypto_geopolitics_radar()
+
+@app.get("/api/crypto/bank-reports")
+def get_crypto_bank_reports():
+    return coe.get_crypto_bank_reports()
+
 @app.api_route("/healthz", methods=["GET", "HEAD"])
 @app.api_route("/health", methods=["GET", "HEAD"])
 @app.api_route("/ping", methods=["GET", "HEAD"])
