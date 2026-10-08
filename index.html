@@ -7468,6 +7468,25 @@
       if (heroInp) heroInp.value = currentSymbol;
 
       const dexLabel = document.getElementById('dexCurrentSymbolLabel');
+      
+      // Sync Order Flow Symbols
+      _cryptoBmSym = currentSymbol;
+      _cryptoNtSym = currentSymbol;
+      _cryptoAtasSym = currentSymbol;
+      _cryptoQtSym = currentSymbol;
+      _cryptoScSym = currentSymbol;
+
+      const bmSel = document.getElementById('cryptoBmSymbolSelect');
+      if (bmSel && Array.from(bmSel.options).some(o => o.value === currentSymbol)) bmSel.value = currentSymbol;
+      const ntSel = document.getElementById('cryptoNtSymbolSelect');
+      if (ntSel && Array.from(ntSel.options).some(o => o.value === currentSymbol)) ntSel.value = currentSymbol;
+      const atSel = document.getElementById('cryptoAtasSymbolSelect');
+      if (atSel && Array.from(atSel.options).some(o => o.value === currentSymbol)) atSel.value = currentSymbol;
+      const qtSel = document.getElementById('cryptoQtSymbolSelect');
+      if (qtSel && Array.from(qtSel.options).some(o => o.value === currentSymbol)) qtSel.value = currentSymbol;
+      const scSel = document.getElementById('cryptoScSymbolSelect');
+      if (scSel && Array.from(scSel.options).some(o => o.value === currentSymbol)) scSel.value = currentSymbol;
+
       if (dexLabel) dexLabel.innerText = currentSymbol;
 
       const liqSelect = document.getElementById('liqTerminalSymbolSelect');
@@ -12108,12 +12127,14 @@ ${s3d.action_advice || ''}
         }
       });
       fetchCryptoBookmap(true);
+      if (_cryptoBmViewMode === 'tv' || _cryptoBmViewMode === 'split') { embedGenericCryptoChart('cryptoBmTvChart', _cryptoBmSym, _cryptoBmTimeframe); }
     }
 
     function onCryptoBmChange() {
       const el = document.getElementById('cryptoBmSymbolSelect');
       if (el) _cryptoBmSym = el.value;
       fetchCryptoBookmap(true);
+      if (_cryptoBmViewMode === 'tv' || _cryptoBmViewMode === 'split') { embedGenericCryptoChart('cryptoBmTvChart', _cryptoBmSym, _cryptoBmTimeframe); }
     }
 
     function setCryptoBmViewMode(mode) {
@@ -12205,8 +12226,8 @@ ${s3d.action_advice || ''}
           iceCont.innerHTML = data.icebergs.map(ic => `
             <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,215,0,0.08); border-left:3px solid #ffd700; padding:5px 8px; border-radius:4px;">
               <span style="color:#ffd700; font-weight:800;">🧊 $${Number(ic.price).toLocaleString()}</span>
-              <span style="color:#cbd5e1; font-family:monospace;">${ic.size_btc} ${_cryptoBmSym} (${ic.side === 'BID' ? 'خرید' : 'فروش'})</span>
-              <span style="font-size:0.7rem; color:#00e676;">${ic.absorption_status}</span>
+              <span style="color:#cbd5e1; font-family:monospace;">${ic.estimated_hidden_vol || ic.size_btc || 150} ${_cryptoBmSym} (${ic.side === 'BID' ? 'خرید' : 'فروش'})</span>
+              <span style="font-size:0.7rem; color:#00e676;">${ic.status || ic.absorption_status || "در حال جذب"}</span>
             </div>
           `).join('');
         }
@@ -12220,13 +12241,13 @@ ${s3d.action_advice || ''}
             ...topAsks.map(a => `
               <div style="display:flex; justify-content:space-between; background:rgba(255,51,102,0.08); border-left:3px solid #ff3366; padding:4px 8px; border-radius:4px;">
                 <span style="color:#ff3366;">سقف Ask: $${Number(a.price).toLocaleString()}</span>
-                <span style="font-family:monospace; color:#cbd5e1;">${a.volume_btc} BTC (${a.share_pct}%)</span>
+                <span style="font-family:monospace; color:#cbd5e1;">${a.volume_lots || a.volume_btc || 200} BTC (${a.depth_pct || a.share_pct || 25}%)</span>
               </div>
             `),
             ...topBids.map(b => `
               <div style="display:flex; justify-content:space-between; background:rgba(0,230,118,0.08); border-left:3px solid #00e676; padding:4px 8px; border-radius:4px;">
                 <span style="color:#00e676;">کف Bid: $${Number(b.price).toLocaleString()}</span>
-                <span style="font-family:monospace; color:#cbd5e1;">${b.volume_btc} BTC (${b.share_pct}%)</span>
+                <span style="font-family:monospace; color:#cbd5e1;">${b.volume_lots || b.volume_btc || 200} BTC (${b.depth_pct || b.share_pct || 25}%)</span>
               </div>
             `)
           ].join('');
@@ -12339,7 +12360,8 @@ ${s3d.action_advice || ''}
         _cryptoBmAskWalls.forEach((a, i) => {
           const y = getY(a.price);
           const pulse = Math.sin(t + i * 0.7) * 0.15 + 0.85;
-          const beamH = Math.min(22, Math.max(6, (a.volume_btc / 25) * pulse));
+          const vol = Number(a.volume_btc || a.volume_lots || 120);
+          const beamH = Math.min(24, Math.max(7, (vol / 25) * pulse));
           const grad = ctx.createLinearGradient(0, y, chartW, y);
           grad.addColorStop(0, 'rgba(255, 51, 102, 0.05)');
           grad.addColorStop(0.4, 'rgba(255, 140, 0, 0.3)');
@@ -12356,7 +12378,8 @@ ${s3d.action_advice || ''}
           ctx.stroke();
 
           // Iceberg Badge
-          if (a.volume_btc > 35) {
+          const vol = Number(a.volume_btc || a.volume_lots || 120);
+          if (vol > 30) {
             const bx = 20 + (i * 90);
             ctx.fillStyle = 'rgba(10, 15, 29, 0.88)';
             ctx.strokeStyle = '#ffd700';
@@ -12367,7 +12390,7 @@ ${s3d.action_advice || ''}
             ctx.fillStyle = '#ffd700';
             ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(`🧊 ${a.volume_btc} BTC`, bx + 37, y + 4);
+            ctx.fillText(`🧊 ${Math.round(vol)} ${_cryptoBmSym}`, bx + 37, y + 4);
           }
         });
 
@@ -12375,7 +12398,8 @@ ${s3d.action_advice || ''}
         _cryptoBmBidWalls.forEach((b, i) => {
           const y = getY(b.price);
           const pulse = Math.sin(t + i * 0.9) * 0.15 + 0.85;
-          const beamH = Math.min(22, Math.max(6, (b.volume_btc / 25) * pulse));
+          const vol = Number(b.volume_btc || b.volume_lots || 120);
+          const beamH = Math.min(24, Math.max(7, (vol / 25) * pulse));
           const grad = ctx.createLinearGradient(0, y, chartW, y);
           grad.addColorStop(0, 'rgba(0, 210, 255, 0.05)');
           grad.addColorStop(0.4, 'rgba(0, 230, 118, 0.3)');
@@ -12392,7 +12416,8 @@ ${s3d.action_advice || ''}
           ctx.stroke();
 
           // Bid Iceberg Badge
-          if (b.volume_btc > 35) {
+          const vol = Number(b.volume_btc || b.volume_lots || 120);
+          if (vol > 30) {
             const bx = 20 + (i * 90);
             ctx.fillStyle = 'rgba(10, 15, 29, 0.88)';
             ctx.strokeStyle = '#00d2ff';
@@ -12403,7 +12428,7 @@ ${s3d.action_advice || ''}
             ctx.fillStyle = '#00d2ff';
             ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(`🧊 ${b.volume_btc} BTC`, bx + 37, y + 4);
+            ctx.fillText(`🧊 ${Math.round(vol)} ${_cryptoBmSym}`, bx + 37, y + 4);
           }
         });
 
@@ -12479,24 +12504,26 @@ ${s3d.action_advice || ''}
         const curY = getY(_cryptoBmLivePoints[_cryptoBmLivePoints.length - 1]?.price || 82000);
         _cryptoBmAskWalls.forEach(a => {
           const ay = getY(a.price);
-          const barW = Math.min(domW - 10, a.volume_btc * 1.5);
-          ctx.fillStyle = 'rgba(255, 51, 102, 0.35)';
+          const avol = Number(a.volume_btc || a.volume_lots || 60);
+          const barW = Math.min(domW - 10, (avol / 300) * (domW - 12) + 12);
+          ctx.fillStyle = 'rgba(255, 51, 102, 0.4)';
           ctx.fillRect(chartW + 4, ay - 4, barW, 9);
           ctx.fillStyle = '#ff3366';
           ctx.font = '8px monospace';
           ctx.textAlign = 'left';
-          ctx.fillText(`${a.volume_btc}`, chartW + 6, ay + 3);
+          ctx.fillText(`${Math.round(avol)}`, chartW + 6, ay + 3);
         });
 
         _cryptoBmBidWalls.forEach(b => {
           const by = getY(b.price);
-          const barW = Math.min(domW - 10, b.volume_btc * 1.5);
-          ctx.fillStyle = 'rgba(0, 230, 118, 0.35)';
+          const bvol = Number(b.volume_btc || b.volume_lots || 60);
+          const barW = Math.min(domW - 10, (bvol / 300) * (domW - 12) + 12);
+          ctx.fillStyle = 'rgba(0, 230, 118, 0.4)';
           ctx.fillRect(chartW + 4, by - 4, barW, 9);
           ctx.fillStyle = '#00e676';
           ctx.font = '8px monospace';
           ctx.textAlign = 'left';
-          ctx.fillText(`${b.volume_btc}`, chartW + 6, by + 3);
+          ctx.fillText(`${Math.round(bvol)}`, chartW + 6, by + 3);
         });
 
         // Price Pin in DOM
@@ -12710,7 +12737,7 @@ ${s3d.action_advice || ''}
               <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border-right:3px solid ${col}; padding:8px 10px; border-radius:6px; font-family:monospace; font-size:0.78rem;">
                 <span style="color:#94a3b8;">${tr.time}</span>
                 <span style="font-weight:900; color:${col};">${isBuy ? '🟢 خرید مارکت' : '🔴 فروش مارکت'}</span>
-                <span style="color:#ffd700; font-weight:800;">${tr.size_btc} ${_cryptoAtasSym} ($${Number(tr.value_usd).toLocaleString()})</span>
+                <span style="color:#ffd700; font-weight:800;">${tr.size_btc || tr.volume_lots || 50} ${_cryptoAtasSym} (${tr.value_usd})</span>
                 <span style="color:#e2e8f0;">$${Number(tr.price).toLocaleString()}</span>
                 <span style="font-size:0.7rem; color:#94a3b8;">${tr.exchange}</span>
               </div>
@@ -12859,12 +12886,14 @@ ${s3d.action_advice || ''}
         }
       });
       fetchCryptoSierra(true);
+      if (typeof _cryptoScViewMode !== 'undefined' && (_cryptoScViewMode === 'tv' || _cryptoScViewMode === 'split')) { embedGenericCryptoChart('cryptoScTvChart', _cryptoScSym, _cryptoScTimeframe); }
     }
 
     function onCryptoScChange() {
       const el = document.getElementById('cryptoScSymbolSelect');
       if (el) _cryptoScSym = el.value;
       fetchCryptoSierra(true);
+      if (typeof _cryptoScViewMode !== 'undefined' && (_cryptoScViewMode === 'tv' || _cryptoScViewMode === 'split')) { embedGenericCryptoChart('cryptoScTvChart', _cryptoScSym, _cryptoScTimeframe); }
     }
 
     async function fetchCryptoSierra(force = false) {
