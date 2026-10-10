@@ -2862,6 +2862,63 @@
 
           </div>
 
+          <!-- CRYPTO SMT TRIAD & LIQUIDATION HEATMAP RADARS -->
+          <div style="margin-top: 14px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 14px;">
+            <!-- 1. Crypto SMT Triad Radar (BTC vs ETH vs SOL) -->
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.82rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                  <span>📡</span> ۱. رادار واگرایی پول هوشمند کریپتو (Crypto SMT Triad)
+                </span>
+                <span id="cryptoSmtBadge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #38bdf8; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 800;">
+                  در حال پایش سه‌قلوهای کریپتو...
+                </span>
+              </div>
+              <div id="cryptoSmtTriadGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; font-size: 0.72rem; margin-bottom: 8px;">
+                <div style="background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                  <span style="color: #ffd700; font-weight: 800;">BTC (بیت‌کوین)</span><br>
+                  <strong id="cryptoSmtBtcVal" style="color: #00e676; font-family: monospace;">+2.45%</strong>
+                </div>
+                <div style="background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                  <span style="color: #cbd5e1;">ETH (اتریوم)</span><br>
+                  <strong id="cryptoSmtEthVal" style="color: #38bdf8; font-family: monospace;">+1.85%</strong>
+                </div>
+                <div style="background: rgba(0,0,0,0.3); padding: 5px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                  <span style="color: #cbd5e1;">SOL (سولانا)</span><br>
+                  <strong id="cryptoSmtSolVal" style="color: #00e676; font-family: monospace;">+4.20%</strong>
+                </div>
+              </div>
+              <div id="cryptoSmtDescText" style="font-size: 0.72rem; color: #cbd5e1; line-height: 1.5; background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: 6px; border-right: 3px solid #38bdf8;">
+                پایش لحظه‌ای نوسان بیت‌کوین، اتریوم و سولانا برای کشف زودهنگام انباشت نهادی یا توزیع پنهان وال‌ها.
+              </div>
+            </div>
+
+            <!-- 2. Liquidation Heatmap & Funding Rate Trap Radar -->
+            <div style="background: rgba(15, 23, 42, 0.8); border: 1.5px solid rgba(255, 209, 102, 0.35); border-radius: 10px; padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.82rem; font-weight: 800; color: #ffd166; display: flex; align-items: center; gap: 6px;">
+                  <span>🧲</span> ۲. رادار استخرهای لیکوئیدیشن & فاندینگ ریت (Binance / Bybit)
+                </span>
+                <span id="cryptoFundingBadge" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid #00e676; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 800;">
+                  فاندینگ نرمال و ارگانیک
+                </span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.72rem; margin-bottom: 8px;">
+                <div style="background: rgba(0,0,0,0.3); padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between;">
+                  <span style="color: #ffd700;">🎯 هدف مگنت شورت‌ها:</span>
+                  <strong id="cryptoLiqShortVal" style="color: #ffd166; font-family: monospace;">--</strong>
+                </div>
+                <div style="background: rgba(0,0,0,0.3); padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between;">
+                  <span style="color: #00e676;">🛡️ استخر استاپ لانگ‌ها:</span>
+                  <strong id="cryptoLiqLongVal" style="color: #00e676; font-family: monospace;">--</strong>
+                </div>
+              </div>
+              <div id="cryptoFundingAdviceText" style="font-size: 0.72rem; color: #cbd5e1; line-height: 1.5; background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: 6px; border-right: 3px solid #ffd166;">
+                رصد استخرهای لیکوئیدیشن اهرم‌های ۵۰x و ۱۰۰x برای جلوگیری از افتادن در تله‌های شکار نهنگ‌ها.
+              </div>
+            </div>
+          </div>
+
           <!-- Bottom Operational Guidance -->
           <div style="background: rgba(0, 210, 255, 0.05); border: 1px dashed rgba(0, 210, 255, 0.3); border-radius: 8px; padding: 10px 14px; font-size: 0.76rem; color: #cbd5e1; line-height: 1.8;">
             <strong style="color: #00d2ff;">💡 نحوه انتخاب بین اسکالپ و سوئینگ بدون سردرگمی:</strong><br>
@@ -12325,6 +12382,46 @@ ${s3d.action_advice || ''}
         if (swTp2) swTp2.innerText = sw.tp2_fmt || '-';
         const swHold = document.getElementById('swingHoldingVal');
         if (swHold) swHold.innerText = sw.holding_duration || '۲ الی ۵ روز';
+
+        // SMT & Liquidation Heatmap
+        if (data.smt_and_liquidation) {
+          const sl = data.smt_and_liquidation;
+          if (sl.smt) {
+            const smtBadge = document.getElementById('cryptoSmtBadge');
+            if (smtBadge) {
+              smtBadge.innerText = sl.smt.badge;
+              smtBadge.style.color = sl.smt.color || '#38bdf8';
+              smtBadge.style.borderColor = sl.smt.color || '#38bdf8';
+            }
+            const smtDesc = document.getElementById('cryptoSmtDescText');
+            if (smtDesc && sl.smt.desc) smtDesc.innerText = sl.smt.desc;
+            if (sl.smt.triad && sl.smt.triad.length >= 3) {
+              const btcEl = document.getElementById('cryptoSmtBtcVal');
+              const ethEl = document.getElementById('cryptoSmtEthVal');
+              const solEl = document.getElementById('cryptoSmtSolVal');
+              if (btcEl) btcEl.innerText = `${sl.smt.triad[0].change_24h > 0 ? '+' : ''}${sl.smt.triad[0].change_24h.toFixed(2)}%`;
+              if (ethEl) ethEl.innerText = `${sl.smt.triad[1].change_24h > 0 ? '+' : ''}${sl.smt.triad[1].change_24h.toFixed(2)}%`;
+              if (solEl) solEl.innerText = `${sl.smt.triad[2].change_24h > 0 ? '+' : ''}${sl.smt.triad[2].change_24h.toFixed(2)}%`;
+            }
+          }
+          if (sl.liquidation_heatmap) {
+            const lq = sl.liquidation_heatmap;
+            const fundBadge = document.getElementById('cryptoFundingBadge');
+            if (fundBadge) {
+              fundBadge.innerText = lq.funding_badge;
+              fundBadge.style.color = lq.funding_color || '#00e676';
+              fundBadge.style.borderColor = lq.funding_color || '#00e676';
+            }
+            const fundAdvice = document.getElementById('cryptoFundingAdviceText');
+            if (fundAdvice && lq.funding_advice) fundAdvice.innerText = lq.funding_advice;
+            if (lq.clusters && lq.clusters.length >= 3) {
+              const shortEl = document.getElementById('cryptoLiqShortVal');
+              const longEl = document.getElementById('cryptoLiqLongVal');
+              if (shortEl) shortEl.innerText = `$${Number(lq.clusters[1].price).toLocaleString()} (${lq.clusters[1].volume_usd})`;
+              if (longEl) longEl.innerText = `$${Number(lq.clusters[2].price).toLocaleString()} (${lq.clusters[2].volume_usd})`;
+            }
+          }
+        }
 
       } catch (err) {
         console.error('Error fetching Unified Signals:', err);

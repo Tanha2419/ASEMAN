@@ -187,6 +187,12 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         alignment_status = "اسکالپ اصلاحی درون روند کلان (Counter-Trend Retracement ⚠️)"
         alignment_note = "دیدگاه اسکالپ ۱۵ دقیقه‌ای خلاف جهت سوئینگ چندروزه است؛ این معامله یک پولبک موقت است و خروج سریع در TP1 الزامی است."
 
+    try:
+        import crypto_smt_and_liquidation_engine as csle
+        smt_liq = csle.get_crypto_smt_and_liquidation_data(symbol_clean)
+    except Exception:
+        smt_liq = None
+
     return {
         "ok": True,
         "symbol": symbol_clean,
@@ -196,6 +202,7 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         "is_aligned": is_aligned,
         "alignment_status": alignment_status,
         "alignment_note": alignment_note,
+        "smt_and_liquidation": smt_liq,
         "updated_at_iran": f"{tehran_date_str} ساعت {tehran_time_str}"
     }
 

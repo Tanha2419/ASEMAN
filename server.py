@@ -1975,6 +1975,14 @@ import crypto_unified_signals as cus
 def get_crypto_unified_signals(symbol: str = Query("BTC")):
     return cus.get_unified_signals(symbol)
 
+@app.get("/api/crypto/smt-and-liquidation")
+def get_crypto_smt_and_liquidation(symbol: str = Query("BTC")):
+    try:
+        import crypto_smt_and_liquidation_engine as csle
+        return csle.get_crypto_smt_and_liquidation_data(symbol)
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
 @app.get("/api/crypto/sniper-signal")
 def get_crypto_sniper_signal(symbol: str = Query("BTC")):
     return cse.evaluate_sniper_confluence(symbol)
