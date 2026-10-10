@@ -57,38 +57,41 @@ def get_crypto_bookmap_data(symbol: str = "BTC", timeframe: str = "15m") -> Dict
     if cache_key in _CACHE and (now - _CACHE_TIME.get(cache_key, 0.0) < _TTL):
         return _CACHE[cache_key]
 
-    p = round(_get_live_crypto_price(base), 1)
+    raw_p = _get_live_crypto_price(base)
+    dec = 1 if raw_p >= 1000 else (2 if raw_p >= 10 else (4 if raw_p >= 1 else 6))
+    p = round(raw_p, dec)
+    step = max(p * 0.0025, 1e-6)
 
     # Dynamic resting liquidity ask walls
     ask_levels = [
-        {"price": round(p + 45, 1), "volume_lots": 285, "volume_btc": 285, "depth_pct": 58, "share_pct": 58, "heat_color": "#38bdf8", "type": "ASK_WALL", "label": f"نقدینگی اسکالپ بایننس ({base})", "distance_pts": 45.0, "note": "تجمع لیمیت‌های فروش HFT"},
-        {"price": round(p + 95, 1), "volume_lots": 410, "volume_btc": 410, "depth_pct": 74, "share_pct": 74, "heat_color": "#ffd700", "type": "ASK_WALL", "label": "سقف عرضه نهنگ‌ها", "distance_pts": 95.0, "note": "دیواره دفاعی فروشندگان"},
-        {"price": round(p + 160, 1), "volume_lots": 580, "volume_btc": 580, "depth_pct": 89, "share_pct": 89, "heat_color": "#ff3366", "type": "ASK_WALL", "label": "بلوک لیکوئیدیشن شورت", "distance_pts": 160.0, "note": "آهنربای جذب قیمت"},
-        {"price": round(p + 240, 1), "volume_lots": 750, "volume_btc": 750, "depth_pct": 98, "share_pct": 98, "heat_color": "#ff3366", "type": "ASK_WALL", "label": "مقاومت سنگین هفتگی", "distance_pts": 240.0, "note": "عرضه گسترده سازمانی"}
+        {"price": round(p + step * 1.5, dec), "volume_lots": 285, "volume_btc": 285, "depth_pct": 58, "share_pct": 58, "heat_color": "#38bdf8", "type": "ASK_WALL", "label": f"نقدینگی اسکالپ بایننس ({base})", "distance_pts": round(step * 1.5, dec), "note": "تجمع لیمیت‌های فروش HFT"},
+        {"price": round(p + step * 3.0, dec), "volume_lots": 410, "volume_btc": 410, "depth_pct": 74, "share_pct": 74, "heat_color": "#ffd700", "type": "ASK_WALL", "label": "سقف عرضه نهنگ‌ها", "distance_pts": round(step * 3.0, dec), "note": "دیواره دفاعی فروشندگان"},
+        {"price": round(p + step * 5.0, dec), "volume_lots": 580, "volume_btc": 580, "depth_pct": 89, "share_pct": 89, "heat_color": "#ff3366", "type": "ASK_WALL", "label": "بلوک لیکوئیدیشن شورت", "distance_pts": round(step * 5.0, dec), "note": "آهنربای جذب قیمت"},
+        {"price": round(p + step * 8.0, dec), "volume_lots": 750, "volume_btc": 750, "depth_pct": 98, "share_pct": 98, "heat_color": "#ff3366", "type": "ASK_WALL", "label": "مقاومت سنگین هفتگی", "distance_pts": round(step * 8.0, dec), "note": "عرضه گسترده سازمانی"}
     ]
 
     # Dynamic resting liquidity bid shelves
     bid_levels = [
-        {"price": round(p - 40, 1), "volume_lots": 310, "volume_btc": 310, "depth_pct": 62, "share_pct": 62, "heat_color": "#00e676", "type": "BID_SHELF", "label": f"کف تقاضای لحظه‌ای ({base})", "distance_pts": 40.0, "note": "ورود سفارشات لیمیت خریداران"},
-        {"price": round(p - 85, 1), "volume_lots": 490, "volume_btc": 490, "depth_pct": 81, "share_pct": 81, "heat_color": "#00e676", "type": "BID_SHELF", "label": "حمایت پرحجم نهنگ‌ها", "distance_pts": 85.0, "note": "انباشت پایدار پول هوشمند"},
-        {"price": round(p - 150, 1), "volume_lots": 640, "volume_btc": 640, "depth_pct": 92, "share_pct": 92, "heat_color": "#00d2ff", "type": "BID_SHELF", "label": "استخر نقدینگی استاپ لانگ", "distance_pts": 150.0, "note": "دیواره حمایتی صرافی‌های متمرکز"},
-        {"price": round(p - 220, 1), "volume_lots": 820, "volume_btc": 820, "depth_pct": 99, "share_pct": 99, "heat_color": "#00d2ff", "type": "BID_SHELF", "label": "کف بتنی ماهانه", "distance_pts": 220.0, "note": "حمایت راهبردی بلک‌راک و فیدلیتی"}
+        {"price": round(p - step * 1.5, dec), "volume_lots": 310, "volume_btc": 310, "depth_pct": 62, "share_pct": 62, "heat_color": "#00e676", "type": "BID_SHELF", "label": f"کف تقاضای لحظه‌ای ({base})", "distance_pts": round(step * 1.5, dec), "note": "ورود سفارشات لیمیت خریداران"},
+        {"price": round(p - step * 3.0, dec), "volume_lots": 490, "volume_btc": 490, "depth_pct": 81, "share_pct": 81, "heat_color": "#00e676", "type": "BID_SHELF", "label": "حمایت پرحجم نهنگ‌ها", "distance_pts": round(step * 3.0, dec), "note": "انباشت پایدار پول هوشمند"},
+        {"price": round(p - step * 5.0, dec), "volume_lots": 640, "volume_btc": 640, "depth_pct": 92, "share_pct": 92, "heat_color": "#00d2ff", "type": "BID_SHELF", "label": "استخر نقدینگی استاپ لانگ", "distance_pts": round(step * 5.0, dec), "note": "دیواره حمایتی صرافی‌های متمرکز"},
+        {"price": round(p - step * 8.0, dec), "volume_lots": 820, "volume_btc": 820, "depth_pct": 99, "share_pct": 99, "heat_color": "#00d2ff", "type": "BID_SHELF", "label": "کف بتنی ماهانه", "distance_pts": round(step * 8.0, dec), "note": "حمایت راهبردی بلک‌راک و فیدلیتی"}
     ]
 
     # Icebergs with both key sets
     iceberg_orders = [
-        {"price": round(p + 70, 1), "revealed_vol": 38, "estimated_hidden_vol": 340, "size_btc": 340, "direction": "SELL", "side": "ASK", "direction_fa": "فروش پنهان نهنگ", "color": "#ff3366", "status": "در حال جذب سفارشات خرید (Absorbing Buys)", "absorption_status": "در حال جذب سفارشات خرید"},
-        {"price": round(p - 65, 1), "revealed_vol": 45, "estimated_hidden_vol": 480, "size_btc": 480, "direction": "BUY", "side": "BID", "direction_fa": "خرید پنهان نهنگ", "color": "#00e676", "status": "انباشت مخفیانه و تکمیل پوزیشن", "absorption_status": "انباشت مخفیانه و جذب فروش‌ها"}
+        {"price": round(p + step * 2.2, dec), "revealed_vol": 38, "estimated_hidden_vol": 340, "size_btc": 340, "direction": "SELL", "side": "ASK", "direction_fa": "فروش پنهان نهنگ", "color": "#ff3366", "status": "در حال جذب سفارشات خرید (Absorbing Buys)", "absorption_status": "در حال جذب سفارشات خرید"},
+        {"price": round(p - step * 2.2, dec), "revealed_vol": 45, "estimated_hidden_vol": 480, "size_btc": 480, "direction": "BUY", "side": "BID", "direction_fa": "خرید پنهان نهنگ", "color": "#00e676", "status": "انباشت مخفیانه و تکمیل پوزیشن", "absorption_status": "انباشت مخفیانه و جذب فروش‌ها"}
     ]
 
     # Recent trades for canvas animation bubbles
     t_str = datetime.now(TEHRAN_TZ).strftime("%H:%M:%S")
     recent_trades = [
-        {"price": round(p - 8, 1), "amount": 6.4, "side": "BUY", "time": t_str},
-        {"price": round(p + 12, 1), "amount": 8.1, "side": "SELL", "time": t_str},
-        {"price": round(p - 4, 1), "amount": 11.5, "side": "BUY", "time": t_str},
-        {"price": round(p + 6, 1), "amount": 4.2, "side": "BUY", "time": t_str},
-        {"price": round(p - 14, 1), "amount": 7.8, "side": "SELL", "time": t_str}
+        {"price": round(p - step * 0.4, dec), "amount": 6.4, "side": "BUY", "time": t_str},
+        {"price": round(p + step * 0.6, dec), "amount": 8.1, "side": "SELL", "time": t_str},
+        {"price": round(p - step * 0.2, dec), "amount": 11.5, "side": "BUY", "time": t_str},
+        {"price": round(p + step * 0.3, dec), "amount": 4.2, "side": "BUY", "time": t_str},
+        {"price": round(p - step * 0.7, dec), "amount": 7.8, "side": "SELL", "time": t_str}
     ]
 
     total_ask = sum(a["volume_lots"] for a in ask_levels)
@@ -414,9 +417,12 @@ def get_crypto_quantower_live(symbol: str = "BTC", timeframe: str = "1h") -> Dic
 
     p = round(_get_live_crypto_price(base), 1)
 
-    vpoc = round(p - 35.0, 1)
-    vah = round(vpoc + 280.0, 1)
-    val = round(vpoc - 240.0, 1)
+    raw_p = _get_live_crypto_price(base)
+    dec = 1 if raw_p >= 1000 else (2 if raw_p >= 10 else (4 if raw_p >= 1 else 6))
+    p = round(raw_p, dec)
+    vpoc = round(p * 0.998, dec)
+    vah = round(vpoc * 1.018, dec)
+    val = round(vpoc * 0.982, dec)
 
     profile_distribution = [
         {"price": round(vah + 60, 1), "volume": 320, "is_vah": False, "is_val": False, "is_poc": False, "type": "LVN (گره کم‌حجم)"},

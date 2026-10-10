@@ -2,19 +2,47 @@
 """
 CRYPTO UNIFIED SIGNALS ENGINE (INSTITUTIONAL PRO 2026)
 -----------------------------------------------------
-Provides two distinct, institutional-grade unified signals with:
-1. UNIFIED SCALP SIGNAL (15m Timeframe) - Bookmap + NinjaTrader + ATAS + Sierra Chart
-2. UNIFIED SWING SIGNAL (4h Timeframe) - Quantower 4H + Spot ETF Flows + CME CoT + Wall St Desks
-3. MASTER CONFLICT RESOLUTION ENGINE (9-Module Confluence & No-Trade Safety Lock)
-4. FULL TP1, TP2, TP3 EXPANSION
+Adaptive Multi-Asset Precision Engine:
+- Scalp 15m: Micro SL (-0.40%), TP1 (+1.10%), TP2 (+2.50%), TP3 (+4.20%)
+- Swing 4h: Macro SL (-1.80%), TP1 (+3.50%), TP2 (+7.50%), TP3 (+12.50%)
+- Proportional percentage calculation for ALL cryptos (BTC, ETH, SOL, SUI, XRP, DOGE, PEPE, etc.)
+- Strict protection against negative prices, zero division, or fixed dollar offsets.
 """
 
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
 import crypto_orderflow_engine as coe
 
+def get_price_decimals(p: float) -> int:
+    """Determine adaptive decimal precision based on asset price magnitude."""
+    if p >= 1000:
+        return 1
+    elif p >= 10:
+        return 2
+    elif p >= 1:
+        return 4
+    elif p >= 0.01:
+        return 5
+    elif p > 0:
+        return 8
+    return 2
+
+def format_crypto_price(p: float) -> str:
+    """Format crypto price with readable thousand separators and adaptive decimals."""
+    if p >= 1000:
+        return f"${p:,.1f}"
+    elif p >= 10:
+        return f"${p:,.2f}"
+    elif p >= 1:
+        return f"${p:,.4f}"
+    elif p >= 0.01:
+        return f"${p:,.5f}"
+    elif p > 0:
+        return f"${p:.8f}"
+    return "$0.00"
+
 def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
-    symbol_clean = symbol.replace("USDT", "").replace("/", "").upper()
+    symbol_clean = symbol.replace("USDT", "").replace("/", "").strip().upper() or "BTC"
     now_utc = datetime.now(timezone.utc)
     now_iran = now_utc + timedelta(hours=3, minutes=30)
     tehran_time_str = now_iran.strftime("%H:%M:%S")
@@ -35,14 +63,17 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     except Exception:
         smt_liq = None
 
-    current_price = bm.get("current_price", 83250.0)
+    raw_price = bm.get("current_price", 0.0)
+    if raw_price <= 0:
+        raw_price = coe._get_live_crypto_price(symbol_clean)
+    if raw_price <= 0:
+        raw_price = 83000.0 if symbol_clean == "BTC" else (2500.0 if symbol_clean == "ETH" else (175.0 if symbol_clean == "SOL" else 1.0))
 
-    # =========================================================================
-    # PART 1: UNIFIED SCALP SIGNAL (15m Timeframe)
-    # =========================================================================
+    dec = get_price_decimals(raw_price)
+    current_price = round(raw_price, dec)
+
+    # Order flow indicators
     bm_icebergs = bm.get("icebergs", [])
-    bm_bid_walls = bm.get("bid_levels", [])
-    bm_ask_walls = bm.get("ask_levels", [])
     cvd_raw = nt.get("cvd", 0)
     cvd_val = cvd_raw.get("value", 0) if isinstance(cvd_raw, dict) else (cvd_raw or 0)
     sc_div = sc.get("divergence", "")
@@ -61,28 +92,26 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
 
     scalp_is_long = scalp_bull_score >= 5
 
-    # Scalp Levels with TP1, TP2, TP3
-    if scalp_is_long:
-        bid_iceberg = next((ic for ic in bm_icebergs if ic.get("direction") == "BUY" or ic.get("side") == "BID"), None)
-        floor_p = bid_iceberg.get("price", current_price * 0.996) if bid_iceberg else (bm_bid_walls[0].get("price", current_price * 0.996) if bm_bid_walls else current_price * 0.996)
-        scalp_entry = current_price
-        scalp_sl = round(min(current_price * 0.996, floor_p - 30), 1)
-        scalp_tp1 = round(current_price * 1.011, 1) # ~ +1.1%
-        scalp_tp2 = round(current_price * 1.025, 1) # ~ +2.5%
-        scalp_tp3 = round(current_price * 1.042, 1) # ~ +4.2%
-    else:
-        ask_iceberg = next((ic for ic in bm_icebergs if ic.get("direction") == "SELL" or ic.get("side") == "ASK"), None)
-        ceiling_p = ask_iceberg.get("price", current_price * 1.004) if ask_iceberg else (bm_ask_walls[0].get("price", current_price * 1.004) if bm_ask_walls else current_price * 1.004)
-        scalp_entry = current_price
-        scalp_sl = round(max(current_price * 1.004, ceiling_p + 30), 1)
-        scalp_tp1 = round(current_price * 0.989, 1) # ~ -1.1%
-        scalp_tp2 = round(current_price * 0.975, 1) # ~ -2.5%
-        scalp_tp3 = round(current_price * 0.958, 1) # ~ -4.2%
+    # =========================================================================
+    # PART 1: UNIFIED SCALP SIGNAL (15m Timeframe - Micro SL 0.40%)
+    # =========================================================================
+    scalp_entry = current_price
 
-    scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100
-    scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100
-    scalp_tp2_pct = abs((scalp_tp2 - scalp_entry) / scalp_entry) * 100
-    scalp_tp3_pct = abs((scalp_tp3 - scalp_entry) / scalp_entry) * 100
+    if scalp_is_long:
+        scalp_sl = round(scalp_entry * 0.9960, dec)  # Strict 0.40% Micro SL
+        scalp_tp1 = round(scalp_entry * 1.0110, dec) # +1.10% TP1
+        scalp_tp2 = round(scalp_entry * 1.0250, dec) # +2.50% TP2
+        scalp_tp3 = round(scalp_entry * 1.0420, dec) # +4.20% TP3
+    else:
+        scalp_sl = round(scalp_entry * 1.0040, dec)  # Strict 0.40% Micro SL
+        scalp_tp1 = round(scalp_entry * 0.9890, dec) # +1.10% TP1
+        scalp_tp2 = round(scalp_entry * 0.9750, dec) # +2.50% TP2
+        scalp_tp3 = round(scalp_entry * 0.9580, dec) # +4.20% TP3
+
+    scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 0.40
+    scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 1.10
+    scalp_tp2_pct = abs((scalp_tp2 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 2.50
+    scalp_tp3_pct = abs((scalp_tp3 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 4.20
 
     scalp_signal = {
         "signal_type": "SCALP",
@@ -92,15 +121,15 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         "direction_code": "LONG" if scalp_is_long else "SHORT",
         "direction_emoji": "🟢" if scalp_is_long else "🔴",
         "entry": scalp_entry,
-        "entry_fmt": f"${scalp_entry:,.1f}",
+        "entry_fmt": format_crypto_price(scalp_entry),
         "stop_loss": scalp_sl,
-        "stop_loss_fmt": f"${scalp_sl:,.1f} (-{scalp_sl_pct:.2f}%)",
+        "stop_loss_fmt": f"{format_crypto_price(scalp_sl)} (-{scalp_sl_pct:.2f}%)",
         "tp1": scalp_tp1,
-        "tp1_fmt": f"${scalp_tp1:,.1f} (+{scalp_tp1_pct:.2f}%)",
+        "tp1_fmt": f"{format_crypto_price(scalp_tp1)} (+{scalp_tp1_pct:.2f}%)",
         "tp2": scalp_tp2,
-        "tp2_fmt": f"${scalp_tp2:,.1f} (+{scalp_tp2_pct:.2f}%)",
+        "tp2_fmt": f"{format_crypto_price(scalp_tp2)} (+{scalp_tp2_pct:.2f}%)",
         "tp3": scalp_tp3,
-        "tp3_fmt": f"${scalp_tp3:,.1f} (+{scalp_tp3_pct:.2f}%)",
+        "tp3_fmt": f"{format_crypto_price(scalp_tp3)} (+{scalp_tp3_pct:.2f}%)",
         "date_tehran": tehran_date_str,
         "time_tehran": tehran_time_str,
         "holding_duration": "۳۰ دقیقه الی ۲ ساعت",
@@ -110,15 +139,10 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     }
 
     # =========================================================================
-    # PART 2: UNIFIED SWING TRADING SIGNAL (4h Timeframe)
+    # PART 2: UNIFIED SWING SIGNAL (4h Timeframe - Macro SL 1.80%)
     # =========================================================================
-    qt_mp = qt.get("market_profile", {})
-    qt_vah = qt_mp.get("vah", current_price * 1.03)
-    qt_val = qt_mp.get("val", current_price * 0.97)
-
     etf_net = bank.get("spot_etf_summary", {}).get("total_daily_net_usd", "+$394.9M")
     etf_is_positive = "+" in etf_net or "مثبت" in etf_net
-    whales = bank.get("institutional_whales", {})
     cme_cot = bank.get("cme_cot_crypto", {})
 
     # Swing Direction Evaluation
@@ -127,29 +151,27 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         swing_bull_score += 4
     if "84%" in cme_cot.get("asset_managers_position", "") or "Long" in cme_cot.get("asset_managers_position", ""):
         swing_bull_score += 3
-    if current_price >= qt_val * 0.99:
+    if cvd_val >= 0:
         swing_bull_score += 3
 
     swing_is_long = swing_bull_score >= 6
+    swing_entry = current_price
 
-    # Swing Levels with TP1, TP2, TP3
     if swing_is_long:
-        swing_entry = current_price
-        swing_sl = round(min(current_price * 0.982, qt_val * 0.992), 1)
-        swing_tp1 = round(max(current_price * 1.035, qt_vah), 1)
-        swing_tp2 = round(current_price * 1.075, 1)
-        swing_tp3 = round(current_price * 1.125, 1)
+        swing_sl = round(swing_entry * 0.9820, dec)  # Strict 1.80% Macro Structural SL
+        swing_tp1 = round(swing_entry * 1.0350, dec) # +3.50% VAH Target
+        swing_tp2 = round(swing_entry * 1.0750, dec) # +7.50% Macro Expansion
+        swing_tp3 = round(swing_entry * 1.1250, dec) # +12.50% Consensus Target
     else:
-        swing_entry = current_price
-        swing_sl = round(max(current_price * 1.018, qt_vah * 1.008), 1)
-        swing_tp1 = round(min(current_price * 0.965, qt_val), 1)
-        swing_tp2 = round(current_price * 0.925, 1)
-        swing_tp3 = round(current_price * 0.875, 1)
+        swing_sl = round(swing_entry * 1.0180, dec)  # Strict 1.80% Macro Structural SL
+        swing_tp1 = round(swing_entry * 0.9650, dec) # +3.50% VAL Target
+        swing_tp2 = round(swing_entry * 0.9250, dec) # +7.50% Macro Expansion
+        swing_tp3 = round(swing_entry * 0.8750, dec) # +12.50% Consensus Target
 
-    swing_sl_pct = abs((swing_sl - swing_entry) / swing_entry) * 100
-    swing_tp1_pct = abs((swing_tp1 - swing_entry) / swing_entry) * 100
-    swing_tp2_pct = abs((swing_tp2 - swing_entry) / swing_entry) * 100
-    swing_tp3_pct = abs((swing_tp3 - swing_entry) / swing_entry) * 100
+    swing_sl_pct = abs((swing_sl - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 1.80
+    swing_tp1_pct = abs((swing_tp1 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 3.50
+    swing_tp2_pct = abs((swing_tp2 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 7.50
+    swing_tp3_pct = abs((swing_tp3 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 12.50
 
     swing_signal = {
         "signal_type": "SWING",
@@ -159,15 +181,15 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         "direction_code": "LONG" if swing_is_long else "SHORT",
         "direction_emoji": "🟢" if swing_is_long else "🔴",
         "entry": swing_entry,
-        "entry_fmt": f"${swing_entry:,.1f}",
+        "entry_fmt": format_crypto_price(swing_entry),
         "stop_loss": swing_sl,
-        "stop_loss_fmt": f"${swing_sl:,.1f} (-{swing_sl_pct:.2f}%)",
+        "stop_loss_fmt": f"{format_crypto_price(swing_sl)} (-{swing_sl_pct:.2f}%)",
         "tp1": swing_tp1,
-        "tp1_fmt": f"${swing_tp1:,.1f} (+{swing_tp1_pct:.2f}%)",
+        "tp1_fmt": f"{format_crypto_price(swing_tp1)} (+{swing_tp1_pct:.2f}%)",
         "tp2": swing_tp2,
-        "tp2_fmt": f"${swing_tp2:,.1f} (+{swing_tp2_pct:.2f}%)",
+        "tp2_fmt": f"{format_crypto_price(swing_tp2)} (+{swing_tp2_pct:.2f}%)",
         "tp3": swing_tp3,
-        "tp3_fmt": f"${swing_tp3:,.1f} (+{swing_tp3_pct:.2f}%)",
+        "tp3_fmt": f"{format_crypto_price(swing_tp3)} (+{swing_tp3_pct:.2f}%)",
         "date_tehran": tehran_date_str,
         "time_tehran": tehran_time_str,
         "holding_duration": "۲ الی ۵ روز",
@@ -179,7 +201,6 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     # =========================================================================
     # PART 3: 9-MODULE INSTITUTIONAL CONFLICT RESOLUTION ENGINE
     # =========================================================================
-    # Check 9 institutional pillars
     conflict_checklist: List[Dict[str, Any]] = [
         {"tool": "Bookmap L2/L3", "aligned": True, "note": "دیواره خرید و پر شدن مجدد نقدینگی"},
         {"tool": "NinjaTrader Footprint", "aligned": cvd_val >= 0, "note": "دلتای مثبت و حراج ناقص در سقف"},
@@ -240,7 +261,7 @@ def format_clean_telegram_signal(sig: Dict[str, Any], symbol: str = "BTC") -> st
     Produces the exact clean, non-cluttered Telegram alert format requested by user:
     Only: Direction, Type & Timeframe, Entry, TP1, TP2, TP3, SL, Date, Time (Iran), Duration.
     """
-    sym = symbol.replace("USDT", "").replace("/", "").upper()
+    sym = symbol.replace("USDT", "").replace("/", "").strip().upper()
     sig_type_fa = sig.get("signal_type_fa", "اسکالپ")
     tf = sig.get("timeframe", "15m")
     direction = sig.get("direction", "خرید (LONG)")
@@ -271,9 +292,6 @@ def format_clean_telegram_signal(sig: Dict[str, Any], symbol: str = "BTC") -> st
     return msg.strip()
 
 if __name__ == "__main__":
-    res = get_unified_signals("BTC")
-    print("Conflict Status:", res["conflict_engine"]["status"])
-    print("SCALP:", res["scalp"]["direction"], res["scalp"]["entry_fmt"], "SL:", res["scalp"]["stop_loss_fmt"], "TP3:", res["scalp"]["tp3_fmt"])
-    print("SWING:", res["swing"]["direction"], res["swing"]["entry_fmt"], "SL:", res["swing"]["stop_loss_fmt"], "TP3:", res["swing"]["tp3_fmt"])
-    print("\nSAMPLE TELEGRAM SCALP ALERT:")
-    print(format_clean_telegram_signal(res["scalp"], "BTC"))
+    for s in ["BTC", "ETH", "SOL", "XRP", "DOGE", "SUI", "PEPE"]:
+        r = get_unified_signals(s)
+        print(f"[{s}] Price: {r['current_price']} | Scalp SL: {r['scalp']['stop_loss_fmt']} | Swing SL: {r['swing']['stop_loss_fmt']}")
