@@ -1675,17 +1675,18 @@ class DexScreenerEngine:
 class CoinlegsScanner:
     """
     Integration inspired by Coinlegs & Institutional Alpha Hunters (https://www.coinlegs.com/detections)
-    Scans Top 70 Market Cryptocurrencies using 6 Elite Quantitative Filters:
+    Scans Top 70 Market Cryptocurrencies using 6 Elite Quantitative Filters with Logical Strictness:
       1. Relative Strength vs BTC (Alpha RS)
       2. Volatility Squeeze & Bollinger Expansion
       3. Aggressive Taker Buy Dominance (> 65% Market Volume)
       4. Turtle Soup Liquidity Sweep & Support Reclaim
       5. Multi-Timeframe 4H Break of Structure (BOS)
       6. Turnover & Short Squeeze Fuel
-    Isolates the Top 3 Diamond Gems (👑 3 کاندیدای پرواز الماسی) with maximum conviction.
+    Isolates the Top 3 Diamond Gems (👑 3 کاندیدای پرواز الماسی) with 10-Minute Rank Stability.
     """
     _cached_detections = None
     _last_scan_time = 0
+    _diamond_anchors = {} # {symbol: {"score": score, "locked_until": timestamp}}
 
     TOP_50_SYMBOLS = [
         'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT',
@@ -1707,7 +1708,11 @@ class CoinlegsScanner:
     def _analyze_single_symbol(cls, sym: str, all_tickers: Dict[str, Any] = None, btc_chg_24h: float = 0.0) -> Optional[Dict[str, Any]]:
         try:
             tk = all_tickers.get(sym, {}) if all_tickers else {}
-            chg_24h = float(tk.get('priceChangePercent', 0.0)) * 100.0 if tk else 0.0
+            raw_chg = float(tk.get('priceChangePercent', 0.0)) if tk else 0.0
+            if abs(raw_chg) < 0.25 and abs(raw_chg) > 0.00001:
+                chg_24h = round(raw_chg * 100.0, 2) # MEXC decimal format
+            else:
+                chg_24h = round(raw_chg, 2)         # Binance percentage format
             alpha_rs = round(chg_24h - btc_chg_24h, 2)
             vol_usd_24h = float(tk.get('quoteVolume', 0.0)) if tk else 0.0
             curr_price = float(tk.get('lastPrice', 0.0)) if tk else 0.0
@@ -1964,20 +1969,26 @@ class CoinlegsScanner:
             # --- ACCURACY BOOSTERS (4 INSTITUTIONAL FILTERS) ---
             # 1. BTC Trend Alignment Gatekeeper: Protect against altcoin fake-pumps when BTC is dumping
             btc_alignment = True
-            if btc_chg_24h < -2.5 and alpha_rs < 2.0:
+            if btc_chg_24h < -2.5 and alpha_rs < 1.5:
                 btc_alignment = False
-                growth_score = max(25, growth_score - 16)
 
             # 2. Short Squeeze & Funding Rate Trap Potential:
-            squeeze_fuel = bool(alpha_rs >= 1.5 and vol_usd_24h > 10_000_000 and rsi < 72)
-            if squeeze_fuel:
-                growth_score = min(98, growth_score + 6)
+            squeeze_fuel = bool(alpha_rs >= 1.2 and vol_usd_24h > 15_000_000 and rsi < 68)
 
             # 3. Institutional Volume Absorption:
             absorption_confirmed = bool(f3_passed or f4_passed)
 
-            growth_score = max(30, min(98, growth_score))
             pass_count = sum(1 for f in elite_filters if f["passed"])
+
+            # Continuous decimal scoring formula (eliminates ties & prevents 1-minute score saturation)
+            score_pass = pass_count * 7.5 # up to 45 pts
+            score_alpha = min(max(alpha_rs * 1.5, -4.0), 16.0) # up to 16 pts
+            score_trend = 10.0 if trend_4h == "BULLISH_BOS" else (6.0 if trend_4h == "BULLISH" else 0.0)
+            score_vol = min((vol_usd_24h / 40_000_000.0) * 4.0, 8.0)
+            score_rsi = 5.0 if (48 <= rsi <= 64) else (2.0 if (42 <= rsi <= 68) else -5.0)
+
+            growth_score = round(48.0 + score_pass + score_alpha + score_trend + score_vol + score_rsi, 1)
+            growth_score = max(50.0, min(98.8, growth_score))
             accuracy_grade = "GRADE A+ (نهادی)" if pass_count >= 4 and btc_alignment else ("GRADE A" if pass_count >= 3 else "GRADE B")
 
             # --- DYNAMIC HIGH-WINRATE TP / SL & RISK-TO-REWARD ENGINE ---
@@ -2011,7 +2022,7 @@ class CoinlegsScanner:
             tp1_price = round(tp1_raw, pDec)
             
             # TP2: +2.8% to +3.6% (Structural wave target)
-            tp2_raw = max(entry_high * 1.028, p_curr + (atr_est * 1.80))
+            tp2_raw = max(entry_high * 1.032, p_curr + (atr_est * 2.20))
             tp2_price = round(tp2_raw, pDec)
             
             # TP3: +5.5% to +8.0% (Final expansion / Liquidity Pool hunt)
@@ -2030,19 +2041,27 @@ class CoinlegsScanner:
             rr_ratio = round(reward_dist / risk_dist, 2)
             rr_text = f"1:{rr_ratio}"
 
-            # --- FILTER GATE 1: Multi-Timeframe (MTF) Macro Alignment ---
-            # If 4H Trend is Bearish (under 4H EMA) or Bearish Divergence detected, reject to prevent bull traps
-            if trend_4h == "BEARISH" and alpha_rs < 2.0:
+            # --- REASONABLE LOGICAL STRICTNESS QUALITY GATES ---
+            # 1. Turnover Floor: At least $15M daily liquidity to prevent illiquid slippage
+            if vol_usd_24h < 15_000_000:
+                return None
+
+            # 2. RSI Sweet Spot: Reject overheated euphoria (> 68) and dead dumpers (< 40)
+            if rsi > 68 or rsi < 40:
+                return None
+
+            # 3. Macro 4H Trend Alignment: Reject 4H downtrends unless massive alpha > 3.0%
+            if trend_4h == "BEARISH" and alpha_rs < 3.0:
                 return None
             if div_badge == "BEARISH_DIV":
                 return None
 
-            # --- FILTER GATE 2: Dynamic Minimum Risk-to-Reward (R:R >= 1:1.45) ---
-            if rr_ratio < 1.45:
+            # 4. Confluence Gate: Must pass at least 3 of 6 elite filters!
+            if pass_count < 3:
                 return None
 
-            # Selectivity Gate: Require at least Score >= 60 or pass_count >= 1
-            if growth_score < 60 and pass_count < 1:
+            # 5. Risk-to-Reward Quality Floor: Minimum 1:1.65 structural potential
+            if rr_ratio < 1.60:
                 return None
 
             # Actionable Strategy Verdict
@@ -2145,6 +2164,18 @@ class CoinlegsScanner:
         # Filter out None (neutral/weak coins omitted)
         items = [it for it in raw_items if it is not None]
 
+        # 10-Minute Rank Stability Engine (Hysteresis Buffer):
+        # Give previously confirmed top-3 diamond gems a +3.5 point loyalty buffer
+        # to prevent 1-minute random flip-flopping on micro-tick noise
+        now_ts = now
+        for item in items:
+            s_name = item["symbol"]
+            if s_name in cls._diamond_anchors:
+                anchor = cls._diamond_anchors[s_name]
+                if now_ts < anchor.get("locked_until", 0):
+                    item["growth_score"] = round(item["growth_score"] + 3.5, 1)
+                    item["is_anchored"] = True
+
         # Sort by growth conviction score descending
         items.sort(key=lambda x: x["growth_score"], reverse=True)
 
@@ -2153,6 +2184,11 @@ class CoinlegsScanner:
         for idx, gem in enumerate(top_3_gems):
             gem["diamond_rank"] = idx + 1
             gem["rank_icon"] = "👑" if idx == 0 else ("⭐" if idx == 1 else "✨")
+            # Anchor / refresh 10-minute validity lock
+            cls._diamond_anchors[gem["symbol"]] = {
+                "score": gem["growth_score"],
+                "locked_until": now_ts + 600
+            }
 
         neutral_count = len(target_symbols) - len(items)
 
