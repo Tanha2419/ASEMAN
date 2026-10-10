@@ -177,10 +177,10 @@ def get_crypto_ninjatrader_live(symbol: str = "BTC", timeframe: str = "15m") -> 
         })
     super_dom.reverse()
 
-    # 2. Footprint Candlestick Clusters (Authentic 3-column Ladder)
+    # 2. Footprint Candlestick Clusters (Authentic 3-column Ladder - 12 institutional candles)
     footprint_candles: List[Dict[str, Any]] = []
-    base_time = now - (bar_sec * 6)
-    for c_idx in range(6):
+    base_time = now - (bar_sec * 12)
+    for c_idx in range(12):
         c_time = datetime.fromtimestamp(base_time + c_idx * bar_sec, tz=TEHRAN_TZ).strftime("%H:%M")
         c_open = round(p - (c_idx * step * 1.5) + math.sin(c_idx) * step, 1)
         c_close = round(c_open + (step * 2.2 if c_idx % 2 == 0 else -step * 1.2), 1)
