@@ -2813,6 +2813,9 @@
                 <span>⏳ مدت نگهداری: <strong id="scalpHoldingVal" style="color: #ffd700;">۳۰ دقیقه الی ۲ ساعت</strong></span>
                 <span>⏱️ تایم‌فریم: <strong style="color: #00e676;">15 دقیقه (15m)</strong></span>
               </div>
+              <button onclick="dispatchSpecificSignal('scalp')" style="width: 100%; margin-top: 10px; padding: 7px 12px; background: rgba(0, 230, 118, 0.15); border: 1px solid #00e676; border-radius: 6px; color: #00e676; font-size: 0.76rem; font-weight: 800; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(0, 230, 118, 0.28)'" onmouseout="this.style.background='rgba(0, 230, 118, 0.15)'">
+                🚀 ارسال سیگنال اسکالپ به تلگرام و ژورنال
+              </button>
             </div>
 
             <!-- CARD 2: UNIFIED SWING (4h) -->
@@ -2858,6 +2861,9 @@
                 <span>⏳ مدت نگهداری: <strong id="swingHoldingVal" style="color: #ffd700;">۲ الی ۵ روز</strong></span>
                 <span>⏱️ تایم‌فریم: <strong style="color: #c084fc;">۴ ساعته (4h)</strong></span>
               </div>
+              <button onclick="dispatchSpecificSignal('swing')" style="width: 100%; margin-top: 10px; padding: 7px 12px; background: rgba(168, 85, 247, 0.15); border: 1px solid #c084fc; border-radius: 6px; color: #c084fc; font-size: 0.76rem; font-weight: 800; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(168, 85, 247, 0.28)'" onmouseout="this.style.background='rgba(168, 85, 247, 0.15)'">
+                🌊 ارسال سیگنال سوئینگ به تلگرام و ژورنال
+              </button>
             </div>
 
           </div>
@@ -4902,6 +4908,7 @@
                   <th style="padding: 12px 14px;">حد ضرر (SL)</th>
                   <th style="padding: 12px 14px;">تارگت اول (TP1)</th>
                   <th style="padding: 12px 14px;">تارگت دوم (TP2)</th>
+                  <th style="padding: 12px 14px; color: #c084fc;">تارگت سوم (TP3)</th>
                   <th style="padding: 12px 14px;">مدت نگهداری</th>
                   <th style="padding: 12px 14px;">وضعیت پایش</th>
                   <th style="padding: 12px 14px;">بازدهی</th>
@@ -4911,7 +4918,7 @@
               </thead>
               <tbody id="journalTableBody">
                 <tr>
-                  <td colspan="12" style="text-align: center; padding: 30px; color: var(--text-dim);">
+                  <td colspan="13" style="text-align: center; padding: 30px; color: var(--text-dim);">
                     در حال فراخوانی داده‌های ژورنال سیگنال‌ها...
                   </td>
                 </tr>
@@ -4952,25 +4959,48 @@
           </div>
 
           <!-- Heatmap Summary Stats -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 18px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 14px;">
             <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
               <div style="font-size: 0.75rem; color: var(--text-dim);">وضعیت کلی بازار (Market State)</div>
               <div style="font-size: 1.1rem; font-weight: 800; margin-top: 4px;" id="c360MarketState">در حال لود...</div>
             </div>
             <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 8px; padding: 12px;">
-              <div style="font-size: 0.75rem; color: #00e676;">بیشترین رشد ۲۴ ساعته (Top Gainer)</div>
+              <div style="font-size: 0.75rem; color: #00e676;" id="c360TopGainerLabel">بیشترین رشد (Top Gainer)</div>
               <div style="font-size: 1.1rem; font-weight: 800; color: #00e676; margin-top: 4px;" id="c360TopGainer">--</div>
             </div>
             <div style="background: rgba(255, 51, 102, 0.08); border: 1px solid rgba(255, 51, 102, 0.2); border-radius: 8px; padding: 12px;">
-              <div style="font-size: 0.75rem; color: #ff3366;">بیشترین اصلاح ۲۴ ساعته (Top Loser)</div>
+              <div style="font-size: 0.75rem; color: #ff3366;" id="c360TopLoserLabel">بیشترین اصلاح (Top Loser)</div>
               <div style="font-size: 1.1rem; font-weight: 800; color: #ff3366; margin-top: 4px;" id="c360TopLoser">--</div>
             </div>
           </div>
 
-          <!-- Treemap Grid -->
-          <div class="heatmap-grid" id="heatmapGrid">
+          <!-- Heatmap Timeframe Bar & Horizontal Guidance -->
+          <div style="background: rgba(10, 16, 32, 0.75); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 10px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 700;">⏱️ افق زمانی هیت‌مپ:</span>
+              <div style="display: inline-flex; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 3px; gap: 4px;">
+                <button id="btnHeatmap1h" onclick="changeHeatmapTimeframe('1h')" style="background: transparent; border: 1px solid transparent; color: #94a3b8; padding: 5px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: 0.2s;">
+                  ⚡ ۱ ساعته (1H)
+                </button>
+                <button id="btnHeatmap24h" onclick="changeHeatmapTimeframe('24h')" style="background: rgba(0, 210, 255, 0.25); border: 1px solid #00d2ff; color: #00d2ff; padding: 5px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: 0.2s;">
+                  📅 ۲۴ ساعته (24H)
+                </button>
+                <button id="btnHeatmap7d" onclick="changeHeatmapTimeframe('7d')" style="background: transparent; border: 1px solid transparent; color: #94a3b8; padding: 5px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: 0.2s;">
+                  📊 ۷ روزه (7D)
+                </button>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 0.76rem; color: #38bdf8;">
+              <span>👈 نقشه افقی ۵۰ ارز برتر کریپتو (اسکرول افقی به چپ و راست)</span>
+              <button onclick="scrollHeatmapGrid(-300)" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff; width: 28px; height: 28px; border-radius: 6px; cursor: pointer;">▶</button>
+              <button onclick="scrollHeatmapGrid(300)" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff; width: 28px; height: 28px; border-radius: 6px; cursor: pointer;">◀</button>
+            </div>
+          </div>
+
+          <!-- Treemap Grid (Horizontal Scrollable Carousel for 50 Coins) -->
+          <div class="heatmap-grid" id="heatmapGrid" style="display: grid; grid-template-rows: repeat(3, 115px); grid-auto-flow: column; grid-auto-columns: minmax(140px, 160px); gap: 12px; overflow-x: auto; overflow-y: hidden; padding-bottom: 12px; scroll-behavior: smooth;">
             <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-dim);">
-              در حال دریافت آخرین نوسانات بازار از موتور هیت‌مپ...
+              در حال دریافت آخرین نوسانات بازار از موتور هیت‌مپ ۵۰ ارز برتر...
             </div>
           </div>
         </div>
@@ -4982,14 +5012,14 @@
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
             <div>
               <div style="font-size: 1.1rem; font-weight: 800; color: #ff9800; display: flex; align-items: center; gap: 8px;">
-                <span>🦵</span> رادار دیتکشن‌ها و فرصت‌های آنی (اسکن ۱۰۰ نماد برتر بازار - تایم ۵ دقیقه M5)
+                <span>🦵</span> رادار دیتکشن‌ها و فرصت‌های آنی (اسکن ۵۰ ارز برتر بازار - تایم ۵ دقیقه M5 با ۴ لایه ارتقای دقت)
               </div>
               <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">
-                اسکن ۱۰۰ ارز برتر کریپتو در تایم‌فریم فوق‌سریع ۵ دقیقه | شکار لحظه‌ای استارت پامپ‌ها بدون تاخیر با تارگت‌های ۳گانه
+                اسکن همزمان ۵۰ نماد برتر کریپتو با فیلتر هماهنگی روندی BTC، تله شورت‌اسکوئیز و جذب CVD | تارگت‌های سه‌گانه TP1/TP2/TP3
               </div>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-              <button onclick="fetchCoinlegsDetections()" class="copy-btn" style="padding: 6px 14px; font-size: 0.8rem;">🔄 اسکن زنده ۱۰۰ ارز (M5)</button>
+              <button onclick="fetchCoinlegsDetections()" class="copy-btn" style="padding: 6px 14px; font-size: 0.8rem;">🔄 اسکن زنده ۵۰ ارز برتر (M5)</button>
               <a href="https://www.coinlegs.com/detections" target="_blank" class="portal-chip portal-legs" style="padding: 6px 14px;">
                 🦵 پرتال مرجع Coinlegs ↗
               </a>
@@ -5000,9 +5030,9 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
               <div style="display: flex; align-items: center; gap: 8px; color: #fef08a; font-weight: 700;">
                 <span>🎯 فیلتر هوشمند مومنتوم ۵ دقیقه (M5):</span>
-                <span id="coinlegsFilterStats">در حال اسکن ۱۰۰ نماد برتر و تفکیک فرصت‌های طلایی...</span>
+                <span id="coinlegsFilterStats">در حال اسکن ۵۰ نماد برتر و اعمال تاییدیه‌های ۴ گانه دقت...</span>
               </div>
-              <span style="font-size: 0.74rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; padding: 2px 8px; border-radius: 4px; font-weight: 700;">● فقط سیگنال‌های پرقدرت و تاییدشده</span>
+              <span style="font-size: 0.74rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; padding: 2px 8px; border-radius: 4px; font-weight: 700;">● فیلتر تله و سیگنال‌های نهادی تاییدشده</span>
             </div>
           </div>
 
@@ -6669,7 +6699,7 @@
             <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <span style="font-size: 0.85rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
-                  <span>🔢</span> چارت میله‌ای عددی تیک‌به‌تیک (Numbered Bars Bid x Ask)
+                  <span>🔢</span> چارت میله‌ای عددی تیک‌به‌تیک سییرا چارت (۱۲ کندل جریان سفارشات Numbered Bars)
                 </span>
                 <span id="cryptoScActiveTfSpan" style="font-size: 0.72rem; color: #ffd700;">کندل‌های ۱۵ دقیقه‌ای</span>
               </div>
@@ -7089,7 +7119,7 @@
       }
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 24px; color: var(--text-dim);">هیچ معامله‌ای با شرایط فیلتر انتخاب‌شده یافت نشد.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 24px; color: var(--text-dim);">هیچ معامله‌ای با شرایط فیلتر انتخاب‌شده یافت نشد.</td></tr>`;
         return;
       }
 
@@ -7163,6 +7193,7 @@
             <td style="padding: 10px 14px; color: #ff3366; font-weight: 600;">${slFmt}</td>
             <td style="padding: 10px 14px; color: #00e676; font-weight: 600;">${tp1Fmt}</td>
             <td style="padding: 10px 14px; color: #ffd700; font-weight: 600;">${tp2Fmt}</td>
+            <td style="padding: 10px 14px; color: #c084fc; font-weight: 700;">${tp3Fmt}</td>
             <td style="padding: 10px 14px; color: #ffd700; font-size: 0.74rem; font-weight: 700;">${r.holding_duration || ((r.timeframe === '4h' || (r.signal_type || '').includes('SWING')) ? '۲ الی ۵ روز' : '۳۰ دقیقه الی ۲ ساعت')}</td>
             <td style="padding: 10px 14px;">${statusBadge}</td>
             <td style="padding: 10px 14px;">${pnlBadge}</td>
@@ -7382,7 +7413,7 @@
         const data = await res.json();
         
         if (!data || !data.records) {
-          if (tbody) tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 20px; color: var(--text-dim);">هیچ معامله‌ای تا این لحظه ثبت نشده است.</td></tr>`;
+          if (tbody) tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 20px; color: var(--text-dim);">هیچ معامله‌ای تا این لحظه ثبت نشده است.</td></tr>`;
           return;
         }
 
@@ -7420,7 +7451,7 @@
         _journalAllRecords = data.records || [];
         applyJournalFilters();
       } catch (err) {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 20px; color: #ff3366;">خطا در دریافت اطلاعات ژورنال عملکرد.</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 20px; color: #ff3366;">خطا در دریافت اطلاعات ژورنال عملکرد.</td></tr>`;
       }
     }
 
@@ -7734,61 +7765,118 @@
       }
     }
 
-    // --- Coin360 Heatmap Engine ---
-    async function fetchHeatmap() {
+    // --- Coin360 Heatmap Engine (50 Elite Cryptos, Multi-Timeframe, Horizontal Scroll) ---
+    let _activeHeatmapTf = '24h';
+
+    function changeHeatmapTimeframe(tf) {
+      _activeHeatmapTf = tf;
+      ['1h', '24h', '7d'].forEach(k => {
+        const btn = document.getElementById(`btnHeatmap${k}`);
+        if (btn) {
+          if (k === tf) {
+            btn.style.background = 'rgba(0, 210, 255, 0.25)';
+            btn.style.borderColor = '#00d2ff';
+            btn.style.color = '#00d2ff';
+          } else {
+            btn.style.background = 'transparent';
+            btn.style.borderColor = 'transparent';
+            btn.style.color = '#94a3b8';
+          }
+        }
+      });
+
+      const topGLabel = document.getElementById('c360TopGainerLabel');
+      const topLLabel = document.getElementById('c360TopLoserLabel');
+      const lbl = tf === '1h' ? '۱ ساعته (1H)' : (tf === '7d' ? '۷ روزه (7D)' : '۲۴ ساعته (24H)');
+      if (topGLabel) topGLabel.innerText = `بیشترین رشد ${lbl}`;
+      if (topLLabel) topLLabel.innerText = `بیشترین اصلاح ${lbl}`;
+
+      fetchHeatmap(_activeHeatmapTf);
+    }
+
+    function scrollHeatmapGrid(delta) {
       const grid = document.getElementById('heatmapGrid');
-      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-dim);">در حال ارتباط با موتور هیت‌مپ زنده بازار به سبک Coin360...</div>';
+      if (grid) {
+        grid.scrollBy({ left: delta, behavior: 'smooth' });
+      }
+    }
+
+    async function fetchHeatmap(tf = _activeHeatmapTf) {
+      const grid = document.getElementById('heatmapGrid');
+      if (grid) {
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-dim);">در حال ارتباط با موتور هیت‌مپ ۵۰ ارز برتر به سبک Coin360...</div>';
+      }
       try {
-        const res = await fetch('/api/heatmap');
+        const res = await fetch(`/api/heatmap?timeframe=${tf}`);
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Failed to fetch heatmap');
 
-        document.getElementById('c360MarketState').innerText = data.market_state || 'متعادل';
+        const stateEl = document.getElementById('c360MarketState');
+        if (stateEl) stateEl.innerText = `${data.market_state || 'متعادل'} (${data.timeframe_label || tf})`;
+
         if (data.top_gainer) {
-          document.getElementById('c360TopGainer').innerText = `${data.top_gainer.symbol} (+${data.top_gainer.change_pct}%)`;
+          const tgEl = document.getElementById('c360TopGainer');
+          if (tgEl) tgEl.innerText = `${data.top_gainer.symbol} (+${data.top_gainer.change_pct}%)`;
         }
         if (data.top_loser) {
-          document.getElementById('c360TopLoser').innerText = `${data.top_loser.symbol} (${data.top_loser.change_pct}%)`;
+          const tlEl = document.getElementById('c360TopLoser');
+          if (tlEl) tlEl.innerText = `${data.top_loser.symbol} (${data.top_loser.change_pct}%)`;
         }
 
         const tiles = data.tiles || data.blocks || [];
-        grid.innerHTML = '';
-        tiles.forEach(tile => {
-          const isUp = tile.change_pct >= 0;
-          const isLarge = tile.weight >= 20;
-          const bgRgba = isUp 
-            ? `rgba(0, 230, 118, ${Math.min(0.85, 0.20 + Math.abs(tile.change_pct)/12)})`
-            : `rgba(255, 51, 102, ${Math.min(0.85, 0.20 + Math.abs(tile.change_pct)/12)})`;
-          const borderCol = isUp ? '#00e676' : '#ff3366';
+        if (grid) {
+          grid.innerHTML = '';
+          tiles.forEach(tile => {
+            const isUp = tile.change_pct >= 0;
+            const isLeader = tile.rank <= 3;
+            const bgRgba = isUp 
+              ? `rgba(0, 230, 118, ${Math.min(0.85, 0.20 + Math.abs(tile.change_pct)/10)})`
+              : `rgba(255, 51, 102, ${Math.min(0.85, 0.20 + Math.abs(tile.change_pct)/10)})`;
+            const borderCol = isUp ? '#00e676' : '#ff3366';
 
-          const card = document.createElement('div');
-          card.className = `heatmap-tile ${isLarge ? 'large' : ''}`;
-          card.style.background = bgRgba;
-          card.style.border = `1px solid ${borderCol}`;
-          card.title = `کلیک کنید تا تحلیل کامل ${tile.symbol} باز شود`;
-          card.onclick = () => {
-            loadSymbol(tile.symbol);
-            switchTab('instTab', document.querySelector('.tab-btn'));
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            showToast(`نماد ${tile.symbol} انتخاب شد.`);
-          };
+            const card = document.createElement('div');
+            card.className = `heatmap-tile ${isLeader ? 'large' : ''}`;
+            card.style.background = bgRgba;
+            card.style.border = `1.5px solid ${borderCol}`;
+            card.style.minWidth = '140px';
+            card.style.borderRadius = '8px';
+            card.style.padding = '10px 12px';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.justifyContent = 'space-between';
+            card.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+            card.style.cursor = 'pointer';
+            card.style.transition = 'transform 0.15s';
+            card.onmouseover = () => card.style.transform = 'translateY(-2px)';
+            card.onmouseout = () => card.style.transform = 'translateY(0)';
+            card.title = `رتبه ${tile.rank} | کلیک کنید تا تحلیل کامل ${tile.symbol} باز شود`;
+            card.onclick = () => {
+              loadSymbol(tile.symbol);
+              switchTab('instTab', document.querySelector('.tab-btn'));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              showToast(`نماد ${tile.symbol} برای تحلیل انتخاب شد.`);
+            };
 
-          card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <span style="font-weight: 900; font-size: ${isLarge ? '1.5rem' : '1.1rem'}; color: #fff;">${tile.symbol}</span>
-              <span style="font-size: 0.72rem; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; color: #fff;">${tile.volume_fmt || ''}</span>
-            </div>
-            <div style="margin-top: auto; padding-top: 10px;">
-              <div style="font-family: var(--font-mono); font-size: ${isLarge ? '1.25rem' : '0.95rem'}; font-weight: 800; color: #fff;">${formatPrice(tile.price)}</div>
-              <div style="font-size: ${isLarge ? '1.1rem' : '0.9rem'}; font-weight: 800; color: #fff; margin-top: 2px;">
-                ${isUp ? '▲ +' : '▼ '}${tile.change_pct}%
+            card.innerHTML = `
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; align-items: baseline; gap: 4px;">
+                  <span style="font-weight: 900; font-size: ${isLeader ? '1.25rem' : '1.05rem'}; color: #fff;">${tile.symbol}</span>
+                  <span style="font-size: 0.65rem; color: #cbd5e1;">#${tile.rank}</span>
+                </div>
+                <span style="font-size: 0.65rem; background: rgba(0,0,0,0.45); padding: 1px 5px; border-radius: 4px; color: #fff;">${tile.volume_fmt || ''}</span>
               </div>
-            </div>
-          `;
-          grid.appendChild(card);
-        });
+              <div style="margin-top: auto; padding-top: 6px;">
+                <div style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 800; color: #fff;">$${formatPrice(tile.price)}</div>
+                <div style="font-size: 0.82rem; font-weight: 900; color: #fff; margin-top: 2px;">
+                  ${isUp ? '▲ +' : '▼ '}${tile.change_pct}%
+                </div>
+              </div>
+            `;
+            grid.appendChild(card);
+          });
+        }
       } catch (e) {
-        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #ff3366;">خطا در دریافت هیت‌مپ: ${e.message}</div>`;
+        if (grid) grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #ff3366;">خطا در دریافت هیت‌مپ: ${e.message}</div>`;
       }
     }
 
@@ -7796,7 +7884,7 @@
     async function fetchCoinlegsDetections() {
       const tbody = document.getElementById('detectionsTbody');
       const gemsGrid = document.getElementById('diamondGemsGrid');
-      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">در حال اسکن همزمان ۷۰ نماد برتر با ۶ فیلتر کوانتومی (قدرت نسبی به BTC، شکست فنر بولینگر و اردر فلو)...</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">در حال اسکن همزمان ۵۰ نماد برتر با ۶ فیلتر کوانتومی و ۴ لایه ارتقای دقت (گارد روندی BTC، تله فاندینگ‌ریت و جذب CVD)...</td></tr>';
       if (gemsGrid) gemsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #ffd700;">در حال شناسایی و اعتبارسنجی ۳ کاندیدای پرواز الماسی...</div>';
       
       try {
@@ -7806,7 +7894,7 @@
 
         const statsEl = document.getElementById('coinlegsFilterStats');
         if (statsEl) {
-          statsEl.innerText = `${data.total_scanned || 70} نماد ارزیابی شد | ${data.neutral_filtered || 0} نماد خنثی حذف شد | ${data.high_conviction_count || 0} فرصت الیت با ۳ الماس لیدر استخراج شد`;
+          statsEl.innerText = `${data.total_scanned || 50} نماد ارزیابی شد | ${data.neutral_filtered || 0} نماد فاقد مومنتوم فیلتر شد | ${data.high_conviction_count || 0} فرصت الیت با ۳ الماس لیدر استخراج شد`;
         }
 
         // 1. Render Top 3 Diamond Gems Spotlight
@@ -7845,6 +7933,7 @@
                       <span style="font-size: 0.74rem; font-weight: 800; background: rgba(255, 215, 0, 0.2); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.4); padding: 3px 8px; border-radius: 4px;">
                         امتیاز رشد: ${g.growth_score}/100
                       </span>
+                      ${g.accuracy_grade ? `<span style="font-size: 0.74rem; font-weight: 800; background: rgba(0, 230, 118, 0.18); color: #00e676; border: 1px solid #00e676; padding: 3px 8px; border-radius: 4px;">${g.accuracy_grade}</span>` : ''}
                       <span style="font-size: 0.74rem; font-weight: 700; background: ${g.alpha_rs >= 0 ? 'rgba(0, 230, 118, 0.18)' : 'rgba(255, 51, 102, 0.18)'}; color: ${g.alpha_rs >= 0 ? '#00e676' : '#ff3366'}; border: 1px solid ${g.alpha_rs >= 0 ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 51, 102, 0.35)'}; padding: 3px 8px; border-radius: 4px;">
                         آلفا به BTC: ${g.alpha_rs >= 0 ? '+' : ''}${g.alpha_rs}%
                       </span>
@@ -11227,29 +11316,60 @@ ${s3d.action_advice || ''}
       }
     }
 
-    async function dispatchTelegramSignal() {
-      if (!currentAnalysis) return;
-      const token = document.getElementById('tgBotToken').value;
-      const chat = document.getElementById('tgChatId').value;
-      showToast('در حال مخابره سیگنال سازمانی به تلگرام...');
+    async function dispatchTelegramSignal(sigType = 'scalp') {
+      const sym = (currentAnalysis ? currentAnalysis.symbol : (typeof _cryptoBmSym !== 'undefined' ? _cryptoBmSym : 'BTC'));
+      const token = (document.getElementById('tgBotToken') ? document.getElementById('tgBotToken').value : '') || '';
+      const chat = (document.getElementById('tgChatId') ? document.getElementById('tgChatId').value : '') || '';
+      showToast('در حال مخابره سیگنال سازمانی به تلگرام و ثبت در ژورنال...');
       try {
         const res = await fetch('/api/telegram/send', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
-            symbol: currentAnalysis.symbol,
+            symbol: sym,
             bot_token: token,
-            chat_id: chat
+            chat_id: chat,
+            signal_type: sigType
           })
         });
         const data = await res.json();
         if (data.success) {
-          showToast(data.message || 'سیگنال به تلگرام ارسال شد!');
+          showToast(data.message || 'سیگنال به تلگرام ارسال شد و در ژورنال هوشمند ثبت گردید!');
+          fetchJournalLive();
         } else {
           showToast(data.error || 'خطا در ارسال به تلگرام');
         }
       } catch (err) {
         showToast('خطا در اتصال: ' + err.message);
+      }
+    }
+
+    async function dispatchSpecificSignal(sigType) {
+      const sym = typeof _cryptoBmSym !== 'undefined' ? _cryptoBmSym : (currentAnalysis ? currentAnalysis.symbol : 'BTC');
+      const token = (document.getElementById('tgBotToken') ? document.getElementById('tgBotToken').value : '') || '';
+      const chat = (document.getElementById('tgChatId') ? document.getElementById('tgChatId').value : '') || '';
+      const title = sigType === 'swing' ? 'سوئینگ (4H)' : 'اسکالپ (15M)';
+      showToast(`در حال ارسال سیگنال ${title} به تلگرام و ثبت در ژورنال...`);
+      try {
+        const res = await fetch('/api/telegram/send', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            symbol: sym,
+            bot_token: token,
+            chat_id: chat,
+            signal_type: sigType
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`سیگنال ${title} [${sym}] با موفقیت در تلگرام و ژورنال ثبت شد!`);
+          fetchJournalLive();
+        } else {
+          showToast(data.error || 'خطا در ارسال سیگنال');
+        }
+      } catch (err) {
+        showToast('خطا در ارتباط با سرور: ' + err.message);
       }
     }
 
@@ -13457,31 +13577,34 @@ ${s3d.action_advice || ''}
         // Numbered Bars
         const nbCont = document.getElementById('cryptoScNumberedBarsContainer');
         if (nbCont && data.numbered_bars) {
-          nbCont.innerHTML = data.numbered_bars.map(b => {
+          nbCont.innerHTML = data.numbered_bars.map((b, idx) => {
             const isBull = b.close >= b.open;
             const deltaCol = b.delta >= 0 ? '#00e676' : '#ff3366';
+            const candleNum = idx + 1;
+            const tagBadge = b.tag ? `<div style="font-size:0.66rem; color:#ffd700; background:rgba(255,215,0,0.15); border-radius:3px; padding:1px 4px; text-align:center; margin-top:3px;">${b.tag}</div>` : '';
             return `
-              <div style="min-width:140px; background:rgba(0,0,0,0.45); border:1px solid ${isBull ? '#00e676' : '#ff3366'}; border-radius:6px; padding:8px; font-family:monospace; font-size:0.74rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-weight:800; color:#fff;">
-                  <span>${b.time}</span>
-                  <span style="color:${deltaCol};">${b.delta >= 0 ? '+' : ''}${b.delta} Δ</span>
+              <div style="min-width:145px; background:rgba(0,0,0,0.5); border:1.5px solid ${isBull ? 'rgba(0,230,118,0.6)' : 'rgba(255,51,102,0.6)'}; border-radius:8px; padding:8px 10px; font-family:var(--font-mono); font-size:0.74rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-weight:800; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:3px;">
+                  <span style="color:#94a3b8; font-size:0.7rem;">#${candleNum} [${b.time}]</span>
+                  <span style="color:${deltaCol}; font-weight:900;">${b.delta >= 0 ? '+' : ''}${b.delta} Δ</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; color:#94a3b8;">
-                  <span>Open:</span><span>$${Number(b.open).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; color:#94a3b8; font-size:0.71rem;">
+                  <span>O:</span><span>$${Number(b.open).toLocaleString()}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; color:#00e676;">
-                  <span>High:</span><span>$${Number(b.high).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; color:#00e676; font-size:0.71rem;">
+                  <span>H:</span><span>$${Number(b.high).toLocaleString()}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; color:#ff3366;">
-                  <span>Low:</span><span>$${Number(b.low).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; color:#ff3366; font-size:0.71rem;">
+                  <span>L:</span><span>$${Number(b.low).toLocaleString()}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; color:#ffd700; font-weight:800;">
-                  <span>Close:</span><span>$${Number(b.close).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; color:#ffd700; font-weight:800; font-size:0.73rem;">
+                  <span>C:</span><span>$${Number(b.close).toLocaleString()}</span>
                 </div>
                 <div style="margin-top:4px; border-top:1px solid rgba(255,255,255,0.06); padding-top:4px; display:flex; justify-content:space-between; font-size:0.7rem;">
-                  <span style="color:#00e676;">${b.bid_vol} B</span>
-                  <span style="color:#ff3366;">${b.ask_vol} A</span>
+                  <span style="color:#00e676;" title="حجم خرید">${b.bid_vol} B</span>
+                  <span style="color:#ff3366;" title="حجم فروش">${b.ask_vol} A</span>
                 </div>
+                ${tagBadge}
               </div>
             `;
           }).join('');

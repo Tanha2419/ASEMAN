@@ -442,118 +442,121 @@ def get_crypto_sierrachart_data(symbol: str = "BTC", timeframe: str = "15m") -> 
     p = round(_get_live_crypto_price(base), 1)
     t_now = datetime.now(TEHRAN_TZ)
 
-    # Dynamic candles and parameters based on timeframe
-    if tf == "1m":
-        tf_name = "۱ دقیقه (اسکالپ پرسرعت)"
-        step = 6.0
-        v_mult = 1.0
-        times = [
-            (t_now.replace(minute=(t_now.minute - 4) % 60)).strftime("%H:%M"),
-            (t_now.replace(minute=(t_now.minute - 3) % 60)).strftime("%H:%M"),
-            (t_now.replace(minute=(t_now.minute - 2) % 60)).strftime("%H:%M"),
-            (t_now.replace(minute=(t_now.minute - 1) % 60)).strftime("%H:%M"),
-            t_now.strftime("%H:%M")
-        ]
-        numbered_bars = [
-            {"bar_id": 201, "time": times[0], "open": round(p - 18, 1), "high": round(p - 8, 1), "low": round(p - 22, 1), "close": round(p - 12, 1), "vol": 72, "delta": +24, "state": "SCALP_BOUNCE", "absorption": "NO"},
-            {"bar_id": 202, "time": times[1], "open": round(p - 12, 1), "high": round(p - 4, 1), "low": round(p - 15, 1), "close": round(p - 6, 1), "vol": 85, "delta": +18, "state": "CONTINUATION", "absorption": "NO"},
-            {"bar_id": 203, "time": times[2], "open": round(p - 6, 1), "high": round(p + 8, 1), "low": round(p - 10, 1), "close": round(p + 2, 1), "vol": 115, "delta": -12, "state": "DELTA_ABSORPTION", "absorption": "YES_BULLISH"},
-            {"bar_id": 204, "time": times[3], "open": round(p + 2, 1), "high": round(p + 14, 1), "low": round(p - 1, 1), "close": round(p + 10, 1), "vol": 130, "delta": +45, "state": "MOMENTUM_SPIKE", "absorption": "NO"},
-            {"bar_id": 205, "time": times[4], "open": round(p + 10, 1), "high": round(p + 18, 1), "low": round(p + 5, 1), "close": round(p + 12, 1), "vol": 94, "delta": +16, "state": "CONSOLIDATION", "absorption": "NO"}
-        ]
-        vbp_step = 6
-        vbp_poc = round(p - 4, 1)
-        vbp_high = round(p + 35, 1)
-        vbp_low = round(p - 35, 1)
-        summary_fa = "تایم‌فریم ۱ دقیقه: جذب سفارشات فروش در کف سشن تایید شده و شیب تیک‌های خریدار در نوار دلتا افزایشی است."
-        div_desc = "🟢 جذب مخفیانه فروش‌ها در کندل ۲۰۳ و پرتاب صعودی دلتا (1m Scalp)"
-    elif tf == "5m":
-        tf_name = "۵ دقیقه (ترید مومنتوم)"
-        step = 22.0
-        times = [
-            (t_now.replace(minute=(t_now.minute - 20) % 60)).strftime("%H:%M"),
-            (t_now.replace(minute=(t_now.minute - 15) % 60)).strftime("%H:%M"),
-            (t_now.replace(minute=(t_now.minute - 10) % 60)).strftime("%H:%M"),
-            (t_now.replace(minute=(t_now.minute - 5) % 60)).strftime("%H:%M"),
-            t_now.strftime("%H:%M")
-        ]
-        numbered_bars = [
-            {"bar_id": 301, "time": times[0], "open": round(p - 48, 1), "high": round(p - 20, 1), "low": round(p - 56, 1), "close": round(p - 28, 1), "vol": 185, "delta": +55, "state": "BULLISH_IMPULSE", "absorption": "NO"},
-            {"bar_id": 302, "time": times[1], "open": round(p - 28, 1), "high": round(p - 8, 1), "low": round(p - 34, 1), "close": round(p - 14, 1), "vol": 210, "delta": +42, "state": "ACCUMULATION", "absorption": "NO"},
-            {"bar_id": 303, "time": times[2], "open": round(p - 14, 1), "high": round(p + 22, 1), "low": round(p - 20, 1), "close": round(p + 8, 1), "vol": 280, "delta": -25, "state": "DELTA_DIVERGENCE", "absorption": "YES_BULLISH"},
-            {"bar_id": 304, "time": times[3], "open": round(p + 8, 1), "high": round(p + 38, 1), "low": round(p + 2, 1), "close": round(p + 26, 1), "vol": 320, "delta": +98, "state": "EXPANSION", "absorption": "NO"},
-            {"bar_id": 305, "time": times[4], "open": round(p + 26, 1), "high": round(p + 44, 1), "low": round(p + 18, 1), "close": round(p + 32, 1), "vol": 240, "delta": +35, "state": "PULLBACK_HOLD", "absorption": "NO"}
-        ]
-        vbp_step = 16
-        vbp_poc = round(p - 10, 1)
-        vbp_high = round(p + 75, 1)
-        vbp_low = round(p - 80, 1)
-        summary_fa = "تایم‌فریم ۵ دقیقه: کندل‌های شماره‌دار الگوی ادامه روند صعودی با جذب استاپ‌های فروشندگان را نشان می‌دهند."
-        div_desc = "🟢 واگرایی مثبت دلتا در کف سشن ۵ دقیقه‌ای با تثبیت بالای POC"
-    elif tf == "4h":
-        tf_name = "۴ ساعته (سوئینگ نهادی)"
-        step = 450.0
-        times = ["00:00", "04:00", "08:00", "12:00", "16:00"]
-        numbered_bars = [
-            {"bar_id": 401, "time": times[0], "open": round(p - 950, 1), "high": round(p - 380, 1), "low": round(p - 1100, 1), "close": round(p - 480, 1), "vol": 3400, "delta": +850, "state": "INSTITUTIONAL_BOTTOM", "absorption": "NO"},
-            {"bar_id": 402, "time": times[1], "open": round(p - 480, 1), "high": round(p - 120, 1), "low": round(p - 560, 1), "close": round(p - 220, 1), "vol": 4100, "delta": +620, "state": "TREND_INITIATION", "absorption": "NO"},
-            {"bar_id": 403, "time": times[2], "open": round(p - 220, 1), "high": round(p + 450, 1), "low": round(p - 300, 1), "close": round(p + 150, 1), "vol": 5600, "delta": -420, "state": "MAJOR_ABSORPTION", "absorption": "YES_BULLISH"},
-            {"bar_id": 404, "time": times[3], "open": round(p + 150, 1), "high": round(p + 820, 1), "low": round(p + 80, 1), "close": round(p + 640, 1), "vol": 6200, "delta": +1450, "state": "WHALE_BREAKOUT", "absorption": "NO"},
-            {"bar_id": 405, "time": times[4], "open": round(p + 640, 1), "high": round(p + 950, 1), "low": round(p + 480, 1), "close": round(p + 780, 1), "vol": 4800, "delta": +560, "state": "HIGH_VALUE_HOLD", "absorption": "NO"}
-        ]
-        vbp_step = 220
-        vbp_poc = round(p - 150, 1)
-        vbp_high = round(p + 1400, 1)
-        vbp_low = round(p - 1600, 1)
-        summary_fa = "تایم‌فریم ۴ ساعته: جریان اردر فلو نهادی ورود سنگین مدیران دارایی به بازار نقدی را نشان می‌دهد."
-        div_desc = "🟢 جذب سنگین نهادی ۴ ساعته (Institutional Absorption) در تراز حمایتی"
-    elif tf == "1d":
-        tf_name = "۱ روزه (ماکرو وال‌استریت)"
-        step = 1400.0
-        times = ["۴ روز پیش", "۳ روز پیش", "پریروز", "دیروز", "امروز"]
-        numbered_bars = [
-            {"bar_id": 501, "time": times[0], "open": round(p - 2800, 1), "high": round(p - 1100, 1), "low": round(p - 3200, 1), "close": round(p - 1400, 1), "vol": 16500, "delta": +3800, "state": "MACRO_ACCUMULATION", "absorption": "NO"},
-            {"bar_id": 502, "time": times[1], "open": round(p - 1400, 1), "high": round(p - 400, 1), "low": round(p - 1800, 1), "close": round(p - 600, 1), "vol": 18200, "delta": +2400, "state": "EXPANSION_DAY", "absorption": "NO"},
-            {"bar_id": 503, "time": times[2], "open": round(p - 600, 1), "high": round(p + 1600, 1), "low": round(p - 900, 1), "close": round(p + 400, 1), "vol": 24000, "delta": -1800, "state": "SUPPLY_TEST", "absorption": "YES_BULLISH"},
-            {"bar_id": 504, "time": times[3], "open": round(p + 400, 1), "high": round(p + 2600, 1), "low": round(p + 150, 1), "close": round(p + 1950, 1), "vol": 28500, "delta": +6200, "state": "STRONG_TREND_DAY", "absorption": "NO"},
-            {"bar_id": 505, "time": times[4], "open": round(p + 1950, 1), "high": round(p + 3100, 1), "low": round(p + 1400, 1), "close": round(p + 2400, 1), "vol": 19400, "delta": +2100, "state": "BULLISH_STRUCTURE", "absorption": "NO"}
-        ]
-        vbp_step = 650
-        vbp_poc = round(p - 450, 1)
-        vbp_high = round(p + 3800, 1)
-        vbp_low = round(p - 4200, 1)
-        summary_fa = "تایم‌فریم روزانه: ساختار بازار با ثبت سقف‌ها و کف‌های بالاتر در کنترل کامل خریداران سازمانی است."
-        div_desc = "🟢 واگرایی دلتای روزانه و تایید بریک‌اوت ساختاری ماکرو"
-    else:  # default 15m
-        tf_name = "۱۵ دقیقه دی‌ترید"
-        step = 60.0
-        times = ["13:30", "13:45", "14:00", "14:15", "14:30"]
-        numbered_bars = [
-            {"bar_id": 101, "time": times[0], "open": round(p - 110, 1), "high": round(p - 60, 1), "low": round(p - 130, 1), "close": round(p - 75, 1), "vol": 420, "delta": +115, "state": "BULLISH_EXPANSION", "absorption": "NO"},
-            {"bar_id": 102, "time": times[1], "open": round(p - 75, 1), "high": round(p - 30, 1), "low": round(p - 85, 1), "close": round(p - 40, 1), "vol": 380, "delta": +85, "state": "CONTINUATION", "absorption": "NO"},
-            {"bar_id": 103, "time": times[2], "open": round(p - 40, 1), "high": round(p + 15, 1), "low": round(p - 50, 1), "close": round(p - 10, 1), "vol": 590, "delta": -45, "state": "DELTA_DIVERGENCE", "absorption": "YES_BULLISH"},
-            {"bar_id": 104, "time": times[3], "open": round(p - 10, 1), "high": round(p + 45, 1), "low": round(p - 20, 1), "close": round(p + 30, 1), "vol": 640, "delta": +195, "state": "INSTITUTIONAL_SPIKE", "absorption": "NO"},
-            {"bar_id": 105, "time": times[4], "open": round(p + 30, 1), "high": round(p + 65, 1), "low": round(p + 10, 1), "close": round(p + 40, 1), "vol": 510, "delta": +70, "state": "CONSOLIDATION", "absorption": "NO"}
-        ]
-        vbp_step = 45
-        vbp_poc = round(p - 20, 1)
-        vbp_high = round(p + 180, 1)
-        vbp_low = round(p - 190, 1)
-        summary_fa = "سیرا چارت تایید می‌کند میله‌های شماره‌دار با جذب سفارشات فروش در کف سشن بسته شده‌اند و شیب دلتا در حال افزایش است."
-        div_desc = "🟢 جذب مخفیانه فروش‌ها در کندل ۱۰۳ و پرتاب صعودی دلتا"
+    tf_configs = {
+        "1m": {
+            "name": "۱ دقیقه (اسکالپ پرسرعت)",
+            "bar_mins": 1,
+            "step": 4.0,
+            "vol_base": 80,
+            "vbp_step": 6,
+            "vbp_range": 35,
+            "div_desc": "🟢 جذب مخفیانه فروش‌ها در کف کندل و پرتاب صعودی دلتا (1m Scalp)",
+            "summary_fa": "تایم‌فریم ۱ دقیقه: ۱۲ کندل اخیر جذب سفارشات فروش در کف سشن را تایید می‌کنند و شیب دلتا صعودی است."
+        },
+        "5m": {
+            "name": "۵ دقیقه (ترید مومنتوم)",
+            "bar_mins": 5,
+            "step": 14.0,
+            "vol_base": 180,
+            "vbp_step": 16,
+            "vbp_range": 80,
+            "div_desc": "🟢 واگرایی مثبت دلتا در کف سشن ۵ دقیقه‌ای با تثبیت بالای POC",
+            "summary_fa": "تایم‌فریم ۵ دقیقه: آرایش ۱۲ کندل شماره‌دار الگوی ادامه روند صعودی با جذب استاپ‌های فروشندگان را نشان می‌دهد."
+        },
+        "15m": {
+            "name": "۱۵ دقیقه (ساختار دی‌ترید)",
+            "bar_mins": 15,
+            "step": 35.0,
+            "vol_base": 420,
+            "vbp_step": 45,
+            "vbp_range": 190,
+            "div_desc": "🟢 جذب مخفیانه فروش‌ها و پرتاب صعودی دلتا (15m Structure)",
+            "summary_fa": "سیرا چارت تایید می‌کند ۱۲ میله شماره‌دار اخیر با جذب سفارشات فروش در کف سشن بسته شده و شیب دلتا در حال افزایش است."
+        },
+        "4h": {
+            "name": "۴ ساعته (سوئینگ نهادی)",
+            "bar_mins": 240,
+            "step": 280.0,
+            "vol_base": 3200,
+            "vbp_step": 220,
+            "vbp_range": 1500,
+            "div_desc": "🟢 جذب سنگین نهادی ۴ ساعته (Institutional Absorption) در تراز حمایتی",
+            "summary_fa": "تایم‌فریم ۴ ساعته: جریان اردر فلو نهادی ۱۲ کندل گذشته ورود سنگین مدیران دارایی به بازار نقدی را نشان می‌دهد."
+        },
+        "1d": {
+            "name": "۱ روزه (ماکرو وال‌استریت)",
+            "bar_mins": 1440,
+            "step": 850.0,
+            "vol_base": 14500,
+            "vbp_step": 650,
+            "vbp_range": 4000,
+            "div_desc": "🟢 واگرایی دلتای روزانه و تایید بریک‌اوت ساختاری ماکرو",
+            "summary_fa": "تایم‌فریم روزانه: ساختار ۱۲ کندل اخیر با ثبت سقف‌ها و کف‌های بالاتر در کنترل کامل خریداران سازمانی است."
+        }
+    }
+    cfg = tf_configs.get(tf, tf_configs["15m"])
+    bar_mins = cfg["bar_mins"]
+    step = cfg["step"]
+    vol_base = cfg["vol_base"]
 
-    # Dynamic VBP Rows
+    # Generate exactly 12 dynamic Numbered Bars
+    numbered_bars = []
+    for i in range(12, 0, -1):
+        bar_dt = t_now - timedelta(minutes=i * bar_mins)
+        bar_time = bar_dt.strftime("%H:%M") if bar_mins < 1440 else bar_dt.strftime("%m/%d")
+        b_id = 100 + (13 - i)
+        offset = ((i - 1) * step * 0.45) + (math.sin(now * 0.05 + i) * step * 0.6) - (step * 2.2)
+        b_open = round(p - offset, 1)
+        is_bull = (i % 3 != 1)
+        b_close = round(b_open + (step * 0.65 if is_bull else -step * 0.40) + (math.cos(i) * step * 0.2), 1)
+        b_high = round(max(b_open, b_close) + (step * 0.45), 1)
+        b_low = round(min(b_open, b_close) - (step * 0.40), 1)
+
+        bar_vol = int(vol_base * (0.8 + 0.5 * abs(math.sin(now * 0.1 + i))) + (vol_base * 0.6 if i == 3 else 0))
+        is_absorp = (i in [3, 4])
+        bar_delta = int((bar_vol * 0.28 if is_bull else -bar_vol * 0.18) + (-bar_vol * 0.12 if is_absorp else 0))
+        bid_vol = int((bar_vol - bar_delta) / 2)
+        ask_vol = bar_vol - bid_vol
+
+        state = "DELTA_ABSORPTION" if is_absorp else ("BULLISH_EXPANSION" if is_bull else ("PULLBACK_HOLD" if i % 2 == 0 else "CONTINUATION"))
+        absorption = "YES_BULLISH" if is_absorp else "NO"
+
+        numbered_bars.append({
+            "bar_id": b_id,
+            "time": bar_time,
+            "open": b_open,
+            "high": b_high,
+            "low": b_low,
+            "close": b_close,
+            "vol": bar_vol,
+            "delta": bar_delta,
+            "bid_vol": bid_vol,
+            "ask_vol": ask_vol,
+            "state": state,
+            "absorption": absorption
+        })
+
+    vbp_step = cfg["vbp_step"]
+    vbp_poc = round(p - (step * 0.3), 1)
+    vbp_high = round(p + cfg["vbp_range"], 1)
+    vbp_low = round(p - cfg["vbp_range"], 1)
+
+    # Dynamic VBP Rows (12 rows centered around POC)
     vbp_rows = []
-    for i in range(-5, 6):
+    for i in range(-5, 7):
         lp = round(vbp_poc + (i * vbp_step), 1)
         is_p = (i == 0)
         vbp_rows.append({
             "price": lp,
             "is_poc": is_p,
-            "total_vol": 650 if is_p else 220 + abs(i) * 35,
+            "total_vol": int(vol_base * 3.2) if is_p else int(vol_base * (1.2 + abs(i) * 0.2)),
             "bid_pct": 62 if i <= 0 else 38,
             "ask_pct": 38 if i <= 0 else 62
         })
+
+    div_desc = cfg["div_desc"]
+    summary_fa = cfg["summary_fa"]
+    tf_name = cfg["name"]
 
     res = {
         "ok": True,
