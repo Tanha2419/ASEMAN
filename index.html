@@ -7210,6 +7210,11 @@
         filtered = filtered.filter(r => (r.symbol || '').toUpperCase().includes(query));
       }
 
+      if (!_journalAllRecords || _journalAllRecords.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 32px; color: #94a3b8; font-size: 0.88rem;">✨ ژورنال کاملاً خالی است. هیچ معامله‌ای ثبت نیست. به محض صدور اولین سیگنال، عملکرد به صورت زنده رهگیری خواهد شد.</td></tr>`;
+        return;
+      }
+
       if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 24px; color: var(--text-dim);">هیچ معامله‌ای با شرایط فیلتر انتخاب‌شده یافت نشد.</td></tr>`;
         return;
@@ -7413,14 +7418,13 @@
     }
 
     async function resetJournalData() {
-      const modeName = (_activeJournalMode === '4h') ? "ژورنال معاملات ۴ ساعته و سوئینگ" : "ژورنال اسکالپ سریع";
-      const ok = confirm(`⚠️ اخطار مهم:\nآیا از پاک‌سازی و صفر کردن کامل ${modeName} اطمینان دارید؟\nتمام رکوردهای قبلی پاک شده و آمار از نو آغاز خواهد شد.`);
+      const ok = confirm(`⚠️ اخطار مهم:\nآیا از پاک‌سازی و صفر کردن کامل تمام ژورنال‌ها (اسکالپ و ۴ ساعته) اطمینان دارید؟\nتمام رکوردهای قبلی برای همیشه پاک شده و آمار از صفر آغاز خواهد شد.`);
       if (!ok) return;
 
       // Instant UI zero-out
       const tbody = document.getElementById("journalTableBody");
       if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 28px; color: var(--text-dim); font-size: 0.85rem;">ژورنال با موفقیت پاک‌سازی شد. هیچ معامله‌ای ثبت نیست.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 28px; color: var(--text-dim); font-size: 0.85rem;">ژورنال با موفقیت کاملاً پاک‌سازی شد. هیچ معامله‌ای ثبت نیست.</td></tr>`;
       }
       const wrEl = document.getElementById("journalWinRate");
       if (wrEl) wrEl.innerText = "0.0%";
@@ -7434,10 +7438,17 @@
       if (beEl) beEl.innerText = "0";
       const netEl = document.getElementById("journalNetPnl");
       if (netEl) netEl.innerText = "+0.00%";
+      const pnlEl = document.getElementById("journalTotalPnl");
+      if (pnlEl) pnlEl.innerText = "+0.00%";
+      const slPnlEl = document.getElementById("journalTotalSlPnl");
+      if (slPnlEl) slPnlEl.innerText = "-0.00%";
+
+      if (typeof renderJournalEquityCurve === 'function') {
+        renderJournalEquityCurve([100.0, 100.0]);
+      }
 
       try {
-        const resetUrl = (_activeJournalMode === '4h') ? "/api/journal/4h/reset" : "/api/journal/reset";
-        const res = await fetch(resetUrl, { method: "POST" });
+        const res = await fetch("/api/journal/reset-all", { method: "POST" });
         if (!res.ok) throw new Error("Server error");
         const data = await res.json();
         alert(data.message || "ژورنال با موفقیت ریست شد.");

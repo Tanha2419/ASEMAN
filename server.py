@@ -1174,6 +1174,7 @@ def reset_signal_journal():
     save_sent_cooldown(_sent_cooldown)
 
     save_signal_journal([])
+    save_4h_journal([])
 
     _sentinel_stats["alerts_sent"] = 0
     _sentinel_stats["tp_hits_count"] = 0
@@ -1390,65 +1391,7 @@ def get_signal_journal():
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
     time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
 
-    # Only initialize benchmarks if file NEVER existed on disk (fresh install)
-    if not os.path.exists(JOURNAL_FILE):
-        records = [
-            {
-                "id": "SIG-BENCHMARK-01",
-                "symbol": "BTCUSDT",
-                "action": "LONG",
-                "grade": "A+",
-                "score": 94,
-                "entry": 84120.00,
-                "sl": 83450.00,
-                "tp1": 85150.00,
-                "tp2": 86200.00,
-                "tp3": 87800.00,
-                "created_at": time.time() - 7200,
-                "time_iran": (now_iran - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S"),
-                "status": "TP2_HIT",
-                "pnl_pct": 2.47,
-                "closed": True,
-                "updated_at": time_iran_str
-            },
-            {
-                "id": "SIG-BENCHMARK-02",
-                "symbol": "SOLUSDT",
-                "action": "LONG",
-                "grade": "A",
-                "score": 88,
-                "entry": 194.50,
-                "sl": 191.80,
-                "tp1": 198.80,
-                "tp2": 202.50,
-                "tp3": 208.50,
-                "created_at": time.time() - 14400,
-                "time_iran": (now_iran - timedelta(hours=4)).strftime("%Y-%m-%d %H:%M:%S"),
-                "status": "TP1_HIT",
-                "pnl_pct": 2.21,
-                "closed": False,
-                "updated_at": time_iran_str
-            },
-            {
-                "id": "SIG-BENCHMARK-03",
-                "symbol": "ETHUSDT",
-                "action": "LONG",
-                "grade": "A",
-                "score": 86,
-                "entry": 2680.00,
-                "sl": 2640.00,
-                "tp1": 2740.00,
-                "tp2": 2795.00,
-                "tp3": 2880.00,
-                "created_at": time.time() - 25200,
-                "time_iran": (now_iran - timedelta(hours=7)).strftime("%Y-%m-%d %H:%M:%S"),
-                "status": "TP2_HIT",
-                "pnl_pct": 4.29,
-                "closed": True,
-                "updated_at": time_iran_str
-            }
-        ]
-        save_signal_journal(records)
+    # No fake dummy signals - strictly real trades only
 
     # Real-time sweep: Check unclosed records against live price or expire old signals (> 4 hours)
     now_ts = time.time()
@@ -1598,77 +1541,7 @@ def get_4h_signal_journal():
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
     time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
 
-    # Only initialize benchmarks if file NEVER existed on disk (fresh install)
-    if not os.path.exists(JOURNAL_4H_FILE):
-        records = [
-            {
-                "id": "SWING-4H-BTC-01",
-                "symbol": "BTC",
-                "action": "LONG",
-                "timeframe": "4h",
-                "structure": "BOS صعودی + تثبیت بالای EMA50",
-                "grade": "A+",
-                "score": 92,
-                "entry": 81400.0,
-                "sl": 78900.0,
-                "tp1": 84500.0,
-                "tp2": 88000.0,
-                "tp3": 94000.0,
-                "risk_reward": "1:2.8",
-                "created_at": time.time() - 86400 * 2,
-                "time_iran": (now_iran - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S"),
-                "status": "TP2_HIT",
-                "pnl_pct": 8.11,
-                "closed": True,
-                "validity": "۳ الی ۷ روز کاری",
-                "updated_at": time_iran_str
-            },
-            {
-                "id": "SWING-4H-SOL-02",
-                "symbol": "SOL",
-                "action": "LONG",
-                "timeframe": "4h",
-                "structure": "تغییر ساختار CHoCH + جذب نقدینگی",
-                "grade": "A",
-                "score": 89,
-                "entry": 182.0,
-                "sl": 174.5,
-                "tp1": 194.0,
-                "tp2": 210.0,
-                "tp3": 235.0,
-                "risk_reward": "1:3.7",
-                "created_at": time.time() - 86400 * 3,
-                "time_iran": (now_iran - timedelta(days=3)).strftime("%Y-%m-%d %H:%M:%S"),
-                "status": "TP1_HIT",
-                "pnl_pct": 6.59,
-                "closed": False,
-                "validity": "۳ الی ۷ روز کاری",
-                "updated_at": time_iran_str
-            },
-            {
-                "id": "SWING-4H-ETH-03",
-                "symbol": "ETH",
-                "action": "LONG",
-                "timeframe": "4h",
-                "structure": "شکست مقاومت ماژور ۴ ساعته",
-                "grade": "A",
-                "score": 87,
-                "entry": 2520.0,
-                "sl": 2410.0,
-                "tp1": 2680.0,
-                "tp2": 2880.0,
-                "tp3": 3150.0,
-                "risk_reward": "1:3.2",
-                "created_at": time.time() - 86400 * 5,
-                "time_iran": (now_iran - timedelta(days=5)).strftime("%Y-%m-%d %H:%M:%S"),
-                "status": "TP2_HIT",
-                "pnl_pct": 14.28,
-                "closed": True,
-                "validity": "۳ الی ۷ روز کاری",
-                "updated_at": time_iran_str
-            }
-        ]
-        save_4h_journal(records)
+    # No fake dummy signals - strictly real trades only
 
     # Real-time sweep: Check unclosed 4H records against live prices
     now_ts = time.time()
@@ -1781,6 +1654,13 @@ def get_4h_signal_journal():
 
 @app.post("/api/journal/4h/reset")
 def reset_4h_signal_journal():
+    global _active_signal_trackers, _sent_cooldown
+    with _trackers_lock:
+        _active_signal_trackers.clear()
+    _sent_cooldown.clear()
+    save_sent_cooldown(_sent_cooldown)
+
+    save_signal_journal([])
     save_4h_journal([])
     return {"success": True, "message": "ژورنال معاملات ۴ ساعته و سوئینگ با موفقیت ریست و صفر شد."}
 
