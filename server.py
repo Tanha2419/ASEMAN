@@ -1180,7 +1180,25 @@ def reset_signal_journal():
     _sentinel_stats["active_tracking_count"] = 0
     _sentinel_stats["last_alert"] = "ژورنال ریست شد"
 
-    return {"success": True, "message": "ژورنال ثبت وقایع، ردپای تلگرام و آمار معاملات با موفقیت ریست و صفر شدند."}
+    return {"success": True, "message": "ژورنال معاملات اسکالپ با موفقیت صفر و پاک‌سازی شد."}
+
+@app.post("/api/journal/reset-all")
+def reset_all_signal_journals():
+    global _active_signal_trackers, _sent_cooldown
+    with _trackers_lock:
+        _active_signal_trackers.clear()
+    _sent_cooldown.clear()
+    save_sent_cooldown(_sent_cooldown)
+
+    save_signal_journal([])
+    save_4h_journal([])
+
+    _sentinel_stats["alerts_sent"] = 0
+    _sentinel_stats["tp_hits_count"] = 0
+    _sentinel_stats["active_tracking_count"] = 0
+    _sentinel_stats["last_alert"] = "تمامی ژورنال‌ها ریست شدند"
+
+    return {"success": True, "message": "تمامی ژورنال‌های معاملات (اسکالپ و ۴ ساعته) با موفقیت به طور کامل صفر و پاک‌سازی شدند."}
 
 @app.post("/api/telegram/reset-cooldown")
 def reset_telegram_cooldown():
@@ -1372,8 +1390,8 @@ def get_signal_journal():
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
     time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
 
-    # If journal is completely empty on fresh install (file never existed), initialize benchmarks
-    if not records:
+    # Only initialize benchmarks if file NEVER existed on disk (fresh install)
+    if not os.path.exists(JOURNAL_FILE):
         records = [
             {
                 "id": "SIG-BENCHMARK-01",
@@ -1542,7 +1560,7 @@ def get_signal_journal():
     total_loss_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) < 0])
     net_pnl = total_profit_pnl + total_loss_pnl
     decided_trades = tp1_count + sl_count
-    win_rate = round((tp1_count / decided_trades * 100), 1) if decided_trades > 0 else 100.0
+    win_rate = round((tp1_count / decided_trades * 100), 1) if decided_trades > 0 else 0.0
 
     return {
         "success": True,
@@ -1568,8 +1586,8 @@ def get_4h_signal_journal():
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
     time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
 
-    # If journal is completely empty on fresh install (file never existed), initialize benchmarks
-    if not records:
+    # Only initialize benchmarks if file NEVER existed on disk (fresh install)
+    if not os.path.exists(JOURNAL_4H_FILE):
         records = [
             {
                 "id": "SWING-4H-BTC-01",
@@ -1715,7 +1733,7 @@ def get_4h_signal_journal():
     total_loss_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) < 0])
     net_pnl = total_profit_pnl + total_loss_pnl
     decided_trades = tp1_count + sl_count
-    win_rate = round((tp1_count / decided_trades * 100), 1) if decided_trades > 0 else 100.0
+    win_rate = round((tp1_count / decided_trades * 100), 1) if decided_trades > 0 else 0.0
 
     return {
         "success": True,

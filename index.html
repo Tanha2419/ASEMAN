@@ -7325,14 +7325,32 @@
       const ok = confirm(`⚠️ اخطار مهم:\nآیا از پاک‌سازی و صفر کردن کامل ${modeName} اطمینان دارید؟\nتمام رکوردهای قبلی پاک شده و آمار از نو آغاز خواهد شد.`);
       if (!ok) return;
 
+      // Instant UI zero-out
+      const tbody = document.getElementById("journalTableBody");
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 28px; color: var(--text-dim); font-size: 0.85rem;">ژورنال با موفقیت پاک‌سازی شد. هیچ معامله‌ای ثبت نیست.</td></tr>`;
+      }
+      const wrEl = document.getElementById("journalWinRate");
+      if (wrEl) wrEl.innerText = "0.0%";
+      const totEl = document.getElementById("journalTotalTrades");
+      if (totEl) totEl.innerText = "0";
+      const tpEl = document.getElementById("journalTpHits");
+      if (tpEl) tpEl.innerText = "0";
+      const slEl = document.getElementById("journalSlHits");
+      if (slEl) slEl.innerText = "0";
+      const beEl = document.getElementById("journalBreakevenHits");
+      if (beEl) beEl.innerText = "0";
+      const netEl = document.getElementById("journalNetPnl");
+      if (netEl) netEl.innerText = "+0.00%";
+
       try {
         const resetUrl = (_activeJournalMode === '4h') ? "/api/journal/4h/reset" : "/api/journal/reset";
         const res = await fetch(resetUrl, { method: "POST" });
         if (!res.ok) throw new Error("Server error");
         const data = await res.json();
         alert(data.message || "ژورنال با موفقیت ریست شد.");
-        fetchJournalLive();
-      fetchSentinelStatus();
+        await fetchJournalLive();
+        fetchSentinelStatus();
       } catch (err) {
         alert("خطا در ریست کردن ژورنال: " + err.message);
       }
