@@ -1562,9 +1562,21 @@ def get_signal_journal():
     decided_trades = tp1_count + sl_count
     win_rate = round((tp1_count / decided_trades * 100), 1) if decided_trades > 0 else 0.0
 
+    # Calculate dynamic equity curve trajectory
+    equity_curve = [100.0]
+    running_eq = 100.0
+    for r in sorted(records, key=lambda x: x.get("created_at", 0)):
+        pnl = float(r.get("pnl_pct", 0.0))
+        if r.get("closed") or r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT", "SL_HIT", "BREAKEVEN_CLOSED"]:
+            running_eq = round(running_eq * (1.0 + (pnl / 100.0)), 2)
+            equity_curve.append(running_eq)
+    if len(equity_curve) == 1:
+        equity_curve = [100.0, 100.0]
+
     return {
         "success": True,
         "updated_at": time_iran_str,
+        "equity_curve": equity_curve,
         "stats": {
             "total_trades": total_trades,
             "tp_hits": tp1_count,
@@ -1735,10 +1747,22 @@ def get_4h_signal_journal():
     decided_trades = tp1_count + sl_count
     win_rate = round((tp1_count / decided_trades * 100), 1) if decided_trades > 0 else 0.0
 
+    # Calculate dynamic equity curve trajectory
+    equity_curve = [100.0]
+    running_eq = 100.0
+    for r in sorted(records, key=lambda x: x.get("created_at", 0)):
+        pnl = float(r.get("pnl_pct", 0.0))
+        if r.get("closed") or r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT", "SL_HIT", "BREAKEVEN_CLOSED"]:
+            running_eq = round(running_eq * (1.0 + (pnl / 100.0)), 2)
+            equity_curve.append(running_eq)
+    if len(equity_curve) == 1:
+        equity_curve = [100.0, 100.0]
+
     return {
         "success": True,
         "mode": "4H_SWING",
         "updated_at": time_iran_str,
+        "equity_curve": equity_curve,
         "stats": {
             "total_trades": total_trades,
             "tp_hits": tp1_count,
