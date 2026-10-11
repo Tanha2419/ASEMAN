@@ -354,11 +354,15 @@ def record_4h_swing_setup(symbol: str, action: str, structure: str, grade: str, 
 
     clean_sym = symbol.upper().replace("USDT", "").replace("USD", "").strip()
 
-    force_record = kwargs.get("force_record", False)
-    if not force_record and not kwargs.get("force_new", False):
-        for r in records[:15]:
-            if r.get("symbol") == clean_sym and abs(r.get("created_at", 0) - time.time()) < 1800:
-                return r
+    # STRICT 4H SWING ANTI-SPAM & ANTI-DUPLICATE GUARD
+    for r in records:
+        if r.get("symbol") == clean_sym and r.get("status") in ["TRACKING", "OPEN"]:
+            return r
+
+    now_ts = time.time()
+    for r in records[:20]:
+        if r.get("symbol") == clean_sym and (now_ts - float(r.get("created_at", 0)) < 3600):
+            return r
 
     entry_f = float(entry or 0)
     sl_f = float(sl or 0)
@@ -427,11 +431,17 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, 
 
     clean_sym = symbol.upper().replace("USDT", "").replace("USD", "").strip()
 
-    if not force_record and not kwargs.get("force_new", False):
-        # Avoid duplicate entry within 5 minutes for same symbol in background scanner
-        for r in records[:10]:
-            if r.get("symbol") == clean_sym and abs(r.get("created_at", 0) - time.time()) < 300:
-                return r
+    # STRICT INSTITUTIONAL ANTI-SPAM & ANTI-DUPLICATE GUARD
+    # 1. If an active position for this symbol is currently OPEN / TRACKING, reject duplicate!
+    for r in records:
+        if r.get("symbol") == clean_sym and r.get("status") in ["TRACKING", "OPEN"]:
+            return r
+
+    # 2. Minimum 15-Minute (900s) cooldown between trades for the exact same symbol
+    now_ts = time.time()
+    for r in records[:20]:
+        if r.get("symbol") == clean_sym and (now_ts - float(r.get("created_at", 0)) < 900):
+            return r
 
     entry_f = float(entry or 0)
     tp1_f = float(tp1 or 0)

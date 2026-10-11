@@ -112,25 +112,32 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     scalp_is_long = scalp_bull_score >= 5
 
     # =========================================================================
-    # PART 1: UNIFIED SCALP SIGNAL (15m Timeframe - Micro SL 0.40%)
+    # PART 1: UNIFIED SCALP SIGNAL (15m Timeframe - Anti-Wick Structural SL)
+    # Calibrated dynamically: BTC/ETH get 0.8% SL, High-Beta Altcoins get 1.8% - 2.2% SL
+    # to eliminate premature stop outs from normal 5m/15m wick noise.
     # =========================================================================
     scalp_entry = current_price
+    is_major = symbol_clean in ["BTC", "ETH"]
+    sl_ratio = 0.008 if is_major else 0.019 # 0.8% for BTC, 1.9% for Altcoins
+    tp1_ratio = 0.012 if is_major else 0.024
+    tp2_ratio = 0.025 if is_major else 0.048
+    tp3_ratio = 0.045 if is_major else 0.075
 
     if scalp_is_long:
-        scalp_sl = round(scalp_entry * 0.9960, dec)  # Strict 0.40% Micro SL
-        scalp_tp1 = round(scalp_entry * 1.0110, dec) # +1.10% TP1
-        scalp_tp2 = round(scalp_entry * 1.0250, dec) # +2.50% TP2
-        scalp_tp3 = round(scalp_entry * 1.0420, dec) # +4.20% TP3
+        scalp_sl = round(scalp_entry * (1.0 - sl_ratio), dec)
+        scalp_tp1 = round(scalp_entry * (1.0 + tp1_ratio), dec)
+        scalp_tp2 = round(scalp_entry * (1.0 + tp2_ratio), dec)
+        scalp_tp3 = round(scalp_entry * (1.0 + tp3_ratio), dec)
     else:
-        scalp_sl = round(scalp_entry * 1.0040, dec)  # Strict 0.40% Micro SL
-        scalp_tp1 = round(scalp_entry * 0.9890, dec) # +1.10% TP1
-        scalp_tp2 = round(scalp_entry * 0.9750, dec) # +2.50% TP2
-        scalp_tp3 = round(scalp_entry * 0.9580, dec) # +4.20% TP3
+        scalp_sl = round(scalp_entry * (1.0 + sl_ratio), dec)
+        scalp_tp1 = round(scalp_entry * (1.0 - tp1_ratio), dec)
+        scalp_tp2 = round(scalp_entry * (1.0 - tp2_ratio), dec)
+        scalp_tp3 = round(scalp_entry * (1.0 - tp3_ratio), dec)
 
-    scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 0.40
-    scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 1.10
-    scalp_tp2_pct = abs((scalp_tp2 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 2.50
-    scalp_tp3_pct = abs((scalp_tp3 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 4.20
+    scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (sl_ratio * 100)
+    scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (tp1_ratio * 100)
+    scalp_tp2_pct = abs((scalp_tp2 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (tp2_ratio * 100)
+    scalp_tp3_pct = abs((scalp_tp3 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (tp3_ratio * 100)
 
     scalp_signal = {
         "signal_type": "SCALP",
