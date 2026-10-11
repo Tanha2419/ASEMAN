@@ -112,32 +112,85 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     scalp_is_long = scalp_bull_score >= 5
 
     # =========================================================================
-    # PART 1: UNIFIED SCALP SIGNAL (15m Timeframe - Anti-Wick Structural SL)
-    # Calibrated dynamically: BTC/ETH get 0.8% SL, High-Beta Altcoins get 1.8% - 2.2% SL
-    # to eliminate premature stop outs from normal 5m/15m wick noise.
+    # PART 1: UNIFIED SCALP SIGNAL (15m Timeframe - Order Flow Anchored Levels)
+    # SL is placed strictly BEHIND the Bookmap Bid/Ask Shelf & Quantower VAL/VAH!
+    # TP1 is anchored to the First Bookmap Liquidity Wall / NinjaTrader Unfinished Auction!
+    # TP2 is anchored to the Quantower VAH / Major Institutional Wall!
     # =========================================================================
     scalp_entry = current_price
     is_major = symbol_clean in ["BTC", "ETH"]
-    sl_ratio = 0.008 if is_major else 0.019 # 0.8% for BTC, 1.9% for Altcoins
-    tp1_ratio = 0.012 if is_major else 0.024
-    tp2_ratio = 0.025 if is_major else 0.048
-    tp3_ratio = 0.045 if is_major else 0.075
+    min_sl_pct = 0.008 if is_major else 0.018
+
+    ask_walls = [float(a.get("price")) for a in bm.get("ask_levels", []) if a.get("price")]
+    bid_shelves = [float(b.get("price")) for b in bm.get("bid_levels", []) if b.get("price")]
+    mp = qt.get("market_profile", {})
+    vah = float(mp.get("vah", current_price * 1.03))
+    val = float(mp.get("val", current_price * 0.97))
+    unfin = nt.get("unfinished_auction", {})
+    unfin_p = float(unfin.get("price", current_price)) if unfin.get("detected") else 0.0
 
     if scalp_is_long:
-        scalp_sl = round(scalp_entry * (1.0 - sl_ratio), dec)
-        scalp_tp1 = round(scalp_entry * (1.0 + tp1_ratio), dec)
-        scalp_tp2 = round(scalp_entry * (1.0 + tp2_ratio), dec)
-        scalp_tp3 = round(scalp_entry * (1.0 + tp3_ratio), dec)
-    else:
-        scalp_sl = round(scalp_entry * (1.0 + sl_ratio), dec)
-        scalp_tp1 = round(scalp_entry * (1.0 - tp1_ratio), dec)
-        scalp_tp2 = round(scalp_entry * (1.0 - tp2_ratio), dec)
-        scalp_tp3 = round(scalp_entry * (1.0 - tp3_ratio), dec)
+        # SL: Safely behind the Bookmap Bid Shelf or Quantower VAL
+        valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
+        if valid_bids:
+            target_bid = valid_bids[min(1, len(valid_bids)-1)]
+            scalp_sl = round(min(target_bid * 0.998, current_price * (1.0 - min_sl_pct)), dec)
+        else:
+            scalp_sl = round(min(val * 0.998, current_price * (1.0 - min_sl_pct)), dec)
 
-    scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (sl_ratio * 100)
-    scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (tp1_ratio * 100)
-    scalp_tp2_pct = abs((scalp_tp2 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (tp2_ratio * 100)
-    scalp_tp3_pct = abs((scalp_tp3 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (tp3_ratio * 100)
+        # TP1: First Bookmap Ask Wall or NinjaTrader Unfinished Auction
+        valid_asks = sorted([a for a in ask_walls if a > current_price])
+        if valid_asks:
+            scalp_tp1 = round(max(valid_asks[0], current_price * 1.012), dec)
+        elif unfin_p > current_price:
+            scalp_tp1 = round(max(unfin_p, current_price * 1.012), dec)
+        else:
+            scalp_tp1 = round(current_price * (1.012 if is_major else 1.024), dec)
+
+        # TP2: Major Bookmap Resistance Wall or Quantower VAH
+        if len(valid_asks) > 1:
+            scalp_tp2 = round(max(valid_asks[1], vah if vah > scalp_tp1 else current_price * 1.035), dec)
+        else:
+            scalp_tp2 = round(max(vah if vah > scalp_tp1 else current_price * 1.035, current_price * (1.025 if is_major else 1.048)), dec)
+
+        # TP3: Final CME Liquidity Pool
+        scalp_tp3 = round(max(scalp_tp2 * 1.025, current_price * (1.045 if is_major else 1.075)), dec)
+
+        sl_why = "حفاظ بتنی پشت دیواره خرید بوک‌مپ (Bookmap Bid Shelf)"
+        tp1_why = "دیواره عرضه و نقدینگی اول بوک‌مپ (Bookmap Ask Wall)"
+        tp2_why = "سقف ناحیه ارزش منصفانه کوانت‌تاور (Quantower VAH)"
+    else:
+        # SL: Safely above the Bookmap Ask Wall or Quantower VAH
+        valid_asks = sorted([a for a in ask_walls if a > current_price])
+        if valid_asks:
+            target_ask = valid_asks[min(1, len(valid_asks)-1)]
+            scalp_sl = round(max(target_ask * 1.002, current_price * (1.0 + min_sl_pct)), dec)
+        else:
+            scalp_sl = round(max(vah * 1.002, current_price * (1.0 + min_sl_pct)), dec)
+
+        valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
+        if valid_bids:
+            scalp_tp1 = round(min(valid_bids[0], current_price * 0.988), dec)
+        elif unfin_p < current_price and unfin_p > 0:
+            scalp_tp1 = round(min(unfin_p, current_price * 0.988), dec)
+        else:
+            scalp_tp1 = round(current_price * (0.988 if is_major else 0.976), dec)
+
+        if len(valid_bids) > 1:
+            scalp_tp2 = round(min(valid_bids[1], val if val < scalp_tp1 else current_price * 0.965), dec)
+        else:
+            scalp_tp2 = round(min(val if val < scalp_tp1 else current_price * 0.965, current_price * (0.975 if is_major else 0.952)), dec)
+
+        scalp_tp3 = round(min(scalp_tp2 * 0.975, current_price * (0.955 if is_major else 0.925)), dec)
+
+        sl_why = "حفاظ بتنی بالای دیواره فروش بوک‌مپ (Bookmap Ask Wall)"
+        tp1_why = "دیواره تقاضا و نقدینگی اول بوک‌مپ (Bookmap Bid Shelf)"
+        tp2_why = "کف ناحیه ارزش منصفانه کوانت‌تاور (Quantower VAL)"
+
+    scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (min_sl_pct * 100)
+    scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 1.5
+    scalp_tp2_pct = abs((scalp_tp2 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 3.5
+    scalp_tp3_pct = abs((scalp_tp3 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 6.5
 
     scalp_signal = {
         "signal_type": "SCALP",
