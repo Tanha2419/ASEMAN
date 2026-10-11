@@ -811,10 +811,27 @@ def get_crypto_bank_reports() -> Dict[str, Any]:
             ]
         },
         "bank_desks": [
-            {"bank": "Goldman Sachs (Digital Assets Desk)", "analyst_stance": "خرید بلندمدت", "target": "$125,000", "horizon": "سه‌ماهه سوم ۲۰۲۶", "rationale": "افزایش تخصیص صندوق‌های بازنشستگی آمریکا و ETFهای اسپات."},
-            {"bank": "JPMorgan Chase (Global Market Strategy)", "analyst_stance": "انباشت در اصلاحات", "target": "$110,000", "horizon": "پایان سال ۲۰۲۶", "rationale": "مقایسه ارزش بازار بیت‌کوین با طلای بخش خصوصی."},
-            {"bank": "Standard Chartered (Crypto Research)", "analyst_stance": "فوق صعودی (Ultra Bullish)", "target": "$150,000", "horizon": "سیکل جاری ۲۰۲۶", "rationale": "سرعت ورود سرمایه‌های سازمانی و اثر هاوینگ."}
+            {"bank": "Goldman Sachs (Digital Assets Desk)", "analyst_stance": "خرید بلندمدت", "target": "$125,000", "target_btc": "$125,000", "horizon": "سه‌ماهه سوم ۲۰۲۶", "rationale": "افزایش تخصیص صندوق‌های بازنشستگی آمریکا و ETFهای اسپات.", "thesis": "افزایش تخصیص صندوق‌های بازنشستگی آمریکا و تقاضای مستمر ETFهای اسپات."},
+            {"bank": "JPMorgan Chase (Global Market Strategy)", "analyst_stance": "انباشت در اصلاحات", "target": "$110,000", "target_btc": "$110,000", "horizon": "پایان سال ۲۰۲۶", "rationale": "مقایسه ارزش بازار بیت‌کوین با طلای بخش خصوصی.", "thesis": "مقایسه ارزش بازار بیت‌کوین با طلای بخش خصوصی و کاهش سهم نقدینگی سنتی."},
+            {"bank": "Morgan Stanley (Wealth Management Desk)", "analyst_stance": "تخصیص صعودی (Bullish)", "target": "$135,000", "target_btc": "$135,000", "horizon": "سیکل جاری ۲۰۲۶", "rationale": "پیشنهاد رسمی بیت‌کوین به مشتریان فوق ثروتمند و صندوق‌های ثروت خانوادگی.", "thesis": "توصیه به سرمایه‌گذاران نهادی برای تخصیص ۱ تا ۳ درصد سبد به بیت‌کوین اسپات."},
+            {"bank": "Standard Chartered (Crypto Research)", "analyst_stance": "فوق صعودی (Ultra Bullish)", "target": "$150,000", "target_btc": "$150,000", "horizon": "سیکل جاری ۲۰۲۶", "rationale": "سرعت ورود سرمایه‌های سازمانی و اثر کاهش عرضه هاوینگ.", "thesis": "کاهش موجودی صرافی‌ها و انباشت پایدار ETFها اهداف بالای ۱۵۰ هزار دلار را محتمل می‌کند."},
+            {"bank": "Citigroup / BlackRock Global Allocation", "analyst_stance": "انباشت استراتژیک (Accumulate)", "target": "$140,000", "target_btc": "$140,000", "horizon": "افق ۱۲ ماهه", "rationale": "تبدیل شدن بیت‌کوین به پوشش ریسک بدهی‌های جهانی و تورم اعتباری.", "thesis": "تثبیت جریان سرمایه‌های بازنشستگی به سمت ذخایر دیجیتال به عنوان دارایی بدون ریسک متقابل."}
         ],
+        "bank_models": [
+            {"bank": "Goldman Sachs (Digital Assets Desk)", "analyst_stance": "خرید بلندمدت", "target": "$125,000", "target_btc": "$125,000", "horizon": "سه‌ماهه سوم ۲۰۲۶", "rationale": "افزایش تخصیص صندوق‌های بازنشستگی آمریکا و ETFهای اسپات.", "thesis": "افزایش تخصیص صندوق‌های بازنشستگی آمریکا و تقاضای مستمر ETFهای اسپات."},
+            {"bank": "JPMorgan Chase (Global Market Strategy)", "analyst_stance": "انباشت در اصلاحات", "target": "$110,000", "target_btc": "$110,000", "horizon": "پایان سال ۲۰۲۶", "rationale": "مقایسه ارزش بازار بیت‌کوین با طلای بخش خصوصی.", "thesis": "مقایسه ارزش بازار بیت‌کوین با طلای بخش خصوصی و کاهش سهم نقدینگی سنتی."},
+            {"bank": "Morgan Stanley (Wealth Management Desk)", "analyst_stance": "تخصیص صعودی (Bullish)", "target": "$135,000", "target_btc": "$135,000", "horizon": "سیکل جاری ۲۰۲۶", "rationale": "پیشنهاد رسمی بیت‌کوین به مشتریان فوق ثروتمند و صندوق‌های ثروت خانوادگی.", "thesis": "توصیه به سرمایه‌گذاران نهادی برای تخصیص ۱ تا ۳ درصد سبد به بیت‌کوین اسپات."},
+            {"bank": "Standard Chartered (Crypto Research)", "analyst_stance": "فوق صعودی (Ultra Bullish)", "target": "$150,000", "target_btc": "$150,000", "horizon": "سیکل جاری ۲۰۲۶", "rationale": "سرعت ورود سرمایه‌های سازمانی و اثر کاهش عرضه هاوینگ.", "thesis": "کاهش موجودی صرافی‌ها و انباشت پایدار ETFها اهداف بالای ۱۵۰ هزار دلار را محتمل می‌کند."},
+            {"bank": "Citigroup / BlackRock Global Allocation", "analyst_stance": "انباشت استراتژیک (Accumulate)", "target": "$140,000", "target_btc": "$140,000", "horizon": "افق ۱۲ ماهه", "rationale": "تبدیل شدن بیت‌کوین به پوشش ریسک بدهی‌های جهانی و تورم اعتباری.", "thesis": "تثبیت جریان سرمایه‌های بازنشستگی به سمت ذخایر دیجیتال به عنوان دارایی بدون ریسک متقابل."}
+        ],
+        "macro_consensus_targets": {
+            "bull_target": "$145,000",
+            "bull_probability": "احتمال ۶۵٪",
+            "base_target": "$115,000",
+            "base_probability": "احتمال ۲۵٪",
+            "bear_target": "$74,500",
+            "bear_probability": "احتمال ۱۰٪"
+        },
         "institutional_whales": {
             "microstrategy_holding": "499,000+ BTC ($41.5B)",
             "asset_managers_position": "84% لانگ در CME",
