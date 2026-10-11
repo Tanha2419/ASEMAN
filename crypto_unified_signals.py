@@ -66,12 +66,12 @@ def _apply_anti_front_run_tp(
     tp_adjusted = float(tp_raw)
 
     if is_long:
-        # Check against Bookmap resting ask walls
+        # Check against Bookmap resting ask walls (Only front-run if target is in close proximity to the wall)
         sorted_walls = sorted([w for w in orderbook_walls if w > entry])
         for wall in sorted_walls:
-            if tp_raw >= wall * 0.995:
+            if 0 <= (tp_raw - wall * 0.995) < (entry * 0.015):
                 front_run_wall = wall * (1.0 - buffer_pct)
-                if front_run_wall > entry * 1.003:
+                if front_run_wall > entry * 1.006:
                     tp_adjusted = min(tp_adjusted, front_run_wall)
                     break
 
@@ -92,17 +92,17 @@ def _apply_anti_front_run_tp(
         nearest_ceiling = math.ceil(tp_adjusted / round_step) * round_step
         if nearest_ceiling > 0:
             dist_pct = abs(tp_adjusted - nearest_ceiling) / nearest_ceiling
-            if dist_pct < 0.006 or tp_adjusted >= nearest_ceiling:
+            if dist_pct < 0.006:
                 front_run_ceiling = nearest_ceiling * (1.0 - buffer_pct)
-                if front_run_ceiling > entry * 1.003:
+                if front_run_ceiling > entry * 1.006:
                     tp_adjusted = min(tp_adjusted, front_run_ceiling)
     else:
         # SHORT: Front-run resting bid shelves and round floors (sit ABOVE them)
         sorted_shelves = sorted([s for s in orderbook_walls if s < entry], reverse=True)
         for shelf in sorted_shelves:
-            if tp_raw <= shelf * 1.005:
+            if 0 <= (shelf * 1.005 - tp_raw) < (entry * 0.015):
                 front_run_shelf = shelf * (1.0 + buffer_pct)
-                if front_run_shelf < entry * 0.997:
+                if front_run_shelf < entry * 0.994:
                     tp_adjusted = max(tp_adjusted, front_run_shelf)
                     break
 
@@ -122,9 +122,9 @@ def _apply_anti_front_run_tp(
         nearest_floor = math.floor(tp_adjusted / round_step) * round_step
         if nearest_floor > 0:
             dist_pct = abs(tp_adjusted - nearest_floor) / nearest_floor
-            if dist_pct < 0.006 or tp_adjusted <= nearest_floor:
+            if dist_pct < 0.006:
                 front_run_floor = nearest_floor * (1.0 + buffer_pct)
-                if front_run_floor < entry * 0.997:
+                if front_run_floor < entry * 0.994:
                     tp_adjusted = max(tp_adjusted, front_run_floor)
 
     return round(tp_adjusted, dec)
@@ -241,19 +241,18 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         unfin_p = float(unfin.get("price", current_price)) if unfin.get("detected") else 0.0
 
         if scalp_is_long:
+            scalp_sl = round(current_price * (1.0 - min_sl_pct), dec)
             valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
             if valid_bids:
-                # 0.5% clearance below the deepest shelf to defeat sweep wicks
-                target_bid = valid_bids[min(1, len(valid_bids)-1)]
-                scalp_sl = round(min(target_bid * 0.995, current_price * (1.0 - min_sl_pct)), dec)
-            else:
-                scalp_sl = round(min(val * 0.995, current_price * (1.0 - min_sl_pct)), dec)
+                candidate_shelf = next((b for b in valid_bids if b <= current_price * 0.992), None)
+                if candidate_shelf:
+                    scalp_sl = round(min(candidate_shelf * 0.997, scalp_sl), dec)
 
             valid_asks = sorted([a for a in ask_walls if a > current_price])
             
             # Base raw targets
-            raw_tp1 = max(valid_asks[0] * 0.996 if valid_asks else current_price * tp1_mult, current_price * tp1_mult)
-            raw_tp2 = max(valid_asks[1] * 0.996 if len(valid_asks) > 1 else (vah * 0.996 if vah > raw_tp1 else current_price * tp2_mult), raw_tp1 * 1.008)
+            raw_tp1 = max(valid_asks[0] * 0.998 if valid_asks and valid_asks[0] > current_price * tp1_mult else current_price * tp1_mult, current_price * tp1_mult)
+            raw_tp2 = max(valid_asks[1] * 0.998 if len(valid_asks) > 1 and valid_asks[1] > raw_tp1 else (vah * 0.996 if vah > raw_tp1 else current_price * tp2_mult), raw_tp1 * 1.008)
             raw_tp3 = max(raw_tp2 * 1.020, current_price * tp3_mult)
 
             # Apply Whale & Psychological Anti-Front-Running Algorithm
@@ -274,17 +273,17 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
             tp1_why = "خروج امن ضد فرانت‌رانینگ قبل از اولین دیواره فروش (Anti-Front-Run Ask Wall)"
             tp2_why = "خروج هوشمند پیش از تجمع اردرهای رُند و سقف ارزش (Psychological Front-Run VAH)"
         else:
+            scalp_sl = round(current_price * (1.0 + min_sl_pct), dec)
             valid_asks = sorted([a for a in ask_walls if a > current_price])
             if valid_asks:
-                target_ask = valid_asks[min(1, len(valid_asks)-1)]
-                scalp_sl = round(max(target_ask * 1.005, current_price * (1.0 + min_sl_pct)), dec)
-            else:
-                scalp_sl = round(max(vah * 1.005, current_price * (1.0 + min_sl_pct)), dec)
+                candidate_wall = next((a for a in valid_asks if a >= current_price * 1.008), None)
+                if candidate_wall:
+                    scalp_sl = round(max(candidate_wall * 1.003, scalp_sl), dec)
 
             valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
             
-            raw_tp1 = min(valid_bids[0] * 1.004 if valid_bids else current_price * (2.0 - tp1_mult), current_price * (2.0 - tp1_mult))
-            raw_tp2 = min(valid_bids[1] * 1.004 if len(valid_bids) > 1 else (val * 1.004 if val < raw_tp1 else current_price * (2.0 - tp2_mult)), raw_tp1 * 0.992)
+            raw_tp1 = min(valid_bids[0] * 1.002 if valid_bids and valid_bids[0] < current_price * (2.0 - tp1_mult) else current_price * (2.0 - tp1_mult), current_price * (2.0 - tp1_mult))
+            raw_tp2 = min(valid_bids[1] * 1.002 if len(valid_bids) > 1 and valid_bids[1] < raw_tp1 else (val * 1.004 if val < raw_tp1 else current_price * (2.0 - tp2_mult)), raw_tp1 * 0.992)
             raw_tp3 = min(raw_tp2 * 0.980, current_price * (2.0 - tp3_mult))
 
             scalp_tp1 = _apply_anti_front_run_tp(raw_tp1, scalp_entry, False, bid_shelves, dec, 1)

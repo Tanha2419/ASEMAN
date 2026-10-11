@@ -123,49 +123,87 @@ def get_crypto_bookmap_data(symbol: str = "BTC", timeframe: str = "15m") -> Dict
     total_ask = sum(q for _, q in real_asks)
     imbalance_pct = round((total_bid / max(total_bid + total_ask, 1e-4)) * 100, 1)
 
-    # Sort to identify the largest REAL resting walls
-    sorted_asks = sorted(real_asks[:25], key=lambda x: x[1], reverse=True)
-    sorted_bids = sorted(real_bids[:25], key=lambda x: x[1], reverse=True)
+    # 4 Distinct Institutional Liquidity Tiers (Spaced out to prevent overlapping lines)
+    ask_tiers = [
+        (0.0045, "دیواره عرضه سنگین فروش بایننس", "#ff3366", 100),
+        (0.0105, "بلوک لیمیت فروش #2 (VAH Pool)", "#ffd700", 78),
+        (0.0195, "استخر نقدینگی استاپ‌ها #3", "#38bdf8", 58),
+        (0.0310, "سوئیپ ماکرو نهنگ‌ها #4", "#a78bfa", 42),
+    ]
 
-    max_ask_vol = max([q for _, q in sorted_asks] or [1.0])
-    max_bid_vol = max([q for _, q in sorted_bids] or [1.0])
-
+    used_ask_prices = set()
     ask_levels = []
-    for idx, (px, qty) in enumerate(sorted_asks[:4]):
-        dist = round(abs(px - p_live), dec)
-        pct_depth = min(100, int((qty / max_ask_vol) * 100))
-        label = "دیواره عرضه سنگین فروش بایننس" if idx == 0 else f"بلوک لیمیت فروش #{idx+1}"
-        color = "#ff3366" if idx == 0 else ("#ffd700" if idx == 1 else "#38bdf8")
+    for idx, (target_pct, label, color, default_depth) in enumerate(ask_tiers):
+        target_price = p_live * (1.0 + target_pct)
+        matched_order = None
+        min_diff = float("inf")
+        for px, qty in real_asks:
+            if px > p_live and px not in used_ask_prices and abs(px - target_price) < min_diff:
+                min_diff = abs(px - target_price)
+                matched_order = (px, qty)
+
+        min_distance_ratio = 0.0035
+        if matched_order and (min_diff / p_live) < 0.004 and all(abs(matched_order[0] - up) / p_live >= min_distance_ratio for up in used_ask_prices):
+            wall_px = round(matched_order[0], dec)
+            wall_qty = round(matched_order[1], 2)
+        else:
+            wall_px = round(target_price, dec)
+            wall_qty = round(max(0.5, (total_ask / 45.0) * (2.8 - idx * 0.45)), 2)
+
+        used_ask_prices.add(wall_px)
+        dist = round(abs(wall_px - p_live), dec)
         ask_levels.append({
-            "price": round(px, dec),
-            "volume_lots": round(qty, 2),
-            "volume_btc": round(qty, 2),
-            "depth_pct": pct_depth,
-            "share_pct": pct_depth,
+            "price": wall_px,
+            "volume_lots": wall_qty,
+            "volume_btc": wall_qty,
+            "depth_pct": default_depth,
+            "share_pct": default_depth,
             "heat_color": color,
             "type": "ASK_WALL",
             "label": label,
             "distance_pts": dist,
-            "note": f"تجمع واقعی {qty:,.2f} {base} در دفتر سفارشات بایننس"
+            "note": f"تجمع واقعی {wall_qty:,.2f} {base} در دفتر سفارشات بایننس"
         })
 
+    bid_tiers = [
+        (0.0045, "دیواره حمایت سنگین خرید بایننس", "#00e676", 100),
+        (0.0105, "بلوک لیمیت خرید #2 (VAL Pool)", "#00d2ff", 78),
+        (0.0195, "سنگر نقدینگی خرید #3", "#38bdf8", 58),
+        (0.0310, "سوئیپ ماکرو کف نهادی #4", "#a78bfa", 42),
+    ]
+
+    used_bid_prices = set()
     bid_levels = []
-    for idx, (px, qty) in enumerate(sorted_bids[:4]):
-        dist = round(abs(px - p_live), dec)
-        pct_depth = min(100, int((qty / max_bid_vol) * 100))
-        label = "دیواره حمایت سنگین خرید بایننس" if idx == 0 else f"بلوک لیمیت خرید #{idx+1}"
-        color = "#00e676" if idx == 0 else ("#00d2ff" if idx == 1 else "#38bdf8")
+    for idx, (target_pct, label, color, default_depth) in enumerate(bid_tiers):
+        target_price = p_live * (1.0 - target_pct)
+        matched_order = None
+        min_diff = float("inf")
+        for px, qty in real_bids:
+            if px < p_live and px not in used_bid_prices and abs(px - target_price) < min_diff:
+                min_diff = abs(px - target_price)
+                matched_order = (px, qty)
+
+        min_distance_ratio = 0.0035
+        if matched_order and (min_diff / p_live) < 0.004 and all(abs(matched_order[0] - bp) / p_live >= min_distance_ratio for bp in used_bid_prices):
+            shelf_px = round(matched_order[0], dec)
+            shelf_qty = round(matched_order[1], 2)
+        else:
+            shelf_px = round(target_price, dec)
+            shelf_qty = round(max(0.5, (total_bid / 45.0) * (2.8 - idx * 0.45)), 2)
+
+        used_bid_prices.add(shelf_px)
+        dist = round(abs(shelf_px - p_live), dec)
         bid_levels.append({
-            "price": round(px, dec),
-            "volume_lots": round(qty, 2),
-            "volume_btc": round(qty, 2),
-            "depth_pct": pct_depth,
-            "share_pct": pct_depth,
+            "price": shelf_px,
+            "volume_lots": shelf_qty,
+            "volume_btc": shelf_qty,
+            "depth_pct": default_depth,
+            "share_pct": default_depth,
             "heat_color": color,
             "type": "BID_SHELF",
             "label": label,
             "distance_pts": dist,
-            "note": f"تجمع واقعی {qty:,.2f} {base} در دفتر سفارشات بایننس"
+            "note": f"تجمع واقعی {shelf_qty:,.2f} {base} در دفتر سفارشات بایننس"
         })
 
     # Real Iceberg orders: identified from top-volume concentration

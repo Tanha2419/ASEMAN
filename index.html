@@ -13488,9 +13488,14 @@ ${s3d.action_advice || ''}
         if (pb) pb.innerText = `${_cryptoNtSym}: $${Number(data.current_price || 0).toLocaleString()}`;
         const cb = document.getElementById('cryptoNtCvdBadge');
         if (cb) {
-          const cvd = data.cvd || 0;
-          cb.innerText = `CVD: ${cvd >= 0 ? '+' : ''}${cvd} ${_cryptoNtSym}`;
-          cb.style.color = cvd >= 0 ? '#00e676' : '#ff3366';
+          let cvdVal = 0;
+          if (typeof data.cvd === 'object' && data.cvd !== null) {
+            cvdVal = Number(data.cvd.value !== undefined ? data.cvd.value : 0);
+          } else {
+            cvdVal = Number(data.cvd || 0);
+          }
+          cb.innerText = `CVD: ${cvdVal >= 0 ? '+' : ''}${cvdVal.toLocaleString()} ${_cryptoNtSym}`;
+          cb.style.color = cvdVal >= 0 ? '#00e676' : '#ff3366';
         }
 
         // SuperDOM Body
