@@ -12524,6 +12524,11 @@ ${s3d.action_advice || ''}
       fetchJournalLive();
       setInterval(loadTelegramConfig, 20000);
       setInterval(fetchJournalLive, 30000);
+      // Auto-poll live signals every 15 seconds without requiring page refresh
+      fetchCryptoUnifiedSignals(true);
+      setInterval(() => {
+        if (!document.hidden) fetchCryptoUnifiedSignals(false);
+      }, 15000);
     });
   
     // Education Modal Functions

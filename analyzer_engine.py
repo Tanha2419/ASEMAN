@@ -1742,10 +1742,19 @@ class CryptoTradingAgent:
         is_long_liquidation_trap = (deriv_regime == "SHORT_ACCUMULATION" and "Long Liquidation" in str(derivatives_matrix.get("regime", "")))
 
         # --- GATE 2: Multi-Timeframe (MTF) Alignment (Strict Institutional Trend Gate) ---
-        # Never go LONG if 4H trend is in active BEARISH mode (avoid catching falling knives)
-        # Never go SHORT if 4H trend is in active BULLISH mode
-        bullish_mtf = (bias_4h in ["BULLISH", "BULLISH_STRONG", "NEUTRAL"] and bias_15m != "BEARISH_STRONG")
-        bearish_mtf = (bias_4h in ["BEARISH", "BEARISH_STRONG", "NEUTRAL"] and bias_15m != "BULLISH_STRONG")
+        # Strict Multi-Timeframe Alignment Gate:
+        # Never go LONG if 4H or 15M or 1H is in active BEARISH mode
+        # Never go SHORT if 4H or 15M or 1H is in active BULLISH mode (prevents shorting bullish breakouts like UNI)
+        bullish_mtf = (
+            bias_4h in ["BULLISH", "BULLISH_STRONG", "NEUTRAL"]
+            and "BEARISH" not in bias_15m
+            and "BEARISH" not in bias_5m
+        )
+        bearish_mtf = (
+            bias_4h in ["BEARISH", "BEARISH_STRONG", "NEUTRAL"]
+            and "BULLISH" not in bias_15m
+            and "BULLISH" not in bias_5m
+        )
 
         # 5-Layer Confluence Gates for M1/M5 Scalping (Institutional Quality Gate)
         bullish_aligned = (

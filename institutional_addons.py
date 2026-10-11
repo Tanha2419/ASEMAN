@@ -2046,8 +2046,8 @@ class CoinlegsScanner:
             if vol_usd_24h < 15_000_000:
                 return None
 
-            # 2. RSI Sweet Spot: Reject overheated euphoria (> 68) and dead dumpers (< 40)
-            if rsi > 68 or rsi < 40:
+            # 2. RSI High-Momentum Sweet Spot: Permit real breakout momentum (34 - 78)
+            if rsi > 78 or rsi < 34:
                 return None
 
             # 3. Macro 4H Trend Alignment: Reject 4H downtrends unless massive alpha > 3.0%
@@ -2136,8 +2136,6 @@ class CoinlegsScanner:
         if cls._cached_detections and (now - cls._last_scan_time < 75):
             return cls._cached_detections
 
-        target_symbols = symbols if symbols else cls.TOP_50_SYMBOLS
-
         # 1. Fast Batch Ticker Fetch - Binance Global Priority (Synced with Main Dashboard), Fallback to MEXC
         all_tickers = {}
         btc_chg_24h = 0.0
@@ -2156,6 +2154,25 @@ class CoinlegsScanner:
                 btc_chg_24h = float(all_tickers.get('BTCUSDT', {}).get('priceChangePercent', 0.0)) * 100.0
             except Exception:
                 pass
+
+        # Dynamically discover top explosive high-volume momentum runners in Binance right now
+        if symbols:
+            target_symbols = symbols
+        else:
+            dynamic_runners = []
+            for sym, it in all_tickers.items():
+                if not sym.endswith("USDT") or any(skip in sym for skip in ["USDC", "FDUSD", "TUSD", "EUR", "DAI", "UPUSDT", "DOWNUSDT", "BULL", "BEAR"]):
+                    continue
+                vol = float(it.get("quoteVolume", 0.0))
+                chg = float(it.get("priceChangePercent", 0.0))
+                if vol >= 10_000_000 and abs(chg) >= 1.2:
+                    score_act = abs(chg) * 1.8 + (vol / 15_000_000.0)
+                    dynamic_runners.append((sym, score_act))
+
+            dynamic_runners.sort(key=lambda x: x[1], reverse=True)
+            target_symbols = [x[0] for x in dynamic_runners[:50]]
+            if not target_symbols or len(target_symbols) < 10:
+                target_symbols = cls.TOP_50_SYMBOLS
 
         # 2. Concurrent parallel scan across all 100 symbols
         with ThreadPoolExecutor(max_workers=20) as executor:

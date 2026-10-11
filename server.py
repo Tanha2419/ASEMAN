@@ -1073,15 +1073,22 @@ def auto_sentinel_loop():
                                     print(f"[SENTINEL] Skipping {sym} because Altcoin Shield is in DANGER mode.")
                                     continue
 
-                                # MTF 4H Anti-Trend Shield: Never buy into 4H downtrends
+                                # MTF Multi-Timeframe Anti-Trend Shield:
+                                # Never go LONG if 4H, 1H or 15M is active BEARISH
+                                # Never go SHORT if 4H, 1H or 15M is active BULLISH (prevents counter-trend shorting)
                                 tf_map = analysis.get("timeframes", {})
                                 bias_4h = tf_map.get("4h", {}).get("bias", "NEUTRAL")
-                                if scalp_act == "BUY" and bias_4h in ["BEARISH", "BEARISH_STRONG"]:
-                                    print(f"[SENTINEL] Skipping {sym} because 4H trend is bearish ({bias_4h}).")
-                                    continue
-                                if scalp_act == "SELL" and bias_4h in ["BULLISH", "BULLISH_STRONG"]:
-                                    print(f"[SENTINEL] Skipping {sym} because 4H trend is bullish ({bias_4h}).")
-                                    continue
+                                bias_1h = tf_map.get("1h", {}).get("bias", "NEUTRAL")
+                                bias_15m = tf_map.get("15m", {}).get("bias", "NEUTRAL")
+
+                                if scalp_act in ["BUY", "LONG"]:
+                                    if any("BEARISH" in str(b) for b in [bias_4h, bias_1h, bias_15m]):
+                                        print(f"[SENTINEL] Skipping BUY on {sym}: MTF Bearish conflict ({bias_4h}, {bias_1h}, {bias_15m}).")
+                                        continue
+                                if scalp_act in ["SELL", "SHORT"]:
+                                    if any("BULLISH" in str(b) for b in [bias_4h, bias_1h, bias_15m]):
+                                        print(f"[SENTINEL] Skipping SELL on {sym}: MTF Bullish conflict ({bias_4h}, {bias_1h}, {bias_15m}).")
+                                        continue
 
                                 # Order book depth check: only reject if massive dumping sell wall
                                 ob_ratio = float(analysis.get("order_book", {}).get("ratio", 1.0))
