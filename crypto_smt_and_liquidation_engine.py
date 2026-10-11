@@ -18,7 +18,24 @@ _CACHE: Dict[str, Any] = {}
 _CACHE_TIME: Dict[str, float] = {}
 _TTL = 3.0  # seconds
 
+def _get_price_decimals(p: float) -> int:
+    if p >= 50:
+        return 2
+    elif p >= 1:
+        return 4
+    elif p >= 0.005:
+        return 5
+    elif p >= 0.0001:
+        return 6
+    else:
+        return 8
+
+def _format_price_adaptive(p: float) -> str:
+    dec = _get_price_decimals(p)
+    return f"${p:,.{dec}f}"
+
 def _fetch_live_quote(symbol: str) -> Dict[str, float]:
+
     """Fetch live price and 24h change for crypto symbol."""
     base = symbol.upper().replace("USDT", "").replace("PERP", "").strip() or "BTC"
     sym_pair = f"{base}USDT"
@@ -103,16 +120,17 @@ def get_crypto_smt_and_liquidation_data(symbol: str = "BTC") -> Dict[str, Any]:
     # 3. LIQUIDATION HEATMAP & CLUSTERS (Binance + Bybit + OKX Futures)
     # Scale liquidation levels relative to current coin price
     step = p_curr * 0.018 # 1.8% step
+    dec = _get_price_decimals(p_curr)
     
     # Short Liquidation Clusters (Above price)
-    short_liq_major = round(p_curr + (step * 1.5), 1 if p_curr > 10 else 4)
-    short_liq_minor = round(p_curr + (step * 0.7), 1 if p_curr > 10 else 4)
+    short_liq_major = round(p_curr + (step * 1.5), dec)
+    short_liq_minor = round(p_curr + (step * 0.7), dec)
     short_vol_major_m = round(120.0 + (p_curr % 50), 1)
     short_vol_minor_m = round(65.0 + (p_curr % 30), 1)
 
     # Long Liquidation Clusters (Below price)
-    long_liq_major = round(p_curr - (step * 1.4), 1 if p_curr > 10 else 4)
-    long_liq_minor = round(p_curr - (step * 0.6), 1 if p_curr > 10 else 4)
+    long_liq_major = round(p_curr - (step * 1.4), dec)
+    long_liq_minor = round(p_curr - (step * 0.6), dec)
     long_vol_major_m = round(145.0 + (p_curr % 45), 1)
     long_vol_minor_m = round(55.0 + (p_curr % 25), 1)
 
@@ -132,19 +150,19 @@ def get_crypto_smt_and_liquidation_data(symbol: str = "BTC") -> Dict[str, Any]:
         funding_badge = "⚠️ فاندینگ سنگین مثبت (ریسک Long Squeeze)"
         funding_color = "#ff3366"
         funding_advice = "پوزیشن‌های لانگ به شدت متراکم شده‌اند؛ نهنگ‌ها ممکن است قبل از ادامه صعود، استخر لانگ‌ها را پاکسازی (Flush) کنند."
-        hunt_direction = f"استخر لانگ‌ها در ${long_liq_minor:,.1f}"
+        hunt_direction = f"استخر لانگ‌ها در {_format_price_adaptive(long_liq_minor)}"
     elif live_funding_rate < -0.0050:
         funding_state = "NEGATIVE_SHORT_TRAP"
         funding_badge = "🔥 فاندینگ منفی تله شورت (پتانسیل Short Squeeze)"
         funding_color = "#00e676"
         funding_advice = "فروشندگان اهرم‌دار در تله افتاده‌اند و کارمزد پرداخت می‌کنند؛ احتمال پرتاب شارپ صعودی برای شکار استاپ شورت‌ها بسیار بالاست."
-        hunt_direction = f"استخر شورت‌ها در ${short_liq_minor:,.1f}"
+        hunt_direction = f"استخر شورت‌ها در {_format_price_adaptive(short_liq_minor)}"
     else:
         funding_state = "HEALTHY_BALANCED"
         funding_badge = "💎 فاندینگ نرمال و ارگانیک (0.009%)"
         funding_color = "#38bdf8"
         funding_advice = "تعادل کامل بین خریداران و فروشندگان بدون داغ‌شدگی بازار؛ ورود بر اساس ستاپ ساختاری معتبر و بدون ریسک تله فاندینگ است."
-        hunt_direction = f"مگنتی متعادل (هدف اول: ${short_liq_minor:,.1f})"
+        hunt_direction = f"مگنتی متعادل (هدف اول: {_format_price_adaptive(short_liq_minor)})"
 
     liq_clusters = [
         {

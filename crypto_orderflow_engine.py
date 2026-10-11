@@ -76,14 +76,14 @@ def _get_live_crypto_price(symbol: str = "BTC") -> float:
     return price
 
 def _get_price_decimals(p: float) -> int:
-    if p >= 1000:
-        return 1
-    elif p >= 10:
+    if p >= 50:
         return 2
     elif p >= 1:
         return 4
-    elif p >= 0.01:
+    elif p >= 0.005:
         return 5
+    elif p >= 0.0001:
+        return 6
     else:
         return 8
 
