@@ -2216,7 +2216,7 @@ class CoinlegsScanner:
             "neutral_filtered": neutral_count,
             "btc_chg_24h": round(btc_chg_24h, 2),
             "diamond_gems": top_3_gems,
-            "filter_explanation": f"اسکن هوشمند ۵۰ نماد برتر کریپتو با ۶ فیلتر کوانتومی و ۴ لایه افزایش دقت (گارد روندی BTC، تله فاندینگ‌ریت و جذب CVD)؛ {len(items)} فرصت الیت با ۳ کاندیدای پرواز الماسی استخراج شدند.",
+            "filter_explanation": f"اسکن داینامیک کل بازار بایننس با ۶ فیلتر کوانتومی و ۴ لایه افزایش دقت (گارد روندی BTC، تله فاندینگ‌ریت و جذب CVD)؛ {len(items)} فرصت الیت با ۳ کاندیدای پرواز الماسی استخراج شدند.",
             "updated_at": time.strftime("%H:%M:%S UTC", time.gmtime()),
             "detections": items,
             "source_url": "https://www.coinlegs.com/detections"
