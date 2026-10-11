@@ -12965,12 +12965,18 @@ ${s3d.action_advice || ''}
         _cryptoBmIcebergs = data.icebergs || [];
         _cryptoBmTrades = data.recent_trades || [];
 
-        // Build continuous live price path points
+        // Build continuous live price path points directly from real Binance trades
         const baseP = Number(data.current_price) || 82000;
         _cryptoBmLivePoints = [];
-        for (let i = 0; i < 45; i++) {
-          const shift = Math.sin(i * 0.45) * (baseP * 0.002) + (Math.random() - 0.49) * (baseP * 0.001);
-          _cryptoBmLivePoints.push({ x: i, price: baseP + shift });
+        if (data.recent_trades && data.recent_trades.length > 0) {
+          data.recent_trades.forEach((tr, i) => {
+            _cryptoBmLivePoints.push({ x: i, price: Number(tr.price || baseP) });
+          });
+        }
+        if (_cryptoBmLivePoints.length === 0) {
+          for (let i = 0; i < 20; i++) {
+            _cryptoBmLivePoints.push({ x: i, price: baseP });
+          }
         }
 
         // Institutional Liquidity Replenishment Rate Banner
@@ -13312,7 +13318,7 @@ ${s3d.action_advice || ''}
 
         // Live Execution Bubbles
         _cryptoBmTrades.forEach((tr, i) => {
-          const bx = 40 + (i * 45) + (Math.sin(t * 1.5 + i) * 6);
+          const bx = Math.max(30, Math.min(chartW - 40, (i + 1) * (chartW / (_cryptoBmTrades.length + 1))));
           const by = getY(tr.price);
           const amt = Number(tr.amount || tr.volume_lots || 3.5);
           const rad = Math.min(14, Math.max(5, amt * 1.3));

@@ -9,9 +9,15 @@ Adaptive Multi-Asset Precision Engine:
 - Strict protection against negative prices, zero division, or fixed dollar offsets.
 """
 
+import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
 import crypto_orderflow_engine as coe
+
+_SIG_CACHE: Dict[str, Any] = {}
+_SIG_CACHE_TIME: Dict[str, float] = {}
+_SIG_TTL = 3.0
 
 def get_price_decimals(p: float) -> int:
     """Determine adaptive decimal precision based on asset price magnitude."""
@@ -48,13 +54,26 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     tehran_time_str = now_iran.strftime("%H:%M:%S")
     tehran_date_str = now_iran.strftime("%Y/%m/%d")
 
-    # 1. Fetch live order flow, SMT and macro data
-    bm = coe.get_crypto_bookmap_data(symbol_clean, "15m")
-    nt = coe.get_crypto_ninjatrader_live(symbol_clean, "15m")
-    sc = coe.get_crypto_sierrachart_data(symbol_clean, "15m")
-    atas = coe.get_crypto_atas_live(symbol_clean)
-    qt = coe.get_crypto_quantower_live(symbol_clean, "4h")
-    bank = coe.get_crypto_bank_reports()
+    now_ts = time.time()
+    cache_k = f"sig_{symbol_clean}"
+    if cache_k in _SIG_CACHE and (now_ts - _SIG_CACHE_TIME.get(cache_k, 0.0) < _SIG_TTL):
+        return _SIG_CACHE[cache_k]
+
+    # Fast concurrent parallel fetch across modules
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        f_bm = ex.submit(coe.get_crypto_bookmap_data, symbol_clean, "15m")
+        f_nt = ex.submit(coe.get_crypto_ninjatrader_live, symbol_clean, "15m")
+        f_sc = ex.submit(coe.get_crypto_sierrachart_data, symbol_clean, "15m")
+        f_atas = ex.submit(coe.get_crypto_atas_live, symbol_clean)
+        f_qt = ex.submit(coe.get_crypto_quantower_live, symbol_clean, "4h")
+        f_bank = ex.submit(coe.get_crypto_bank_reports)
+
+    bm = f_bm.result()
+    nt = f_nt.result()
+    sc = f_sc.result()
+    atas = f_atas.result()
+    qt = f_qt.result()
+    bank = f_bank.result()
     geo = coe.get_crypto_geopolitics_radar()
 
     try:
@@ -242,7 +261,7 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         alignment_status = "اسکالپ اصلاحی درون روند کلان (Counter-Trend Retracement ⚠️)"
         alignment_note = "دیدگاه اسکالپ ۱۵ دقیقه‌ای خلاف جهت سوئینگ چندروزه است؛ این معامله یک پولبک موقت است و خروج سریع در TP1 الزامی است."
 
-    return {
+    res_final = {
         "ok": True,
         "symbol": symbol_clean,
         "current_price": current_price,
@@ -255,6 +274,9 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         "smt_and_liquidation": smt_liq,
         "updated_at_iran": f"{tehran_date_str} ساعت {tehran_time_str}"
     }
+    _SIG_CACHE[cache_k] = res_final
+    _SIG_CACHE_TIME[cache_k] = now_ts
+    return res_final
 
 def format_clean_telegram_signal(sig: Dict[str, Any], symbol: str = "BTC") -> str:
     """

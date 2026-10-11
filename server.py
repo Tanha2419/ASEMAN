@@ -2040,10 +2040,11 @@ def get_crypto_atas(symbol: str = Query("BTC")):
         norm_trades.append({
             "time": tr.get("time"),
             "side": tr.get("side"),
+            "side_fa": tr.get("side_fa", "🟢 خرید مارکت" if tr.get("side") == "BUY" else "🔴 فروش مارکت"),
             "size_btc": tr.get("volume_lots", tr.get("size_lots", 50)),
             "price": tr.get("price"),
             "value_usd": tr.get("value_usd", "$5,000,000"),
-            "exchange": tr.get("exchange", "Binance Futures")
+            "exchange": tr.get("exchange", "Binance Live Taker Flow")
         })
     data["big_trades"] = norm_trades
     norm_imbs = []
