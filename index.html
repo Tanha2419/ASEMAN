@@ -7889,6 +7889,36 @@
       }
     }
 
+    async function fetchFastPrice(sym) {
+      if (!sym) return;
+      try {
+        const res = await fetch('/api/ticker?symbol=' + encodeURIComponent(sym));
+        const data = await res.json();
+        if (data && data.price > 0) {
+          lastKnownPrice = data.price;
+          const curPriceEl = document.getElementById('currentPrice');
+          if (curPriceEl) curPriceEl.innerText = formatPrice(data.price);
+          document.title = formatPrice(data.price) + ' | ' + sym + ' - ربات ترید هوشمند آسمان';
+
+          const pill = document.getElementById('priceChangePill');
+          if (pill && data.price_change_pct !== undefined) {
+            const ch = Number(data.price_change_pct);
+            const sign = ch >= 0 ? '+' : '';
+            pill.innerText = sign + ch.toFixed(2) + '% (24h)';
+            pill.className = 'price-change-pill ' + (ch >= 0 ? 'pill-green' : 'pill-red');
+          }
+
+          const coinBadge = document.getElementById('coinBadge');
+          if (coinBadge) coinBadge.innerText = sym;
+          const coinSym = document.getElementById('coinSymbol');
+          if (coinSym) coinSym.innerText = sym + '/USDT';
+
+          const heroPrice = document.getElementById('heroLivePrice');
+          if (heroPrice) heroPrice.innerText = formatPrice(data.price);
+        }
+      } catch (e) {}
+    }
+
     function switchSymbol(sym) {
       loadSymbol(sym);
       switchTab('instTab', document.querySelector('.tab-btn'));
@@ -7944,6 +7974,8 @@
         c.classList.toggle('active', c.innerText.trim() === currentSymbol);
       });
 
+      // Fast initial price update (< 80ms)
+      fetchFastPrice(currentSymbol);
       await fetchAnalysis(currentSymbol);
     }
 
@@ -12883,9 +12915,11 @@ ${s3d.action_advice || ''}
     window.addEventListener('DOMContentLoaded', () => {
       updateUtcClock();
       setInterval(updateUtcClock, 1000);
-      fetchLiveFearAndGreed();
-      setInterval(fetchLiveFearAndGreed, 60000);
+      // Instant Live Price in < 80ms
+      fetchFastPrice('BTC');
       loadSymbol('BTC');
+      setTimeout(fetchLiveFearAndGreed, 150);
+      setInterval(fetchLiveFearAndGreed, 60000);
       setInterval(tickLivePrice, 3000);
       loadTelegramConfig();
       fetchJournalLive();
