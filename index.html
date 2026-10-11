@@ -8155,43 +8155,7 @@
         }
       }
     }
-      const liveSection = document.getElementById('radarLiveSection');
-      const deepSection = document.getElementById('radarDeepSection');
-      const btnLive = document.getElementById('btnRadarViewLive');
-      const btnDeep = document.getElementById('btnRadarViewDeep');
 
-      if (view === 'deep') {
-        if (liveSection) liveSection.style.display = 'none';
-        if (deepSection) deepSection.style.display = 'block';
-        if (btnLive) {
-          btnLive.classList.remove('active');
-          btnLive.style.background = 'transparent';
-          btnLive.style.borderColor = 'rgba(255,255,255,0.15)';
-          btnLive.style.color = '#94a3b8';
-        }
-        if (btnDeep) {
-          btnDeep.classList.add('active');
-          btnDeep.style.background = 'rgba(0, 210, 255, 0.2)';
-          btnDeep.style.borderColor = '#00d2ff';
-          btnDeep.style.color = '#00d2ff';
-        }
-      } else {
-        if (liveSection) liveSection.style.display = 'block';
-        if (deepSection) deepSection.style.display = 'none';
-        if (btnLive) {
-          btnLive.classList.add('active');
-          btnLive.style.background = 'rgba(255, 215, 0, 0.15)';
-          btnLive.style.borderColor = 'rgba(255, 215, 0, 0.4)';
-          btnLive.style.color = '#ffd700';
-        }
-        if (btnDeep) {
-          btnDeep.classList.remove('active');
-          btnDeep.style.background = 'rgba(0, 210, 255, 0.08)';
-          btnDeep.style.borderColor = 'rgba(0, 210, 255, 0.35)';
-          btnDeep.style.color = '#00d2ff';
-        }
-      }
-    }
 
     function filterRadarDeepDossier(key) {
       document.querySelectorAll('.dossier-filter-btn').forEach(b => {
@@ -8285,7 +8249,7 @@
         } else if (g.symbol === 'RLC') {
           reasons = [
             "<strong>۱. آهنربای جذب صعودی (Bullish Magnet در $1.079):</strong> مگنت نقدینگی ۳.۵٪ بالاتر از قیمت فعلی است. بالای سطح ۱.۰۷ دلار استخر بزرگی از استاپ‌های فروشندگان شورت قرار دارد که مثل یک آهنربا قیمت را به بالا می‌کشد (Short Squeeze).",
-            "<strong>۲. سپر بتنی خریداران سازمانی:</strong> میانگین خرید نهنگ‌ها روی <strong style="color: #38bdf8;">$0.994</strong> محاسبه شده است. محدوده ۱.۰۰ تا ۱.۰۲ دلار چندین بار توسط خریداران با حجم سنگین جذب (Absorb) شده است.",
+            `<strong>۲. سپر بتنی خریداران سازمانی:</strong> میانگین خرید نهنگ‌ها روی <strong style="color: #38bdf8;">$0.994</strong> محاسبه شده است. محدوده ۱.۰۰ تا ۱.۰۲ دلار چندین بار توسط خریداران با حجم سنگین جذب (Absorb) شده است.`,
             "<strong>۳. سابقه شکار نقدینگی (Turtle Soup):</strong> این ارز سابقه شدوی بلند نقدینگی و سپس رسیدن به تارگت دوم را دارد؛ یعنی بازیگر ابتدا کف‌سازی و شکار نقدینگی می‌کند، سپس حرکت اصلی را کلید می‌زند."
           ];
           traps = [
