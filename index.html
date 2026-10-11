@@ -3180,6 +3180,221 @@
               </tbody>
             </table>
           </div>
+          </div><!-- end radarLiveSection -->
+
+          <!-- Deep Dossier & Hidden MM Traps Section -->
+          <div id="radarDeepSection" style="display: none;">
+            <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95)); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px; margin-bottom: 18px;">
+                <div>
+                  <div style="font-size: 1.15rem; font-weight: 900; color: #00d2ff; display: flex; align-items: center; gap: 10px;">
+                    <span>🔬</span> کالبدشکافی فوق‌تخصصی ۳ الماس رادار دیتکشن (شناسنامه نهادی، هشدارهای پنهان و استراتژی ورود)
+                  </div>
+                  <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 4px;">
+                    توضیحات جامع و ریشه‌ای برای درک عمق بازار هر ارز قبل از ورود معامله‌گر — تفکیک دقیق کاتالیزورها 🟢، تله‌های مارکت‌میکر 🔴 و دستورالعمل ورود 🛡️
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button onclick="filterRadarDeepDossier('ALL')" id="dossierBtnALL" class="copy-btn" style="padding: 6px 14px; font-size: 0.78rem; font-weight: 800; background: rgba(0, 210, 255, 0.2); border-color: #00d2ff; color: #00d2ff;">نمایش جامع هر ۳ ارز</button>
+                  <button onclick="filterRadarDeepDossier('ENA')" id="dossierBtnENA" class="copy-btn" style="padding: 6px 14px; font-size: 0.78rem; font-weight: 800; background: transparent; border-color: rgba(255,255,255,0.15); color: #cbd5e1;">۱. ارز ENA</button>
+                  <button onclick="filterRadarDeepDossier('RLC')" id="dossierBtnRLC" class="copy-btn" style="padding: 6px 14px; font-size: 0.78rem; font-weight: 800; background: transparent; border-color: rgba(255,255,255,0.15); color: #cbd5e1;">۲. ارز RLC</button>
+                  <button onclick="filterRadarDeepDossier('AVAX')" id="dossierBtnAVAX" class="copy-btn" style="padding: 6px 14px; font-size: 0.78rem; font-weight: 800; background: transparent; border-color: rgba(255,255,255,0.15); color: #cbd5e1;">۳. ارز AVAX</button>
+                  <button onclick="filterRadarDeepDossier('MATRIX')" id="dossierBtnMATRIX" class="copy-btn" style="padding: 6px 14px; font-size: 0.78rem; font-weight: 800; background: transparent; border-color: #ffd700; color: #ffd700;">📊 جدول مقایسه جامع</button>
+                </div>
+              </div>
+
+              <!-- Dossier Card 1: ENA -->
+              <div id="dossierCardENA" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="background: #ffd700; color: #000; font-weight: 900; font-size: 0.82rem; padding: 4px 10px; border-radius: 6px;">الماس ۱</span>
+                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 900; color: #fff;">ارز ENA (Ethena) <span style="color: #94a3b8; font-size: 0.9rem;">- ENA/USDT</span></h3>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.15rem; font-weight: 800; color: #00e676; font-family: var(--font-mono);">قیمت زنده: ~/bin/bash.228</span>
+                    <button onclick="loadSymbol('ENA'); switchTab('instTab', document.querySelector('.tab-btn')); window.scrollTo({top:0, behavior:'smooth'});" class="copy-btn" style="padding: 5px 12px; font-size: 0.76rem; background: rgba(0, 230, 118, 0.2); border-color: #00e676; color: #00e676;">⚡ تحلیل ۳۶۰ درجه ENA</button>
+                  </div>
+                </div>
+
+                <!-- 🟢 Bullish Catalysts -->
+                <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                  <strong style="color: #00e676; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                    <span>🟢</span> دلایلی که رادار آن را صعودی و مستعد جهش دیده است:
+                  </strong>
+                  <ul style="margin: 0; padding-right: 20px; line-height: 1.85; font-size: 0.83rem; color: #e2e8f0;">
+                    <li><strong style="color: #ffd700;">۱. شکست ساختار در تایم ۴ ساعته (4H BOS):</strong> ENA توانسته سقف تثبیت چند روزه خود را در تایم‌فریم ۴ ساعته به سمت بالا بشکند و ساختار روند (Market Structure) آن کاملاً صعودی است.</li>
+                    <li><strong style="color: #ffd700;">۲. فشردگی فنر نوسان (Volatility Squeeze = 2.2%):</strong> پهنای باندهای بولینگر و ATR فشرده شده‌اند؛ یعنی انرژی نوسانی بازار درون یک باکس متراکم شده و در آستانه باز شدن فنر (Expansion) قرار دارد.</li>
+                    <li><strong style="color: #ffd700;">۳. قدرت آلفا نسبت به بیت‌کوین (+2.06% Alpha RS):</strong> در شرایطی که بیت‌کوین درجا می‌زند، ENA نرخ رشد بهتری ثبت کرده و ورود نقدینگی فعال دارد.</li>
+                    <li><strong style="color: #ffd700;">۴. گردش مالی بالا:</strong> حجم ۲۴ ساعته بیش از ۲۴ میلیون دلار نقدشوندگی بسیار روانی به آن می‌دهد.</li>
+                  </ul>
+                </div>
+
+                <!-- 🔴 Hidden MM Traps -->
+                <div style="background: rgba(255, 51, 102, 0.06); border: 1px solid rgba(255, 51, 102, 0.25); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                  <strong style="color: #ff3366; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                    <span>🔴</span> تله‌ها و خطرات پنهان ENA (ایراداتی که تریدر حتماً باید بداند):
+                  </strong>
+                  <ul style="margin: 0; padding-right: 20px; line-height: 1.85; font-size: 0.83rem; color: #e2e8f0;">
+                    <li><strong style="color: #ff708f;">مگنت نقدینگی منفی است (/bin/bash.2204؛ یعنی -3.5% پایین‌تر):</strong> این یک هشدار کلیدی است! تعداد زیادی خریدار اهرم‌دار تازه‌وارد در قیمت‌های فعلی سوار شده‌اند و استخرهای لیکوئیدیشن آن‌ها زیر /bin/bash.224 قرار دارد. اگر مارکت‌میکر قبل از صعود بخواهد استاپ‌ها را بزند، ابتدا یک شدوی نزولی به سمت /bin/bash.221-/bin/bash.223 خواهد زد.</li>
+                    <li><strong style="color: #ff708f;">شاخص RSI روی 68.6 است:</strong> به مرز اشباع خرید نزدیک شده و خرید در سقف فعلی ریسک اصلاح زودهنگام دارد.</li>
+                  </ul>
+                </div>
+
+                <!-- 🛡️ Trader Execution Protocol -->
+                <div style="background: rgba(0, 210, 255, 0.06); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px; padding: 12px 14px;">
+                  <strong style="color: #00d2ff; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                    <span>🛡️</span> جمع‌بندی ترید و دستورالعمل ورود ENA:
+                  </strong>
+                  <div style="font-size: 0.83rem; line-height: 1.8; color: #cbd5e1;">
+                    به هیچ عنوان نباید با قیمت مارکت (FOMO) وارد شد. منطقی‌ترین ورود، کاشتن لیمیت اردر در محدوده پولبک <strong style="color: #38bdf8;">/bin/bash.222 تا /bin/bash.225</strong> با حد ضرر پشت کف حمایتی (<strong style="color: #ff3366;">/bin/bash.218</strong>) و تارگت‌های اول <strong style="color: #00e676;">/bin/bash.232</strong> و دوم <strong style="color: #00e676;">/bin/bash.239</strong> است.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dossier Card 2: RLC -->
+              <div id="dossierCardRLC" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="background: #00e676; color: #000; font-weight: 900; font-size: 0.82rem; padding: 4px 10px; border-radius: 6px;">الماس ۲</span>
+                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 900; color: #fff;">ارز RLC (iExec RLC) <span style="color: #94a3b8; font-size: 0.9rem;">- RLC/USDT</span></h3>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.15rem; font-weight: 800; color: #00e676; font-family: var(--font-mono);">قیمت زنده: ~.045</span>
+                    <button onclick="loadSymbol('RLC'); switchTab('instTab', document.querySelector('.tab-btn')); window.scrollTo({top:0, behavior:'smooth'});" class="copy-btn" style="padding: 5px 12px; font-size: 0.76rem; background: rgba(0, 230, 118, 0.2); border-color: #00e676; color: #00e676;">⚡ تحلیل ۳۶۰ درجه RLC</button>
+                  </div>
+                </div>
+
+                <!-- 🟢 Bullish Catalysts -->
+                <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                  <strong style="color: #00e676; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                    <span>🟢</span> دلایلی که رادار آن را صعودی دیده است:
+                  </strong>
+                  <ul style="margin: 0; padding-right: 20px; line-height: 1.85; font-size: 0.83rem; color: #e2e8f0;">
+                    <li><strong style="color: #ffd700;">۱. آهنربای جذب صعودی (Bullish Magnet در .079):</strong> مگنت نقدینگی ۳.۵٪ بالاتر از قیمت فعلی است. بالای سطح ۱.۰۷ دلار استخر بزرگی از استاپ‌های فروشندگان شورت قرار دارد که مثل یک آهنربا قیمت را به بالا می‌کشد (Short Squeeze).</li>
+                    <li><strong style="color: #ffd700;">۲. سپر بتنی خریداران سازمانی:</strong> میانگین خرید نهنگ‌ها روی <strong style="color: #38bdf8;">/bin/bash.994</strong> محاسبه شده است. محدوده ۱.۰۰ تا ۱.۰۲ دلار چندین بار توسط خریداران با حجم سنگین جذب (Absorb) شده است.</li>
+                    <li><strong style="color: #ffd700;">۳. همان ارزی که خودتان تجربه کردید:</strong> سابقه شدوی بلند نقدینگی و سپس رسیدن به تارگت دوم را دارد؛ یعنی بازیگر ابتدا کف‌سازی و شکار نقدینگی می‌کند، سپس حرکت اصلی را کلید می‌زند.</li>
+                  </ul>
+                </div>
+
+                <!-- 🔴 Hidden MM Traps -->
+                <div style="background: rgba(255, 51, 102, 0.06); border: 1px solid rgba(255, 51, 102, 0.25); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                  <strong style="color: #ff3366; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                    <span>🔴</span> تله‌ها و خطرات پنهان RLC (بسیار مهم):
+                  </strong>
+                  <ul style="margin: 0; padding-right: 20px; line-height: 1.85; font-size: 0.83rem; color: #e2e8f0;">
+                    <li><strong style="color: #ff708f;">طبیعت شدوزن و استاپ‌هانتر (High-Wick Spikes):</strong> مارکت‌میکر RLC علاقه عجیبی به زدن استاپ‌های نزدیک دارد. اگر حد ضرر شما تنگ (مثلاً زیر ۱.۵٪) باشد، ۱۰۰٪ با یک شدو استاپ اوت می‌شوید و بعد می‌بینید قیمت به تارگت ۲ رفته است!</li>
+                  </ul>
+                </div>
+
+                <!-- 🛡️ Trader Execution Protocol -->
+                <div style="background: rgba(0, 210, 255, 0.06); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px; padding: 12px 14px;">
+                  <strong style="color: #00d2ff; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                    <span>🛡️</span> جمع‌بندی ترید و دستورالعمل ورود RLC:
+                  </strong>
+                  <div style="font-size: 0.83rem; line-height: 1.8; color: #cbd5e1;">
+                    ورود در قیمت فعلی (<strong style="color: #38bdf8;">.042 - .045</strong>) با <strong style="color: #ff3366;">حد ضرر پهن و منطقی در .012</strong> (پشت کف ساختاری) و تارگت اول <strong style="color: #00e676;">.059</strong> و تارگت دوم <strong style="color: #00e676;">.085</strong>.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dossier Card 3: AVAX -->
+              <div id="dossierCardAVAX" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="background: #00d2ff; color: #000; font-weight: 900; font-size: 0.82rem; padding: 4px 10px; border-radius: 6px;">الماس ۳</span>
+                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 900; color: #fff;">ارز AVAX (Avalanche) <span style="color: #94a3b8; font-size: 0.9rem;">- AVAX/USDT</span></h3>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.15rem; font-weight: 800; color: #00e676; font-family: var(--font-mono);">قیمت زنده: ~0.77</span>
+                    <button onclick="loadSymbol('AVAX'); switchTab('instTab', document.querySelector('.tab-btn')); window.scrollTo({top:0, behavior:'smooth'});" class="copy-btn" style="padding: 5px 12px; font-size: 0.76rem; background: rgba(0, 230, 118, 0.2); border-color: #00e676; color: #00e676;">⚡ تحلیل ۳۶۰ درجه AVAX</button>
+                  </div>
+                </div>
+
+                <!-- 🟢 Bullish Catalysts -->
+                <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                  <strong style="color: #00e676; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                    <span>🟢</span> دلایلی که رادار آن را صعودی دیده است:
+                  </strong>
+                  <ul style="margin: 0; padding-right: 20px; line-height: 1.85; font-size: 0.83rem; color: #e2e8f0;">
+                    <li><strong style="color: #ffd700;">۱. لارج‌کپ با عمق دفتر سفارشات واقعی (High Order Book Depth):</strong> برخلاف آلت‌کوین‌های کوچک، آواکس دفتر سفارشات ضخیمی در بایننس و کوین‌بیس دارد و اسلیپیج یا تکان‌های بی‌پشتوانه ندارد.</li>
+                    <li><strong style="color: #ffd700;">۲. مگنت لیکوئیدیشن در 1.15 (+3.5% صعودی):</strong> حجم قابل توجهی از پوزیشن‌های شورت با اهرم‌های ۲۵x و ۵۰x بالای مقاومت ۱۱ دلاری جمع شده‌اند که شکست ۱۱ دلار می‌تواند جهش سریعی به 1.30 ایجاد کند.</li>
+                    <li><strong style="color: #ffd700;">۳. ریسک به ریوارد متوازن (1:2.1):</strong> فاصله ورود تا استاپ حدود ۲٪ (0.46) در برابر تارگت‌های 0.95 و 1.29 است که تناسب ریاضی درستی دارد.</li>
+                  </ul>
+                </div>
+
+                <!-- 🔴 Hidden MM Traps -->
+                <div style="background: rgba(255, 51, 102, 0.06); border: 1px solid rgba(255, 51, 102, 0.25); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                  <strong style="color: #ff3366; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+                    <span>🔴</span> تله‌ها و خطرات پنهان AVAX:
+                  </strong>
+                  <ul style="margin: 0; padding-right: 20px; line-height: 1.85; font-size: 0.83rem; color: #e2e8f0;">
+                    <li><strong style="color: #ff708f;">همبستگی شدید (Beta) با بیت‌کوین:</strong> آواکس استقلال حرکتی زیادی ندارد. اگر بیت‌کوین زیر ۸۲,۵۰۰ دلار فشار فروش بگیرد، آواکس به راحتی حمایت ۱۰.۶۰ را از دست می‌دهد و به سمت استخرهای لانگ در ۱۰.۲۰ دلار سر می‌خورد.</li>
+                  </ul>
+                </div>
+
+                <!-- 🛡️ Trader Execution Protocol -->
+                <div style="background: rgba(0, 210, 255, 0.06); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px; padding: 12px 14px;">
+                  <strong style="color: #00d2ff; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                    <span>🛡️</span> جمع‌بندی ترید و دستورالعمل ورود AVAX:
+                  </strong>
+                  <div style="font-size: 0.83rem; line-height: 1.8; color: #cbd5e1;">
+                    مناسب برای افرادی که اهل نوسانات شدید میم‌کوین‌ها نیستند؛ ورود ترجیحاً بین <strong style="color: #38bdf8;">0.65 تا 0.75</strong> با استاپ <strong style="color: #ff3366;">0.46</strong> و تارگت‌های اول <strong style="color: #00e676;">0.95</strong> و دوم <strong style="color: #00e676;">1.29</strong>.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Comparison Matrix Table -->
+              <div id="dossierCardMATRIX" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 215, 0, 0.35); border-radius: 10px; padding: 18px;">
+                <div style="font-size: 1.05rem; font-weight: 800; color: #ffd700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                  <span>📊</span> مقایسه خلاصه و ماتریس تصمیم‌گیری معامله‌گر برای ۳ ارز منتخب:
+                </div>
+                <div style="overflow-x: auto;">
+                  <table class="crypto-table" style="width: 100%; font-size: 0.82rem; text-align: center;">
+                    <thead>
+                      <tr style="background: rgba(255,255,255,0.05);">
+                        <th style="text-align: right; padding: 10px;">ارز</th>
+                        <th>قیمت فعلی</th>
+                        <th>استاپ‌لاس پیشنهادی</th>
+                        <th>تارگت اول / دوم</th>
+                        <th>مگنت قیمت</th>
+                        <th>میزان و نوع ریسک پنهان</th>
+                        <th>استراتژی کلیدی ورود</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="text-align: right; padding: 12px; font-weight: 800; color: #ffd700;">👑 ENA (Ethena)</td>
+                        <td style="font-family: var(--font-mono); font-weight: 700;">/bin/bash.228</td>
+                        <td style="color: #ff3366; font-family: var(--font-mono); font-weight: 700;">/bin/bash.221 (خطر شدو)</td>
+                        <td style="color: #00e676; font-family: var(--font-mono); font-weight: 700;">/bin/bash.232 / /bin/bash.239</td>
+                        <td style="color: #ffd166; font-family: var(--font-mono);">/bin/bash.220 (نزولی)</td>
+                        <td><span style="background: rgba(255,152,0,0.18); color: #ffa726; padding: 3px 8px; border-radius: 4px; font-weight: 700;">⚠️ متوسط تا زیاد</span></td>
+                        <td style="color: #38bdf8;">کاشت لیمیت در پولبک /bin/bash.222-/bin/bash.225 (ورود مارکت ممنوع)</td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="text-align: right; padding: 12px; font-weight: 800; color: #00e676;">⭐ RLC (iExec)</td>
+                        <td style="font-family: var(--font-mono); font-weight: 700;">.045</td>
+                        <td style="color: #ff3366; font-family: var(--font-mono); font-weight: 700;">.012 (پشت کف)</td>
+                        <td style="color: #00e676; font-family: var(--font-mono); font-weight: 700;">.059 / .085</td>
+                        <td style="color: #00e676; font-family: var(--font-mono);">.079 (صعودی 🟢)</td>
+                        <td><span style="background: rgba(255,215,0,0.15); color: #ffd700; padding: 3px 8px; border-radius: 4px; font-weight: 700;">⚠️ متوسط (شدوی استاپ‌هانت)</span></td>
+                        <td style="color: #38bdf8;">ورود در .042 با استاپ پهن ۲.۸٪ ضد هانت مارکت‌میکر</td>
+                      </tr>
+                      <tr>
+                        <td style="text-align: right; padding: 12px; font-weight: 800; color: #00d2ff;">✨ AVAX (Avalanche)</td>
+                        <td style="font-family: var(--font-mono); font-weight: 700;">0.77</td>
+                        <td style="color: #ff3366; font-family: var(--font-mono); font-weight: 700;">0.46 (پشت سوپاپ)</td>
+                        <td style="color: #00e676; font-family: var(--font-mono); font-weight: 700;">0.95 / 1.29</td>
+                        <td style="color: #00e676; font-family: var(--font-mono);">1.15 (صعودی 🟢)</td>
+                        <td><span style="background: rgba(0,230,118,0.15); color: #00e676; padding: 3px 8px; border-radius: 4px; font-weight: 700;">🛡️ کم تا متعادل</span></td>
+                        <td style="color: #38bdf8;">ورود 0.65-0.75 مشروط به حفظ ناحیه ۸۲.۵K بیت‌کوین</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -5046,7 +5261,18 @@
             </div>
           </div>
 
-          <div style="background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.82rem;" id="coinlegsFilterBanner">
+          
+          <!-- Sub-Tab Navigation for Coinlegs Detection Radar -->
+          <div style="display: flex; gap: 10px; border-bottom: 2px solid rgba(255, 255, 255, 0.08); padding-bottom: 14px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+            <button id="btnRadarViewLive" onclick="switchRadarSubTab('live')" class="tab-btn active" style="font-size: 0.88rem; padding: 10px 22px; border-radius: 8px; font-weight: 800; display: flex; align-items: center; gap: 8px; cursor: pointer; border: 1px solid rgba(255, 215, 0, 0.4); background: rgba(255, 215, 0, 0.15); color: #ffd700; transition: all 0.2s;">
+              <span>👑</span> ۳ الماس پرواز و جدول فرصت‌ها (Live Radar)
+            </button>
+            <button id="btnRadarViewDeep" onclick="switchRadarSubTab('deep')" class="tab-btn" style="font-size: 0.88rem; padding: 10px 22px; border-radius: 8px; font-weight: 800; display: flex; align-items: center; gap: 8px; cursor: pointer; border: 1px solid rgba(0, 210, 255, 0.35); background: rgba(0, 210, 255, 0.08); color: #00d2ff; transition: all 0.2s;">
+              <span>📖</span> کالبدشکافی عمیق، تله‌های پنهان و دستورالعمل ورود ۳ الماس (Deep Dossier)
+            </button>
+          </div>
+<div style="background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.82rem;" id="coinlegsFilterBanner">
+          <div id="radarLiveSection">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
               <div style="display: flex; align-items: center; gap: 8px; color: #fef08a; font-weight: 700;">
                 <span>🎯 فیلتر هوشمند مومنتوم ۵ دقیقه (M5):</span>
@@ -8056,6 +8282,83 @@
         }
       } catch (e) {
         if (grid) grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #ff3366;">خطا در دریافت هیت‌مپ: ${e.message}</div>`;
+      }
+    }
+
+    // --- Coinlegs Sub-Tab Controller ---
+    function switchRadarSubTab(view) {
+      const liveSection = document.getElementById('radarLiveSection');
+      const deepSection = document.getElementById('radarDeepSection');
+      const btnLive = document.getElementById('btnRadarViewLive');
+      const btnDeep = document.getElementById('btnRadarViewDeep');
+
+      if (view === 'deep') {
+        if (liveSection) liveSection.style.display = 'none';
+        if (deepSection) deepSection.style.display = 'block';
+        if (btnLive) {
+          btnLive.classList.remove('active');
+          btnLive.style.background = 'transparent';
+          btnLive.style.borderColor = 'rgba(255,255,255,0.15)';
+          btnLive.style.color = '#94a3b8';
+        }
+        if (btnDeep) {
+          btnDeep.classList.add('active');
+          btnDeep.style.background = 'rgba(0, 210, 255, 0.2)';
+          btnDeep.style.borderColor = '#00d2ff';
+          btnDeep.style.color = '#00d2ff';
+        }
+      } else {
+        if (liveSection) liveSection.style.display = 'block';
+        if (deepSection) deepSection.style.display = 'none';
+        if (btnLive) {
+          btnLive.classList.add('active');
+          btnLive.style.background = 'rgba(255, 215, 0, 0.15)';
+          btnLive.style.borderColor = 'rgba(255, 215, 0, 0.4)';
+          btnLive.style.color = '#ffd700';
+        }
+        if (btnDeep) {
+          btnDeep.classList.remove('active');
+          btnDeep.style.background = 'rgba(0, 210, 255, 0.08)';
+          btnDeep.style.borderColor = 'rgba(0, 210, 255, 0.35)';
+          btnDeep.style.color = '#00d2ff';
+        }
+      }
+    }
+
+    function filterRadarDeepDossier(coin) {
+      const cards = ['ENA', 'RLC', 'AVAX', 'MATRIX'];
+      const btns = {
+        ALL: document.getElementById('dossierBtnALL'),
+        ENA: document.getElementById('dossierBtnENA'),
+        RLC: document.getElementById('dossierBtnRLC'),
+        AVAX: document.getElementById('dossierBtnAVAX'),
+        MATRIX: document.getElementById('dossierBtnMATRIX')
+      };
+
+      Object.keys(btns).forEach(k => {
+        if (btns[k]) {
+          btns[k].style.background = 'transparent';
+          btns[k].style.borderColor = 'rgba(255,255,255,0.15)';
+          btns[k].style.color = '#cbd5e1';
+        }
+      });
+
+      if (btns[coin]) {
+        btns[coin].style.background = coin === 'MATRIX' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0, 210, 255, 0.2)';
+        btns[coin].style.borderColor = coin === 'MATRIX' ? '#ffd700' : '#00d2ff';
+        btns[coin].style.color = coin === 'MATRIX' ? '#ffd700' : '#00d2ff';
+      }
+
+      if (coin === 'ALL') {
+        cards.forEach(c => {
+          const el = document.getElementById('dossierCard' + c);
+          if (el) el.style.display = 'block';
+        });
+      } else {
+        cards.forEach(c => {
+          const el = document.getElementById('dossierCard' + c);
+          if (el) el.style.display = (c === coin) ? 'block' : 'none';
+        });
       }
     }
 

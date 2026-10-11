@@ -2633,7 +2633,7 @@ class WhaleFlowEngine:
     _last_whale_time = {}
 
     @classmethod
-    def get_whale_metrics(cls, symbol: str = "BTC") -> Dict[str, Any]:
+    def get_whale_metrics(cls, symbol: str = "BTC", current_price: float = None) -> Dict[str, Any]:
         now = time.time()
         clean_sym = symbol.upper().replace("USDT", "").replace("USD", "").replace("_", "").strip() if symbol else "BTC"
         if not clean_sym:
@@ -2641,17 +2641,34 @@ class WhaleFlowEngine:
 
         cache_key = clean_sym
         if cache_key in cls._cached_whale_data and (now - cls._last_whale_time.get(cache_key, 0) < 60):
-            return cls._cached_whale_data[cache_key]
+            cached = cls._cached_whale_data[cache_key]
+            if current_price and current_price > 0 and abs(cached.get("current_price", 0) - current_price) / max(1e-8, current_price) > 0.05:
+                pass
+            else:
+                return cached
 
-        # 1. Fetch live price for coin
-        curr_price = 86450.0 if clean_sym == "BTC" else (2760.0 if clean_sym == "ETH" else 119.0)
-        try:
-            req = urllib.request.Request(f"https://api.mexc.com/api/v3/ticker/price?symbol={clean_sym}USDT", headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=2.5) as r:
-                data = json.loads(r.read().decode())
-                curr_price = float(data.get("price", curr_price))
-        except Exception:
-            pass
+        # 1. Determine live price for coin
+        curr_price = float(current_price) if current_price and current_price > 0 else 0.0
+        if curr_price <= 0:
+            try:
+                req = urllib.request.Request(f"https://api.binance.com/api/v3/ticker/price?symbol={clean_sym}USDT", headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=2.5) as r:
+                    data = json.loads(r.read().decode())
+                    curr_price = float(data.get("price", 0.0))
+            except Exception:
+                pass
+
+        if curr_price <= 0:
+            try:
+                req = urllib.request.Request(f"https://api.mexc.com/api/v3/ticker/price?symbol={clean_sym}USDT", headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=2.5) as r:
+                    data = json.loads(r.read().decode())
+                    curr_price = float(data.get("price", 0.0))
+            except Exception:
+                pass
+
+        if curr_price <= 0:
+            curr_price = 83000.0 if clean_sym == "BTC" else (2500.0 if clean_sym == "ETH" else (110.0 if clean_sym == "SOL" else 1.0))
 
         # 2. Coin-Specific Top Whale Accumulator Wallets (What quantity & at what entry price they bought)
         base_usd_values = [48_000_000, 115_000_000, 32_000_000, 75_000_000, 22_000_000]
