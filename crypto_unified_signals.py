@@ -10,6 +10,7 @@ Adaptive Multi-Asset Precision Engine:
 """
 
 import time
+import math
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
@@ -23,31 +24,110 @@ _LOCKED_SWING_SETUPS: Dict[str, Any] = {}
 
 def get_price_decimals(p: float) -> int:
     """Determine adaptive decimal precision based on asset price magnitude."""
-    if p >= 1000:
-        return 1
-    elif p >= 10:
+    if p >= 50:
         return 2
     elif p >= 1:
         return 4
-    elif p >= 0.01:
+    elif p >= 0.005:
         return 5
-    elif p > 0:
+    elif p >= 0.0001:
+        return 6
+    else:
         return 8
-    return 2
 
 def format_crypto_price(p: float) -> str:
     """Format crypto price with readable thousand separators and adaptive decimals."""
-    if p >= 1000:
-        return f"${p:,.1f}"
-    elif p >= 10:
+    dec = get_price_decimals(p)
+    if dec <= 2:
         return f"${p:,.2f}"
-    elif p >= 1:
+    elif dec <= 4:
         return f"${p:,.4f}"
-    elif p >= 0.01:
+    elif dec == 5:
         return f"${p:,.5f}"
-    elif p > 0:
+    elif dec == 6:
+        return f"${p:,.6f}"
+    else:
         return f"${p:.8f}"
-    return "$0.00"
+
+def _apply_anti_front_run_tp(
+    tp_raw: float,
+    entry: float,
+    is_long: bool,
+    orderbook_walls: List[float],
+    dec: int,
+    tp_idx: int = 1
+) -> float:
+    """
+    Whale & Order Book Anti-Front-Running Algorithm:
+    Protects trades from premature rejections by placing TP targets 0.25% - 0.40%
+    BEFORE large limit walls (Bookmap Ask/Bid walls) and psychological round levels.
+    """
+    buffer_pct = 0.0035  # 0.35% institutional execution buffer
+    tp_adjusted = float(tp_raw)
+
+    if is_long:
+        # Check against Bookmap resting ask walls
+        sorted_walls = sorted([w for w in orderbook_walls if w > entry])
+        for wall in sorted_walls:
+            if tp_raw >= wall * 0.995:
+                front_run_wall = wall * (1.0 - buffer_pct)
+                if front_run_wall > entry * 1.003:
+                    tp_adjusted = min(tp_adjusted, front_run_wall)
+                    break
+
+        # Check against psychological round numbers
+        if entry < 0.1:
+            round_step = 0.0010
+        elif entry < 1.0:
+            round_step = 0.0050
+        elif entry < 50.0:
+            round_step = 0.50
+        elif entry < 500.0:
+            round_step = 5.0
+        elif entry < 5000.0:
+            round_step = 50.0
+        else:
+            round_step = 500.0
+
+        nearest_ceiling = math.ceil(tp_adjusted / round_step) * round_step
+        if nearest_ceiling > 0:
+            dist_pct = abs(tp_adjusted - nearest_ceiling) / nearest_ceiling
+            if dist_pct < 0.006 or tp_adjusted >= nearest_ceiling:
+                front_run_ceiling = nearest_ceiling * (1.0 - buffer_pct)
+                if front_run_ceiling > entry * 1.003:
+                    tp_adjusted = min(tp_adjusted, front_run_ceiling)
+    else:
+        # SHORT: Front-run resting bid shelves and round floors (sit ABOVE them)
+        sorted_shelves = sorted([s for s in orderbook_walls if s < entry], reverse=True)
+        for shelf in sorted_shelves:
+            if tp_raw <= shelf * 1.005:
+                front_run_shelf = shelf * (1.0 + buffer_pct)
+                if front_run_shelf < entry * 0.997:
+                    tp_adjusted = max(tp_adjusted, front_run_shelf)
+                    break
+
+        if entry < 0.1:
+            round_step = 0.0010
+        elif entry < 1.0:
+            round_step = 0.0050
+        elif entry < 50.0:
+            round_step = 0.50
+        elif entry < 500.0:
+            round_step = 5.0
+        elif entry < 5000.0:
+            round_step = 50.0
+        else:
+            round_step = 500.0
+
+        nearest_floor = math.floor(tp_adjusted / round_step) * round_step
+        if nearest_floor > 0:
+            dist_pct = abs(tp_adjusted - nearest_floor) / nearest_floor
+            if dist_pct < 0.006 or tp_adjusted <= nearest_floor:
+                front_run_floor = nearest_floor * (1.0 + buffer_pct)
+                if front_run_floor < entry * 0.997:
+                    tp_adjusted = max(tp_adjusted, front_run_floor)
+
+    return round(tp_adjusted, dec)
 
 def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     symbol_clean = symbol.replace("USDT", "").replace("/", "").strip().upper() or "BTC"
@@ -158,22 +238,29 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
                 scalp_sl = round(min(val * 0.998, current_price * (1.0 - min_sl_pct)), dec)
 
             valid_asks = sorted([a for a in ask_walls if a > current_price])
-            if valid_asks:
-                scalp_tp1 = round(max(valid_asks[0], current_price * 1.012), dec)
-            elif unfin_p > current_price:
-                scalp_tp1 = round(max(unfin_p, current_price * 1.012), dec)
-            else:
-                scalp_tp1 = round(current_price * (1.012 if is_major else 1.024), dec)
+            
+            # Base raw targets
+            raw_tp1 = max(valid_asks[0] * 0.996 if valid_asks else current_price * 1.012, current_price * (1.008 if is_major else 1.012))
+            raw_tp2 = max(valid_asks[1] * 0.996 if len(valid_asks) > 1 else (vah * 0.996 if vah > raw_tp1 else current_price * 1.026), raw_tp1 * 1.006)
+            raw_tp3 = max(raw_tp2 * 1.015, current_price * (1.035 if is_major else 1.060))
 
-            if len(valid_asks) > 1:
-                scalp_tp2 = round(max(valid_asks[1], vah if vah > scalp_tp1 else current_price * 1.035), dec)
-            else:
-                scalp_tp2 = round(max(vah if vah > scalp_tp1 else current_price * 1.035, current_price * (1.025 if is_major else 1.048)), dec)
+            # Apply Whale & Psychological Anti-Front-Running Algorithm
+            scalp_tp1 = _apply_anti_front_run_tp(raw_tp1, scalp_entry, True, ask_walls, dec, 1)
+            scalp_tp2 = _apply_anti_front_run_tp(raw_tp2, scalp_entry, True, ask_walls, dec, 2)
+            scalp_tp3 = _apply_anti_front_run_tp(raw_tp3, scalp_entry, True, ask_walls, dec, 3)
 
-            scalp_tp3 = round(max(scalp_tp2 * 1.025, current_price * (1.045 if is_major else 1.075)), dec)
+            # Monotonic step enforcement (Entry < TP1 < TP2 < TP3)
+            min_step = max(current_price * 0.003, 10 ** (-dec))
+            if scalp_tp1 <= scalp_entry:
+                scalp_tp1 = round(scalp_entry + min_step, dec)
+            if scalp_tp2 <= scalp_tp1:
+                scalp_tp2 = round(scalp_tp1 + min_step, dec)
+            if scalp_tp3 <= scalp_tp2:
+                scalp_tp3 = round(scalp_tp2 + min_step, dec)
+
             sl_why = "حفاظ بتنی پشت دیواره خرید بوک‌مپ (Bookmap Bid Shelf)"
-            tp1_why = "دیواره عرضه و نقدینگی اول بوک‌مپ (Bookmap Ask Wall)"
-            tp2_why = "سقف ناحیه ارزش منصفانه کوانت‌تاور (Quantower VAH)"
+            tp1_why = "خروج امن ضد فرانت‌رانینگ قبل از اولین دیواره فروش (Anti-Front-Run Ask Wall)"
+            tp2_why = "خروج هوشمند پیش از تجمع اردرهای رُند و سقف ارزش (Psychological Front-Run VAH)"
         else:
             valid_asks = sorted([a for a in ask_walls if a > current_price])
             if valid_asks:
@@ -183,22 +270,27 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
                 scalp_sl = round(max(vah * 1.002, current_price * (1.0 + min_sl_pct)), dec)
 
             valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
-            if valid_bids:
-                scalp_tp1 = round(min(valid_bids[0], current_price * 0.988), dec)
-            elif unfin_p < current_price and unfin_p > 0:
-                scalp_tp1 = round(min(unfin_p, current_price * 0.988), dec)
-            else:
-                scalp_tp1 = round(current_price * (0.988 if is_major else 0.976), dec)
+            
+            raw_tp1 = min(valid_bids[0] * 1.004 if valid_bids else current_price * 0.988, current_price * (0.992 if is_major else 0.988))
+            raw_tp2 = min(valid_bids[1] * 1.004 if len(valid_bids) > 1 else (val * 1.004 if val < raw_tp1 else current_price * 0.974), raw_tp1 * 0.994)
+            raw_tp3 = min(raw_tp2 * 0.985, current_price * (0.965 if is_major else 0.940))
 
-            if len(valid_bids) > 1:
-                scalp_tp2 = round(min(valid_bids[1], val if val < scalp_tp1 else current_price * 0.965), dec)
-            else:
-                scalp_tp2 = round(min(val if val < scalp_tp1 else current_price * 0.965, current_price * (0.975 if is_major else 0.952)), dec)
+            # Apply Whale & Psychological Anti-Front-Running Algorithm
+            scalp_tp1 = _apply_anti_front_run_tp(raw_tp1, scalp_entry, False, bid_shelves, dec, 1)
+            scalp_tp2 = _apply_anti_front_run_tp(raw_tp2, scalp_entry, False, bid_shelves, dec, 2)
+            scalp_tp3 = _apply_anti_front_run_tp(raw_tp3, scalp_entry, False, bid_shelves, dec, 3)
 
-            scalp_tp3 = round(min(scalp_tp2 * 0.975, current_price * (0.955 if is_major else 0.925)), dec)
+            min_step = max(current_price * 0.003, 10 ** (-dec))
+            if scalp_tp1 >= scalp_entry:
+                scalp_tp1 = round(scalp_entry - min_step, dec)
+            if scalp_tp2 >= scalp_tp1:
+                scalp_tp2 = round(scalp_tp1 - min_step, dec)
+            if scalp_tp3 >= scalp_tp2:
+                scalp_tp3 = round(scalp_tp2 - min_step, dec)
+
             sl_why = "حفاظ بتنی بالای دیواره فروش بوک‌مپ (Bookmap Ask Wall)"
-            tp1_why = "دیواره تقاضا و نقدینگی اول بوک‌مپ (Bookmap Bid Shelf)"
-            tp2_why = "کف ناحیه ارزش منصفانه کوانت‌تاور (Quantower VAL)"
+            tp1_why = "خروج امن ضد فرانت‌رانینگ قبل از اولین دیواره خرید (Anti-Front-Run Bid Shelf)"
+            tp2_why = "خروج هوشمند پیش از تجمع اردرهای رُند کف ارزش (Psychological Front-Run VAL)"
 
         scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (min_sl_pct * 100)
         scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 1.5
@@ -248,8 +340,8 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         "time_tehran": scalp_time_tehran,
         "holding_duration": "۳۰ دقیقه الی ۲ ساعت",
         "holding_duration_en": "30m - 2h",
-        "core_modules": "Bookmap L2/L3 + NinjaTrader 8 + ATAS + Sierra Chart",
-        "rationale_fa": "جذب اردرهای مارکت توسط لیمیت‌بای نهنگ در بوک‌مپ، شیب مثبت CVD و عدم تعادل خرید در فوت‌پرینت کلاستری."
+        "core_modules": "Bookmap L2/L3 + NinjaTrader 8 + ATAS + Anti-Front-Run",
+        "rationale_fa": "جذب اردرهای مارکت در بوک‌مپ، شیب مثبت CVD و تارگت‌گذاری ضد فرانت‌رانینگ (Anti-Front-Run) چند تیک قبل از دیواره فروش بایننس جهت تضمین تکمیل سود پیش از بازگشت قیمت." if scalp_is_long else "تخلیه تهاجمی در اتاس و تارگت‌گذاری ضد فرانت‌رانینگ چند تیک قبل از دیواره خرید بایننس جهت خروج امن پیش از پرتاب قیمت."
     }
 
     # =========================================================================
@@ -303,17 +395,25 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
                 sl_raw = min(val_4h * 0.995, swing_entry * 0.980)
             swing_sl = round(sl_raw, dec)
 
-            tp1_raw = max(vah_4h, swing_entry * 1.025)
-            swing_tp1 = round(tp1_raw, dec)
+            is_major = symbol_clean in ["BTC", "ETH"]
+            major_short_pools = [float(c["price"]) for c in liq_clusters if "استخر اصلی شورت" in c.get("tier", "") and float(c["price"]) > swing_entry]
+            major_target = major_short_pools[0] if major_short_pools else (swing_entry * (1.045 if is_major else 1.065))
 
-            if short_liq:
-                tp2_raw = max(short_liq[-1], swing_entry * 1.055)
-            else:
-                tp2_raw = swing_entry * 1.065
-            swing_tp2 = round(tp2_raw, dec)
+            raw_sw_tp1 = max(vah_4h * 0.996, swing_entry * (1.025 if is_major else 1.035))
+            raw_sw_tp2 = max(major_target * 0.996, raw_sw_tp1 * 1.025)
+            raw_sw_tp3 = max(raw_sw_tp2 * 1.045, swing_entry * (1.085 if is_major else 1.120))
 
-            tp3_raw = max(swing_tp2 * 1.045, swing_entry * 1.10)
-            swing_tp3 = round(tp3_raw, dec)
+            swing_tp1 = _apply_anti_front_run_tp(raw_sw_tp1, swing_entry, True, [major_target], dec, 1)
+            swing_tp2 = _apply_anti_front_run_tp(raw_sw_tp2, swing_entry, True, [major_target * 1.03], dec, 2)
+            swing_tp3 = _apply_anti_front_run_tp(raw_sw_tp3, swing_entry, True, [major_target * 1.06], dec, 3)
+
+            min_step = max(current_price * 0.012, 10 ** (-dec))
+            if swing_tp1 <= swing_entry:
+                swing_tp1 = round(swing_entry + min_step, dec)
+            if swing_tp2 <= swing_tp1:
+                swing_tp2 = round(swing_tp1 + min_step, dec)
+            if swing_tp3 <= swing_tp2:
+                swing_tp3 = round(swing_tp2 + min_step, dec)
         else:
             if short_liq:
                 sl_raw = max(short_liq[0] * 1.005, swing_entry * 1.018)
@@ -321,17 +421,25 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
                 sl_raw = max(vah_4h * 1.005, swing_entry * 1.020)
             swing_sl = round(sl_raw, dec)
 
-            tp1_raw = min(val_4h, swing_entry * 0.975)
-            swing_tp1 = round(tp1_raw, dec)
+            is_major = symbol_clean in ["BTC", "ETH"]
+            major_long_pools = [float(c["price"]) for c in liq_clusters if "استخر اصلی لانگ" in c.get("tier", "") and float(c["price"]) < swing_entry]
+            major_target = major_long_pools[0] if major_long_pools else (swing_entry * (0.955 if is_major else 0.935))
 
-            if long_liq:
-                tp2_raw = min(long_liq[-1], swing_entry * 0.945)
-            else:
-                tp2_raw = swing_entry * 0.935
-            swing_tp2 = round(tp2_raw, dec)
+            raw_sw_tp1 = min(val_4h * 1.004, swing_entry * (0.975 if is_major else 0.965))
+            raw_sw_tp2 = min(major_target * 1.004, raw_sw_tp1 * 0.975)
+            raw_sw_tp3 = min(raw_sw_tp2 * 0.955, swing_entry * (0.915 if is_major else 0.880))
 
-            tp3_raw = min(swing_tp2 * 0.955, swing_entry * 0.90)
-            swing_tp3 = round(tp3_raw, dec)
+            swing_tp1 = _apply_anti_front_run_tp(raw_sw_tp1, swing_entry, False, [major_target], dec, 1)
+            swing_tp2 = _apply_anti_front_run_tp(raw_sw_tp2, swing_entry, False, [major_target * 0.97], dec, 2)
+            swing_tp3 = _apply_anti_front_run_tp(raw_sw_tp3, swing_entry, False, [major_target * 0.94], dec, 3)
+
+            min_step = max(current_price * 0.012, 10 ** (-dec))
+            if swing_tp1 >= swing_entry:
+                swing_tp1 = round(swing_entry - min_step, dec)
+            if swing_tp2 >= swing_tp1:
+                swing_tp2 = round(swing_tp1 - min_step, dec)
+            if swing_tp3 >= swing_tp2:
+                swing_tp3 = round(swing_tp2 - min_step, dec)
 
         swing_sl_pct = abs((swing_sl - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 1.80
         swing_tp1_pct = abs((swing_tp1 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 2.50
