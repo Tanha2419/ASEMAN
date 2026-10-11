@@ -3413,7 +3413,7 @@
               <div style="font-weight: 800; color: #38bdf8; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
                 <span>🧲</span> نقشه حرارتی استخرهای نقدینگی (<span id="liqCoinBadge">BTC</span>)
               </div>
-              <span id="liqCascadeBadge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
+              <span id="terminalLiqCascadeBadge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
                 Coinglass Style
               </span>
             </div>
@@ -3421,15 +3421,15 @@
             <div style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                 <span style="color: #94a3b8; font-size: 0.82rem;">آهنربای جذب قیمت (Magnet Price):</span>
-                <span id="liqMagnetPrice" style="color: #ffd700; font-weight: 800; font-size: 0.95rem;">-</span>
+                <span id="terminalLiqMagnetPrice" style="color: #ffd700; font-weight: 800; font-size: 0.95rem;">-</span>
               </div>
               <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                 <span style="color: #94a3b8; font-size: 0.82rem;">جهت مغناطیسی استخر:</span>
-                <span id="liqMagnetDir" style="font-weight: 700; font-size: 0.82rem;">-</span>
+                <span id="terminalLiqMagnetDir" style="font-weight: 700; font-size: 0.82rem;">-</span>
               </div>
               <div style="display: flex; justify-content: space-between;">
                 <span style="color: #94a3b8; font-size: 0.82rem;">نقدینگی در معرض خطر:</span>
-                <span id="liqTotalRisk" style="color: #ff5252; font-weight: 700; font-size: 0.82rem;">-</span>
+                <span id="terminalLiqTotalRisk" style="color: #ff5252; font-weight: 700; font-size: 0.82rem;">-</span>
               </div>
             </div>
 
@@ -7769,9 +7769,8 @@
       } else if (tabId === 'precisionTab') {
         if (currentAnalysis && currentAnalysis.precision_suite) {
           renderPrecisionSuite(currentAnalysis.precision_suite);
-        } else {
-          fetchPrecisionSuite(currentSymbol);
         }
+        fetchPrecisionSuite(currentSymbol);
       } else if (tabId === 'alphaTab') {
         fetchAlphaMatrix();
       } else if (tabId === 'kellyTab') {
@@ -8392,21 +8391,42 @@
       // 1. Liquidations
       if (suite.liquidations) {
         const l = suite.liquidations;
-        document.getElementById('liqTotalLongs').innerText = l.total_long_liq_fmt || '$0.0M';
-        document.getElementById('liqTotalShorts').innerText = l.total_short_liq_fmt || '$0.0M';
-        document.getElementById('liqMagnetPrice').innerText = formatPrice(l.magnet_price);
-        document.getElementById('liqMagnetDist').innerText = `فاصله: ${l.magnet_distance_pct > 0 ? '+' : ''}${l.magnet_distance_pct}% (${l.magnet_direction === 'BULLISH_MAGNET' ? 'بالای قیمت' : 'پایین قیمت'})`;
+        const totalLongsEl = document.getElementById('liqTotalLongs');
+        if (totalLongsEl) totalLongsEl.innerText = l.total_long_liq_fmt || '$0.0M';
+        const totalShortsEl = document.getElementById('liqTotalShorts');
+        if (totalShortsEl) totalShortsEl.innerText = l.total_short_liq_fmt || '$0.0M';
+        
+        const magVal = (l.magnet_price !== undefined && l.magnet_price !== null && !isNaN(Number(l.magnet_price)))
+          ? formatPrice(l.magnet_price)
+          : (lastKnownPrice ? formatPrice(lastKnownPrice) : '$0.00');
 
-        const cBadge = document.getElementById('liqCascadeBadge');
-        if (l.cascade_warning) {
-          cBadge.style.background = 'rgba(255, 51, 102, 0.2)';
-          cBadge.style.color = '#ff3366';
-          cBadge.innerText = '⚠️ هشدار شکست آبشاری لیکوئیدیشن';
-        } else {
-          cBadge.style.background = 'rgba(0, 230, 118, 0.15)';
-          cBadge.style.color = '#00e676';
-          cBadge.innerText = 'محدوده باثبات و نرمال';
+        const magPriceEl = document.getElementById('liqMagnetPrice');
+        if (magPriceEl) magPriceEl.innerText = magVal;
+        const termMagEl = document.getElementById('terminalLiqMagnetPrice');
+        if (termMagEl) termMagEl.innerText = magVal;
+
+        const magDistEl = document.getElementById('liqMagnetDist');
+        if (magDistEl) {
+          const dVal = (l.magnet_distance_pct !== undefined && l.magnet_distance_pct !== null) ? Number(l.magnet_distance_pct) : 0;
+          const sign = dVal > 0 ? '+' : '';
+          const dirPersian = l.magnet_direction === 'BULLISH_MAGNET' ? 'بالای قیمت' : 'پایین قیمت';
+          magDistEl.innerText = `فاصله: ${sign}${dVal.toFixed(2)}% (${dirPersian})`;
         }
+
+        const updateCascadeBadge = (badgeEl) => {
+          if (!badgeEl) return;
+          if (l.cascade_warning) {
+            badgeEl.style.background = 'rgba(255, 51, 102, 0.2)';
+            badgeEl.style.color = '#ff3366';
+            badgeEl.innerText = '⚠️ هشدار شکست آبشاری لیکوئیدیشن';
+          } else {
+            badgeEl.style.background = 'rgba(0, 230, 118, 0.15)';
+            badgeEl.style.color = '#00e676';
+            badgeEl.innerText = 'محدوده باثبات و نرمال';
+          }
+        };
+        updateCascadeBadge(document.getElementById('liqCascadeBadge'));
+        updateCascadeBadge(document.getElementById('terminalLiqCascadeBadge'));
 
         const longList = document.getElementById('longClustersList');
         longList.innerHTML = '';
@@ -8945,22 +8965,41 @@
 
         // 1. Render Column 1: Liquidation Heatmap
         const pDecimals = (data.current_price < 1) ? 6 : ((data.current_price < 10) ? 4 : 2);
-        const magEl = document.getElementById("liqMagnetPrice");
-        if (magEl) magEl.innerText = liq.magnet_price ? `$${Number(liq.magnet_price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}` : "-";
+        const magVal = (liq.magnet_price !== undefined && liq.magnet_price !== null && !isNaN(Number(liq.magnet_price)))
+          ? `$${Number(liq.magnet_price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}`
+          : (data.current_price ? `$${Number(data.current_price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}` : "-");
 
-        const dirEl = document.getElementById("liqMagnetDir");
+        const magEl = document.getElementById("terminalLiqMagnetPrice");
+        if (magEl) magEl.innerText = magVal;
+        const precMagEl = document.getElementById("liqMagnetPrice");
+        if (precMagEl) precMagEl.innerText = magVal;
+
+        const dirEl = document.getElementById("terminalLiqMagnetDir");
         if (dirEl) {
           const isBull = liq.magnet_direction === "BULLISH_MAGNET";
           dirEl.innerText = isBull ? "🟢 مگنت صعودی (جذب به سمت استخر شورت‌ها)" : "🔴 مگنت نزولی (جذب به سمت استخر لانگ‌ها)";
           dirEl.style.color = isBull ? "#00e676" : "#ff3366";
         }
 
-        const riskEl = document.getElementById("liqTotalRisk");
+        const riskEl = document.getElementById("terminalLiqTotalRisk");
         if (riskEl) {
           riskEl.innerText = `لانگ: ${liq.total_long_liq_fmt || "-"} | شورت: ${liq.total_short_liq_fmt || "-"}`;
         }
 
-        const cascadeEl = document.getElementById("liqCascadeBadge");
+        const cascadeEl = document.getElementById("terminalLiqCascadeBadge");
+        if (cascadeEl) {
+          if (liq.cascade_warning) {
+            cascadeEl.style.background = "rgba(255, 51, 102, 0.2)";
+            cascadeEl.style.color = "#ff3366";
+            cascadeEl.style.borderColor = "rgba(255, 51, 102, 0.4)";
+            cascadeEl.innerText = "⚠️ ریسک شکست آبشاری";
+          } else {
+            cascadeEl.style.background = "rgba(0, 230, 118, 0.15)";
+            cascadeEl.style.color = "#00e676";
+            cascadeEl.style.borderColor = "rgba(0, 230, 118, 0.3)";
+            cascadeEl.innerText = "محدوده باثبات و نرمال";
+          }
+        }
                 // Update Visual Pull Gauge
         const shortPullBar = document.getElementById("liqShortPullBar");
         const longPullBar = document.getElementById("liqLongPullBar");
