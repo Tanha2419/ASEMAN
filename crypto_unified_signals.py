@@ -18,6 +18,8 @@ import crypto_orderflow_engine as coe
 _SIG_CACHE: Dict[str, Any] = {}
 _SIG_CACHE_TIME: Dict[str, float] = {}
 _SIG_TTL = 3.0
+_LOCKED_SCALP_SETUPS: Dict[str, Any] = {}
+_LOCKED_SWING_SETUPS: Dict[str, Any] = {}
 
 def get_price_decimals(p: float) -> int:
     """Determine adaptive decimal precision based on asset price magnitude."""
@@ -113,84 +115,117 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
 
     # =========================================================================
     # PART 1: UNIFIED SCALP SIGNAL (15m Timeframe - Order Flow Anchored Levels)
-    # SL is placed strictly BEHIND the Bookmap Bid/Ask Shelf & Quantower VAL/VAH!
-    # TP1 is anchored to the First Bookmap Liquidity Wall / NinjaTrader Unfinished Auction!
-    # TP2 is anchored to the Quantower VAH / Major Institutional Wall!
+    # FROZEN & LOCKED FOR 45 MINUTES (Never drifts with tick noise!)
     # =========================================================================
-    scalp_entry = current_price
-    is_major = symbol_clean in ["BTC", "ETH"]
-    min_sl_pct = 0.008 if is_major else 0.018
-
-    ask_walls = [float(a.get("price")) for a in bm.get("ask_levels", []) if a.get("price")]
-    bid_shelves = [float(b.get("price")) for b in bm.get("bid_levels", []) if b.get("price")]
-    mp = qt.get("market_profile", {})
-    vah = float(mp.get("vah", current_price * 1.03))
-    val = float(mp.get("val", current_price * 0.97))
-    unfin = nt.get("unfinished_auction", {})
-    unfin_p = float(unfin.get("price", current_price)) if unfin.get("detected") else 0.0
-
-    if scalp_is_long:
-        # SL: Safely behind the Bookmap Bid Shelf or Quantower VAL
-        valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
-        if valid_bids:
-            target_bid = valid_bids[min(1, len(valid_bids)-1)]
-            scalp_sl = round(min(target_bid * 0.998, current_price * (1.0 - min_sl_pct)), dec)
-        else:
-            scalp_sl = round(min(val * 0.998, current_price * (1.0 - min_sl_pct)), dec)
-
-        # TP1: First Bookmap Ask Wall or NinjaTrader Unfinished Auction
-        valid_asks = sorted([a for a in ask_walls if a > current_price])
-        if valid_asks:
-            scalp_tp1 = round(max(valid_asks[0], current_price * 1.012), dec)
-        elif unfin_p > current_price:
-            scalp_tp1 = round(max(unfin_p, current_price * 1.012), dec)
-        else:
-            scalp_tp1 = round(current_price * (1.012 if is_major else 1.024), dec)
-
-        # TP2: Major Bookmap Resistance Wall or Quantower VAH
-        if len(valid_asks) > 1:
-            scalp_tp2 = round(max(valid_asks[1], vah if vah > scalp_tp1 else current_price * 1.035), dec)
-        else:
-            scalp_tp2 = round(max(vah if vah > scalp_tp1 else current_price * 1.035, current_price * (1.025 if is_major else 1.048)), dec)
-
-        # TP3: Final CME Liquidity Pool
-        scalp_tp3 = round(max(scalp_tp2 * 1.025, current_price * (1.045 if is_major else 1.075)), dec)
-
-        sl_why = "حفاظ بتنی پشت دیواره خرید بوک‌مپ (Bookmap Bid Shelf)"
-        tp1_why = "دیواره عرضه و نقدینگی اول بوک‌مپ (Bookmap Ask Wall)"
-        tp2_why = "سقف ناحیه ارزش منصفانه کوانت‌تاور (Quantower VAH)"
+    locked_sc = _LOCKED_SCALP_SETUPS.get(symbol_clean)
+    if locked_sc and (now_ts < locked_sc.get("expires_at", 0)) and not locked_sc.get("closed", False):
+        scalp_is_long = (locked_sc["direction_code"] == "LONG")
+        scalp_entry = locked_sc["entry"]
+        scalp_sl = locked_sc["sl"]
+        scalp_tp1 = locked_sc["tp1"]
+        scalp_tp2 = locked_sc["tp2"]
+        scalp_tp3 = locked_sc["tp3"]
+        scalp_sl_pct = locked_sc["sl_pct"]
+        scalp_tp1_pct = locked_sc["tp1_pct"]
+        scalp_tp2_pct = locked_sc["tp2_pct"]
+        scalp_tp3_pct = locked_sc["tp3_pct"]
+        scalp_date_tehran = locked_sc.get("date_tehran", tehran_date_str)
+        scalp_time_tehran = locked_sc.get("time_tehran", tehran_time_str)
+        sl_why = locked_sc.get("sl_why", "")
+        tp1_why = locked_sc.get("tp1_why", "")
+        tp2_why = locked_sc.get("tp2_why", "")
     else:
-        # SL: Safely above the Bookmap Ask Wall or Quantower VAH
-        valid_asks = sorted([a for a in ask_walls if a > current_price])
-        if valid_asks:
-            target_ask = valid_asks[min(1, len(valid_asks)-1)]
-            scalp_sl = round(max(target_ask * 1.002, current_price * (1.0 + min_sl_pct)), dec)
+        scalp_entry = current_price
+        scalp_date_tehran = tehran_date_str
+        scalp_time_tehran = tehran_time_str
+        is_major = symbol_clean in ["BTC", "ETH"]
+        min_sl_pct = 0.008 if is_major else 0.018
+
+        ask_walls = [float(a.get("price")) for a in bm.get("ask_levels", []) if a.get("price")]
+        bid_shelves = [float(b.get("price")) for b in bm.get("bid_levels", []) if b.get("price")]
+        mp = qt.get("market_profile", {})
+        vah = float(mp.get("vah", current_price * 1.03))
+        val = float(mp.get("val", current_price * 0.97))
+        unfin = nt.get("unfinished_auction", {})
+        unfin_p = float(unfin.get("price", current_price)) if unfin.get("detected") else 0.0
+
+        if scalp_is_long:
+            valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
+            if valid_bids:
+                target_bid = valid_bids[min(1, len(valid_bids)-1)]
+                scalp_sl = round(min(target_bid * 0.998, current_price * (1.0 - min_sl_pct)), dec)
+            else:
+                scalp_sl = round(min(val * 0.998, current_price * (1.0 - min_sl_pct)), dec)
+
+            valid_asks = sorted([a for a in ask_walls if a > current_price])
+            if valid_asks:
+                scalp_tp1 = round(max(valid_asks[0], current_price * 1.012), dec)
+            elif unfin_p > current_price:
+                scalp_tp1 = round(max(unfin_p, current_price * 1.012), dec)
+            else:
+                scalp_tp1 = round(current_price * (1.012 if is_major else 1.024), dec)
+
+            if len(valid_asks) > 1:
+                scalp_tp2 = round(max(valid_asks[1], vah if vah > scalp_tp1 else current_price * 1.035), dec)
+            else:
+                scalp_tp2 = round(max(vah if vah > scalp_tp1 else current_price * 1.035, current_price * (1.025 if is_major else 1.048)), dec)
+
+            scalp_tp3 = round(max(scalp_tp2 * 1.025, current_price * (1.045 if is_major else 1.075)), dec)
+            sl_why = "حفاظ بتنی پشت دیواره خرید بوک‌مپ (Bookmap Bid Shelf)"
+            tp1_why = "دیواره عرضه و نقدینگی اول بوک‌مپ (Bookmap Ask Wall)"
+            tp2_why = "سقف ناحیه ارزش منصفانه کوانت‌تاور (Quantower VAH)"
         else:
-            scalp_sl = round(max(vah * 1.002, current_price * (1.0 + min_sl_pct)), dec)
+            valid_asks = sorted([a for a in ask_walls if a > current_price])
+            if valid_asks:
+                target_ask = valid_asks[min(1, len(valid_asks)-1)]
+                scalp_sl = round(max(target_ask * 1.002, current_price * (1.0 + min_sl_pct)), dec)
+            else:
+                scalp_sl = round(max(vah * 1.002, current_price * (1.0 + min_sl_pct)), dec)
 
-        valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
-        if valid_bids:
-            scalp_tp1 = round(min(valid_bids[0], current_price * 0.988), dec)
-        elif unfin_p < current_price and unfin_p > 0:
-            scalp_tp1 = round(min(unfin_p, current_price * 0.988), dec)
-        else:
-            scalp_tp1 = round(current_price * (0.988 if is_major else 0.976), dec)
+            valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
+            if valid_bids:
+                scalp_tp1 = round(min(valid_bids[0], current_price * 0.988), dec)
+            elif unfin_p < current_price and unfin_p > 0:
+                scalp_tp1 = round(min(unfin_p, current_price * 0.988), dec)
+            else:
+                scalp_tp1 = round(current_price * (0.988 if is_major else 0.976), dec)
 
-        if len(valid_bids) > 1:
-            scalp_tp2 = round(min(valid_bids[1], val if val < scalp_tp1 else current_price * 0.965), dec)
-        else:
-            scalp_tp2 = round(min(val if val < scalp_tp1 else current_price * 0.965, current_price * (0.975 if is_major else 0.952)), dec)
+            if len(valid_bids) > 1:
+                scalp_tp2 = round(min(valid_bids[1], val if val < scalp_tp1 else current_price * 0.965), dec)
+            else:
+                scalp_tp2 = round(min(val if val < scalp_tp1 else current_price * 0.965, current_price * (0.975 if is_major else 0.952)), dec)
 
-        scalp_tp3 = round(min(scalp_tp2 * 0.975, current_price * (0.955 if is_major else 0.925)), dec)
+            scalp_tp3 = round(min(scalp_tp2 * 0.975, current_price * (0.955 if is_major else 0.925)), dec)
+            sl_why = "حفاظ بتنی بالای دیواره فروش بوک‌مپ (Bookmap Ask Wall)"
+            tp1_why = "دیواره تقاضا و نقدینگی اول بوک‌مپ (Bookmap Bid Shelf)"
+            tp2_why = "کف ناحیه ارزش منصفانه کوانت‌تاور (Quantower VAL)"
 
-        sl_why = "حفاظ بتنی بالای دیواره فروش بوک‌مپ (Bookmap Ask Wall)"
-        tp1_why = "دیواره تقاضا و نقدینگی اول بوک‌مپ (Bookmap Bid Shelf)"
-        tp2_why = "کف ناحیه ارزش منصفانه کوانت‌تاور (Quantower VAL)"
+        scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (min_sl_pct * 100)
+        scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 1.5
+        scalp_tp2_pct = abs((scalp_tp2 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 3.5
+        scalp_tp3_pct = abs((scalp_tp3 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 6.5
 
-    scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (min_sl_pct * 100)
-    scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 1.5
-    scalp_tp2_pct = abs((scalp_tp2 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 3.5
-    scalp_tp3_pct = abs((scalp_tp3 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 6.5
+        # Freeze & lock for 45 minutes
+        _LOCKED_SCALP_SETUPS[symbol_clean] = {
+            "entry": scalp_entry,
+            "sl": scalp_sl,
+            "tp1": scalp_tp1,
+            "tp2": scalp_tp2,
+            "tp3": scalp_tp3,
+            "sl_pct": scalp_sl_pct,
+            "tp1_pct": scalp_tp1_pct,
+            "tp2_pct": scalp_tp2_pct,
+            "tp3_pct": scalp_tp3_pct,
+            "direction_code": "LONG" if scalp_is_long else "SHORT",
+            "sl_why": sl_why,
+            "tp1_why": tp1_why,
+            "tp2_why": tp2_why,
+            "date_tehran": tehran_date_str,
+            "time_tehran": tehran_time_str,
+            "created_at": now_ts,
+            "expires_at": now_ts + 2700,
+            "closed": False
+        }
 
     scalp_signal = {
         "signal_type": "SCALP",
@@ -209,8 +244,8 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         "tp2_fmt": f"{format_crypto_price(scalp_tp2)} (+{scalp_tp2_pct:.2f}%)",
         "tp3": scalp_tp3,
         "tp3_fmt": f"{format_crypto_price(scalp_tp3)} (+{scalp_tp3_pct:.2f}%)",
-        "date_tehran": tehran_date_str,
-        "time_tehran": tehran_time_str,
+        "date_tehran": scalp_date_tehran,
+        "time_tehran": scalp_time_tehran,
         "holding_duration": "۳۰ دقیقه الی ۲ ساعت",
         "holding_duration_en": "30m - 2h",
         "core_modules": "Bookmap L2/L3 + NinjaTrader 8 + ATAS + Sierra Chart",
@@ -219,83 +254,107 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
 
     # =========================================================================
     # PART 2: UNIFIED SWING SIGNAL (4h Timeframe - Quantower 4H & Liquidation Anchored)
-    # SL is placed strictly BELOW the 4H Quantower VAL and Long Liquidation Cluster!
-    # TP1 is anchored to the Quantower 4H VAH (Value Area High)!
-    # TP2 is anchored to the Major Short Squeeze Target Cluster!
-    # TP3 is anchored to the Wall Street 5 Banks Consensus Target!
+    # FROZEN & LOCKED FOR 4 HOURS (Macro Structural Stability)
     # =========================================================================
     etf_net = bank.get("spot_etf_summary", {}).get("total_daily_net_usd", "+$394.9M")
     etf_is_positive = "+" in etf_net or "مثبت" in etf_net
     cme_cot = bank.get("cme_cot_crypto", {})
-
-    # Swing Direction Evaluation
-    swing_bull_score = 0
-    if etf_is_positive:
-        swing_bull_score += 4
-    if "84%" in cme_cot.get("asset_managers_position", "") or "Long" in cme_cot.get("asset_managers_position", ""):
-        swing_bull_score += 3
-    if cvd_val >= 0:
-        swing_bull_score += 3
-
-    swing_is_long = swing_bull_score >= 6
-    swing_entry = current_price
-
-    # Order flow 4H & Liquidation Cluster levels
-    qt_4h = coe.get_crypto_quantower_live(symbol_clean, "4h")
-    mp_4h = qt_4h.get("market_profile", {})
-    vah_4h = float(mp_4h.get("vah", swing_entry * 1.035))
-    val_4h = float(mp_4h.get("val", swing_entry * 0.965))
-
-    liq_clusters = (smt_liq or {}).get("liquidation_heatmap", {}).get("clusters", [])
-    short_liq = sorted([float(c["price"]) for c in liq_clusters if "شورت" in c.get("tier", "") and float(c["price"]) > swing_entry])
-    long_liq = sorted([float(c["price"]) for c in liq_clusters if "لانگ" in c.get("tier", "") and float(c["price"]) < swing_entry], reverse=True)
-
-    if swing_is_long:
-        # SL: Under long liquidation cluster or 4H VAL
-        if long_liq:
-            sl_raw = min(long_liq[0] * 0.995, swing_entry * 0.982)
-        else:
-            sl_raw = min(val_4h * 0.995, swing_entry * 0.980)
-        swing_sl = round(sl_raw, dec)
-
-        # TP1: Quantower 4H VAH
-        tp1_raw = max(vah_4h, swing_entry * 1.025)
-        swing_tp1 = round(tp1_raw, dec)
-
-        # TP2: Major Short Squeeze Target Cluster
-        if short_liq:
-            tp2_raw = max(short_liq[-1], swing_entry * 1.055)
-        else:
-            tp2_raw = swing_entry * 1.065
-        swing_tp2 = round(tp2_raw, dec)
-
-        # TP3: Wall Street Banks Macro Consensus Target
-        tp3_raw = max(swing_tp2 * 1.045, swing_entry * 1.10)
-        swing_tp3 = round(tp3_raw, dec)
+    locked_sw = _LOCKED_SWING_SETUPS.get(symbol_clean)
+    if locked_sw and (now_ts < locked_sw.get("expires_at", 0)) and not locked_sw.get("closed", False):
+        swing_is_long = (locked_sw["direction_code"] == "LONG")
+        swing_entry = locked_sw["entry"]
+        swing_sl = locked_sw["sl"]
+        swing_tp1 = locked_sw["tp1"]
+        swing_tp2 = locked_sw["tp2"]
+        swing_tp3 = locked_sw["tp3"]
+        swing_sl_pct = locked_sw["sl_pct"]
+        swing_tp1_pct = locked_sw["tp1_pct"]
+        swing_tp2_pct = locked_sw["tp2_pct"]
+        swing_tp3_pct = locked_sw["tp3_pct"]
+        swing_date_tehran = locked_sw.get("date_tehran", tehran_date_str)
+        swing_time_tehran = locked_sw.get("time_tehran", tehran_time_str)
     else:
-        # SHORT: SL above short liquidation cluster or 4H VAH
-        if short_liq:
-            sl_raw = max(short_liq[0] * 1.005, swing_entry * 1.018)
+        swing_bull_score = 0
+        if etf_is_positive:
+            swing_bull_score += 4
+        if "84%" in cme_cot.get("asset_managers_position", "") or "Long" in cme_cot.get("asset_managers_position", ""):
+            swing_bull_score += 3
+        if cvd_val >= 0:
+            swing_bull_score += 3
+
+        swing_is_long = swing_bull_score >= 6
+        swing_entry = current_price
+        swing_date_tehran = tehran_date_str
+        swing_time_tehran = tehran_time_str
+
+        qt_4h = coe.get_crypto_quantower_live(symbol_clean, "4h")
+        mp_4h = qt_4h.get("market_profile", {})
+        vah_4h = float(mp_4h.get("vah", swing_entry * 1.035))
+        val_4h = float(mp_4h.get("val", swing_entry * 0.965))
+
+        liq_clusters = (smt_liq or {}).get("liquidation_heatmap", {}).get("clusters", [])
+        short_liq = sorted([float(c["price"]) for c in liq_clusters if "شورت" in c.get("tier", "") and float(c["price"]) > swing_entry])
+        long_liq = sorted([float(c["price"]) for c in liq_clusters if "لانگ" in c.get("tier", "") and float(c["price"]) < swing_entry], reverse=True)
+
+        if swing_is_long:
+            if long_liq:
+                sl_raw = min(long_liq[0] * 0.995, swing_entry * 0.982)
+            else:
+                sl_raw = min(val_4h * 0.995, swing_entry * 0.980)
+            swing_sl = round(sl_raw, dec)
+
+            tp1_raw = max(vah_4h, swing_entry * 1.025)
+            swing_tp1 = round(tp1_raw, dec)
+
+            if short_liq:
+                tp2_raw = max(short_liq[-1], swing_entry * 1.055)
+            else:
+                tp2_raw = swing_entry * 1.065
+            swing_tp2 = round(tp2_raw, dec)
+
+            tp3_raw = max(swing_tp2 * 1.045, swing_entry * 1.10)
+            swing_tp3 = round(tp3_raw, dec)
         else:
-            sl_raw = max(vah_4h * 1.005, swing_entry * 1.020)
-        swing_sl = round(sl_raw, dec)
+            if short_liq:
+                sl_raw = max(short_liq[0] * 1.005, swing_entry * 1.018)
+            else:
+                sl_raw = max(vah_4h * 1.005, swing_entry * 1.020)
+            swing_sl = round(sl_raw, dec)
 
-        tp1_raw = min(val_4h, swing_entry * 0.975)
-        swing_tp1 = round(tp1_raw, dec)
+            tp1_raw = min(val_4h, swing_entry * 0.975)
+            swing_tp1 = round(tp1_raw, dec)
 
-        if long_liq:
-            tp2_raw = min(long_liq[-1], swing_entry * 0.945)
-        else:
-            tp2_raw = swing_entry * 0.935
-        swing_tp2 = round(tp2_raw, dec)
+            if long_liq:
+                tp2_raw = min(long_liq[-1], swing_entry * 0.945)
+            else:
+                tp2_raw = swing_entry * 0.935
+            swing_tp2 = round(tp2_raw, dec)
 
-        tp3_raw = min(swing_tp2 * 0.955, swing_entry * 0.90)
-        swing_tp3 = round(tp3_raw, dec)
+            tp3_raw = min(swing_tp2 * 0.955, swing_entry * 0.90)
+            swing_tp3 = round(tp3_raw, dec)
 
-    swing_sl_pct = abs((swing_sl - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 1.80
-    swing_tp1_pct = abs((swing_tp1 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 2.50
-    swing_tp2_pct = abs((swing_tp2 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 5.50
-    swing_tp3_pct = abs((swing_tp3 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 10.25
+        swing_sl_pct = abs((swing_sl - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 1.80
+        swing_tp1_pct = abs((swing_tp1 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 2.50
+        swing_tp2_pct = abs((swing_tp2 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 5.50
+        swing_tp3_pct = abs((swing_tp3 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 10.25
+
+        _LOCKED_SWING_SETUPS[symbol_clean] = {
+            "entry": swing_entry,
+            "sl": swing_sl,
+            "tp1": swing_tp1,
+            "tp2": swing_tp2,
+            "tp3": swing_tp3,
+            "sl_pct": swing_sl_pct,
+            "tp1_pct": swing_tp1_pct,
+            "tp2_pct": swing_tp2_pct,
+            "tp3_pct": swing_tp3_pct,
+            "direction_code": "LONG" if swing_is_long else "SHORT",
+            "date_tehran": tehran_date_str,
+            "time_tehran": tehran_time_str,
+            "created_at": now_ts,
+            "expires_at": now_ts + 14400,
+            "closed": False
+        }
 
     swing_signal = {
         "signal_type": "SWING",
@@ -314,8 +373,8 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         "tp2_fmt": f"{format_crypto_price(swing_tp2)} (+{swing_tp2_pct:.2f}%)",
         "tp3": swing_tp3,
         "tp3_fmt": f"{format_crypto_price(swing_tp3)} (+{swing_tp3_pct:.2f}%)",
-        "date_tehran": tehran_date_str,
-        "time_tehran": tehran_time_str,
+        "date_tehran": swing_date_tehran,
+        "time_tehran": swing_time_tehran,
         "holding_duration": "۲ الی ۵ روز",
         "holding_duration_en": "2 - 5 days",
         "core_modules": "Quantower 4H TPO + CME CoT Whales + Spot ETF Net Flows + Wall Street 5 Banks + Geopolitical Radar",
