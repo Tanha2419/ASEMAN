@@ -168,6 +168,29 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
             "depth_spoofing": lambda: OrderbookDepthSpoofingEngine.scan_depth_and_spoofing(sym)
         }, timeout=4.5)
 
+        # --- SYNCHRONIZE 100% WITH DUAL UNIFIED SIGNALS (SINGLE SOURCE OF TRUTH) ---
+        try:
+            import crypto_unified_signals as cus
+            unif = cus.get_unified_signals(sym)
+            sc = unif.get("scalp", {})
+            if sc and sc.get("entry", 0) > 0:
+                if "scalp_setup" not in res or not isinstance(res["scalp_setup"], dict):
+                    res["scalp_setup"] = {}
+                res["scalp_setup"]["entry_price"] = sc["entry"]
+                res["scalp_setup"]["stop_loss"] = sc["stop_loss"]
+                res["scalp_setup"]["tp1"] = sc["tp1"]
+                res["scalp_setup"]["tp2"] = sc["tp2"]
+                res["scalp_setup"]["tp3"] = sc["tp3"]
+                res["scalp_setup"]["action"] = sc["direction"]
+                res["scalp_setup"]["action_code"] = sc["direction_code"]
+                res["scalp_setup"]["direction"] = sc["direction_code"]
+                res["scalp_setup"]["generated_at_tehran"] = sc.get("time_tehran", "")
+                res["scalp_setup"]["holding_duration"] = sc.get("holding_duration", "۳۰ دقیقه الی ۲ ساعت")
+                res["scalp_setup"]["rationale"] = sc.get("rationale_fa", "")
+                res["scalp_setup"]["anti_stop_hunt"] = True
+        except Exception as e_unif:
+            print(f"Error syncing scalp_setup with unified signals: {e_unif}")
+
         # Calculate Default Kelly Risk & Position Sizing
         scalp = res.get("scalp_setup", {})
         entry_s = float(scalp.get("entry_price") or price)

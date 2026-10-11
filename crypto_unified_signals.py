@@ -219,7 +219,18 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         scalp_date_tehran = tehran_date_str
         scalp_time_tehran = tehran_time_str
         is_major = symbol_clean in ["BTC", "ETH"]
-        min_sl_pct = 0.008 if is_major else 0.018
+        is_large_cap = symbol_clean in ["SOL", "BNB", "XRP", "ADA"]
+        if is_major:
+            min_sl_pct = 0.009    # 0.90% for BTC & ETH
+            tp1_mult, tp2_mult, tp3_mult = 1.010, 1.022, 1.045
+        elif is_large_cap:
+            min_sl_pct = 0.018    # 1.80% for SOL, BNB, XRP
+            tp1_mult, tp2_mult, tp3_mult = 1.018, 1.035, 1.065
+        else:
+            # High-Beta Volatile Altcoins (RLC, STRK, DOGE, SUI, PEPE, NEAR, etc.)
+            # Protected by Anti-Stop-Hunt Liquidity Shield (2.85% minimum clearance)
+            min_sl_pct = 0.0285   # 2.85% (prevents 1-tick stop-hunts like RLC 1.0800)
+            tp1_mult, tp2_mult, tp3_mult = 1.024, 1.048, 1.085
 
         ask_walls = [float(a.get("price")) for a in bm.get("ask_levels", []) if a.get("price")]
         bid_shelves = [float(b.get("price")) for b in bm.get("bid_levels", []) if b.get("price")]
@@ -232,17 +243,18 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         if scalp_is_long:
             valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
             if valid_bids:
+                # 0.5% clearance below the deepest shelf to defeat sweep wicks
                 target_bid = valid_bids[min(1, len(valid_bids)-1)]
-                scalp_sl = round(min(target_bid * 0.998, current_price * (1.0 - min_sl_pct)), dec)
+                scalp_sl = round(min(target_bid * 0.995, current_price * (1.0 - min_sl_pct)), dec)
             else:
-                scalp_sl = round(min(val * 0.998, current_price * (1.0 - min_sl_pct)), dec)
+                scalp_sl = round(min(val * 0.995, current_price * (1.0 - min_sl_pct)), dec)
 
             valid_asks = sorted([a for a in ask_walls if a > current_price])
             
             # Base raw targets
-            raw_tp1 = max(valid_asks[0] * 0.996 if valid_asks else current_price * 1.012, current_price * (1.008 if is_major else 1.012))
-            raw_tp2 = max(valid_asks[1] * 0.996 if len(valid_asks) > 1 else (vah * 0.996 if vah > raw_tp1 else current_price * 1.026), raw_tp1 * 1.006)
-            raw_tp3 = max(raw_tp2 * 1.015, current_price * (1.035 if is_major else 1.060))
+            raw_tp1 = max(valid_asks[0] * 0.996 if valid_asks else current_price * tp1_mult, current_price * tp1_mult)
+            raw_tp2 = max(valid_asks[1] * 0.996 if len(valid_asks) > 1 else (vah * 0.996 if vah > raw_tp1 else current_price * tp2_mult), raw_tp1 * 1.008)
+            raw_tp3 = max(raw_tp2 * 1.020, current_price * tp3_mult)
 
             # Apply Whale & Psychological Anti-Front-Running Algorithm
             scalp_tp1 = _apply_anti_front_run_tp(raw_tp1, scalp_entry, True, ask_walls, dec, 1)
@@ -258,24 +270,23 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
             if scalp_tp3 <= scalp_tp2:
                 scalp_tp3 = round(scalp_tp2 + min_step, dec)
 
-            sl_why = "حفاظ بتنی پشت دیواره خرید بوک‌مپ (Bookmap Bid Shelf)"
+            sl_why = "سپر ضد هانت نقدینگی و دیواره خرید بوک‌مپ (Anti-Stop-Hunt Shield)"
             tp1_why = "خروج امن ضد فرانت‌رانینگ قبل از اولین دیواره فروش (Anti-Front-Run Ask Wall)"
             tp2_why = "خروج هوشمند پیش از تجمع اردرهای رُند و سقف ارزش (Psychological Front-Run VAH)"
         else:
             valid_asks = sorted([a for a in ask_walls if a > current_price])
             if valid_asks:
                 target_ask = valid_asks[min(1, len(valid_asks)-1)]
-                scalp_sl = round(max(target_ask * 1.002, current_price * (1.0 + min_sl_pct)), dec)
+                scalp_sl = round(max(target_ask * 1.005, current_price * (1.0 + min_sl_pct)), dec)
             else:
-                scalp_sl = round(max(vah * 1.002, current_price * (1.0 + min_sl_pct)), dec)
+                scalp_sl = round(max(vah * 1.005, current_price * (1.0 + min_sl_pct)), dec)
 
             valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
             
-            raw_tp1 = min(valid_bids[0] * 1.004 if valid_bids else current_price * 0.988, current_price * (0.992 if is_major else 0.988))
-            raw_tp2 = min(valid_bids[1] * 1.004 if len(valid_bids) > 1 else (val * 1.004 if val < raw_tp1 else current_price * 0.974), raw_tp1 * 0.994)
-            raw_tp3 = min(raw_tp2 * 0.985, current_price * (0.965 if is_major else 0.940))
+            raw_tp1 = min(valid_bids[0] * 1.004 if valid_bids else current_price * (2.0 - tp1_mult), current_price * (2.0 - tp1_mult))
+            raw_tp2 = min(valid_bids[1] * 1.004 if len(valid_bids) > 1 else (val * 1.004 if val < raw_tp1 else current_price * (2.0 - tp2_mult)), raw_tp1 * 0.992)
+            raw_tp3 = min(raw_tp2 * 0.980, current_price * (2.0 - tp3_mult))
 
-            # Apply Whale & Psychological Anti-Front-Running Algorithm
             scalp_tp1 = _apply_anti_front_run_tp(raw_tp1, scalp_entry, False, bid_shelves, dec, 1)
             scalp_tp2 = _apply_anti_front_run_tp(raw_tp2, scalp_entry, False, bid_shelves, dec, 2)
             scalp_tp3 = _apply_anti_front_run_tp(raw_tp3, scalp_entry, False, bid_shelves, dec, 3)
@@ -288,7 +299,7 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
             if scalp_tp3 >= scalp_tp2:
                 scalp_tp3 = round(scalp_tp2 - min_step, dec)
 
-            sl_why = "حفاظ بتنی بالای دیواره فروش بوک‌مپ (Bookmap Ask Wall)"
+            sl_why = "سپر ضد هانت نقدینگی بالای دیواره فروش بوک‌مپ (Anti-Stop-Hunt Shield)"
             tp1_why = "خروج امن ضد فرانت‌رانینگ قبل از اولین دیواره خرید (Anti-Front-Run Bid Shelf)"
             tp2_why = "خروج هوشمند پیش از تجمع اردرهای رُند کف ارزش (Psychological Front-Run VAL)"
 

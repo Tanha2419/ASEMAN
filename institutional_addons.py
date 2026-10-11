@@ -2007,27 +2007,38 @@ class CoinlegsScanner:
                 pDec = 2
             atr_est = max(p_curr * 0.015, p_curr * 0.018)
             
-            # SL: safe structural cushion (~2.0% to 2.4% below current price)
-            sl_raw = p_curr - max(atr_est * 1.10, p_curr * 0.020)
-            sl_price = round(sl_raw, pDec)
-            
-            # Entry Zone: Pullback Discount Zone (never overlap with TP1!)
-            entry_low = round(p_curr - max(atr_est * 0.40, p_curr * 0.006), pDec)
-            entry_high = round(p_curr, pDec)
-            entry_zone_str = f"${entry_low} - ${entry_high} (کاشت اردر در پولبک)"
-            
-            # Staged Targets strictly calculated ABOVE entry_high:
-            # TP1: strictly at least +1.2% above entry_high (Quick Bank 50% + Breakeven Lock)
-            tp1_raw = max(entry_high * 1.012, p_curr + (atr_est * 0.65))
-            tp1_price = round(tp1_raw, pDec)
-            
-            # TP2: +2.8% to +3.6% (Structural wave target)
-            tp2_raw = max(entry_high * 1.032, p_curr + (atr_est * 2.20))
-            tp2_price = round(tp2_raw, pDec)
-            
-            # TP3: +5.5% to +8.0% (Final expansion / Liquidity Pool hunt)
-            tp3_raw = max(entry_high * 1.055, p_curr + (atr_est * 3.40))
-            tp3_price = round(tp3_raw, pDec)
+            # --- SYNCHRONIZE 100% WITH UNIFIED SIGNALS ENGINE (SINGLE SOURCE OF TRUTH) ---
+            try:
+                import crypto_unified_signals as cus
+                clean_b = sym.replace("USDT", "").replace("PERP", "").strip().upper()
+                unif_obj = cus.get_unified_signals(clean_b)
+                unif_sc = unif_obj.get("scalp", {})
+                if unif_sc and unif_sc.get("entry", 0) > 0:
+                    entry_high = unif_sc["entry"]
+                    entry_low = round(entry_high * 0.996, pDec)
+                    entry_zone_str = f"${entry_low} - ${entry_high} (کاشت اردر در پولبک)"
+                    sl_price = unif_sc["stop_loss"]
+                    tp1_price = unif_sc["tp1"]
+                    tp2_price = unif_sc["tp2"]
+                    tp3_price = unif_sc["tp3"]
+                else:
+                    sl_raw = p_curr - max(atr_est * 1.5, p_curr * 0.0285)
+                    sl_price = round(sl_raw, pDec)
+                    entry_low = round(p_curr - max(atr_est * 0.40, p_curr * 0.006), pDec)
+                    entry_high = round(p_curr, pDec)
+                    entry_zone_str = f"${entry_low} - ${entry_high} (کاشت اردر در پولبک)"
+                    tp1_price = round(entry_high * 1.020, pDec)
+                    tp2_price = round(entry_high * 1.045, pDec)
+                    tp3_price = round(entry_high * 1.080, pDec)
+            except Exception:
+                sl_raw = p_curr - max(atr_est * 1.5, p_curr * 0.0285)
+                sl_price = round(sl_raw, pDec)
+                entry_low = round(p_curr - max(atr_est * 0.40, p_curr * 0.006), pDec)
+                entry_high = round(p_curr, pDec)
+                entry_zone_str = f"${entry_low} - ${entry_high} (کاشت اردر در پولبک)"
+                tp1_price = round(entry_high * 1.020, pDec)
+                tp2_price = round(entry_high * 1.045, pDec)
+                tp3_price = round(entry_high * 1.080, pDec)
             
             tp1_pct = round(((tp1_price - p_curr) / p_curr) * 100.0, 1)
             tp2_pct = round(((tp2_price - p_curr) / p_curr) * 100.0, 1)
