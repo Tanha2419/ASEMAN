@@ -218,7 +218,11 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     }
 
     # =========================================================================
-    # PART 2: UNIFIED SWING SIGNAL (4h Timeframe - Macro SL 1.80%)
+    # PART 2: UNIFIED SWING SIGNAL (4h Timeframe - Quantower 4H & Liquidation Anchored)
+    # SL is placed strictly BELOW the 4H Quantower VAL and Long Liquidation Cluster!
+    # TP1 is anchored to the Quantower 4H VAH (Value Area High)!
+    # TP2 is anchored to the Major Short Squeeze Target Cluster!
+    # TP3 is anchored to the Wall Street 5 Banks Consensus Target!
     # =========================================================================
     etf_net = bank.get("spot_etf_summary", {}).get("total_daily_net_usd", "+$394.9M")
     etf_is_positive = "+" in etf_net or "مثبت" in etf_net
@@ -236,21 +240,62 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     swing_is_long = swing_bull_score >= 6
     swing_entry = current_price
 
+    # Order flow 4H & Liquidation Cluster levels
+    qt_4h = coe.get_crypto_quantower_live(symbol_clean, "4h")
+    mp_4h = qt_4h.get("market_profile", {})
+    vah_4h = float(mp_4h.get("vah", swing_entry * 1.035))
+    val_4h = float(mp_4h.get("val", swing_entry * 0.965))
+
+    liq_clusters = (smt_liq or {}).get("liquidation_heatmap", {}).get("clusters", [])
+    short_liq = sorted([float(c["price"]) for c in liq_clusters if "شورت" in c.get("tier", "") and float(c["price"]) > swing_entry])
+    long_liq = sorted([float(c["price"]) for c in liq_clusters if "لانگ" in c.get("tier", "") and float(c["price"]) < swing_entry], reverse=True)
+
     if swing_is_long:
-        swing_sl = round(swing_entry * 0.9820, dec)  # Strict 1.80% Macro Structural SL
-        swing_tp1 = round(swing_entry * 1.0350, dec) # +3.50% VAH Target
-        swing_tp2 = round(swing_entry * 1.0750, dec) # +7.50% Macro Expansion
-        swing_tp3 = round(swing_entry * 1.1250, dec) # +12.50% Consensus Target
+        # SL: Under long liquidation cluster or 4H VAL
+        if long_liq:
+            sl_raw = min(long_liq[0] * 0.995, swing_entry * 0.982)
+        else:
+            sl_raw = min(val_4h * 0.995, swing_entry * 0.980)
+        swing_sl = round(sl_raw, dec)
+
+        # TP1: Quantower 4H VAH
+        tp1_raw = max(vah_4h, swing_entry * 1.025)
+        swing_tp1 = round(tp1_raw, dec)
+
+        # TP2: Major Short Squeeze Target Cluster
+        if short_liq:
+            tp2_raw = max(short_liq[-1], swing_entry * 1.055)
+        else:
+            tp2_raw = swing_entry * 1.065
+        swing_tp2 = round(tp2_raw, dec)
+
+        # TP3: Wall Street Banks Macro Consensus Target
+        tp3_raw = max(swing_tp2 * 1.045, swing_entry * 1.10)
+        swing_tp3 = round(tp3_raw, dec)
     else:
-        swing_sl = round(swing_entry * 1.0180, dec)  # Strict 1.80% Macro Structural SL
-        swing_tp1 = round(swing_entry * 0.9650, dec) # +3.50% VAL Target
-        swing_tp2 = round(swing_entry * 0.9250, dec) # +7.50% Macro Expansion
-        swing_tp3 = round(swing_entry * 0.8750, dec) # +12.50% Consensus Target
+        # SHORT: SL above short liquidation cluster or 4H VAH
+        if short_liq:
+            sl_raw = max(short_liq[0] * 1.005, swing_entry * 1.018)
+        else:
+            sl_raw = max(vah_4h * 1.005, swing_entry * 1.020)
+        swing_sl = round(sl_raw, dec)
+
+        tp1_raw = min(val_4h, swing_entry * 0.975)
+        swing_tp1 = round(tp1_raw, dec)
+
+        if long_liq:
+            tp2_raw = min(long_liq[-1], swing_entry * 0.945)
+        else:
+            tp2_raw = swing_entry * 0.935
+        swing_tp2 = round(tp2_raw, dec)
+
+        tp3_raw = min(swing_tp2 * 0.955, swing_entry * 0.90)
+        swing_tp3 = round(tp3_raw, dec)
 
     swing_sl_pct = abs((swing_sl - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 1.80
-    swing_tp1_pct = abs((swing_tp1 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 3.50
-    swing_tp2_pct = abs((swing_tp2 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 7.50
-    swing_tp3_pct = abs((swing_tp3 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 12.50
+    swing_tp1_pct = abs((swing_tp1 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 2.50
+    swing_tp2_pct = abs((swing_tp2 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 5.50
+    swing_tp3_pct = abs((swing_tp3 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 10.25
 
     swing_signal = {
         "signal_type": "SWING",
