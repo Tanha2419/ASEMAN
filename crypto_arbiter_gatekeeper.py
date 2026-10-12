@@ -185,8 +185,12 @@ class CryptoArbiterGatekeeper:
                     reason = f"تله گرانش بیت‌کوین: BTC در روند نزولی پرشتاب ۱ ساعته است (RSI={rsi:.1f}, Bias={bias}). ورود به لانگ روی {clean_cand} ممنوع است."
                     return False, reason, {"btc_bias": bias, "btc_rsi": rsi}
 
+                if not is_long and ("BULLISH_STRONG" in bias or rsi > 65.0):
+                    reason = f"تله گرانش بیت‌کوین: BTC در روند صعودی پرشتاب ۱ ساعته است (RSI={rsi:.1f}, Bias={bias}). ورود به شورت روی {clean_cand} ممنوع است."
+                    return False, reason, {"btc_bias": bias, "btc_rsi": rsi}
+
                 btc_depth = self.agent.fetcher.fetch_orderbook("BTCUSDT", limit=50)
-                if btc_depth and btc_depth.get("asks"):
+                if btc_depth and btc_depth.get("asks") and btc_depth.get("bids"):
                     bids = btc_depth.get("bids", [])
                     asks = btc_depth.get("asks", [])
                     bid_vol = sum([float(b[1]) for b in bids[:20]])
@@ -195,6 +199,9 @@ class CryptoArbiterGatekeeper:
 
                     if is_long and ratio < 0.75:
                         reason = f"تله گرانش بیت‌کوین: دیوار فروش سنگین در اردربوک BTC (نسبت خرید به فروش {ratio:.2f}x). خطر ریزش بیت‌کوین و ریختن آلت‌کوین‌ها."
+                        return False, reason, {"btc_ob_ratio": ratio}
+                    elif not is_long and ratio > 1.35:
+                        reason = f"تله گرانش بیت‌کوین: دیوار خرید سنگین در اردربوک BTC (نسبت خرید به فروش {ratio:.2f}x). پامپ احتمالی بیت‌کوین و خطر شورت‌اسکوئیز."
                         return False, reason, {"btc_ob_ratio": ratio}
 
             return True, "وضعیت بیت‌کوین باثبات و همراه با روند ارزیابی شد", {"btc_healthy": True}
@@ -639,12 +646,12 @@ class CryptoArbiterGatekeeper:
 • <b>تارگت سوم (TP3):</b> <code>${tp3}</code> <i>(تارگت بسط فیبوناچی)</i>
 
 🛡️ <b>تاییدیه دفاعی دروازه‌بان:</b>
-✅ لیدر بازار (بیت‌کوین) در وضعیت باثبات و همراه با روند
-✅ سوئیپ نقدینگی و هانت کف قبلی (Judas Sweep) تایید شد
-✅ فاندینگ ریت متعادل و بدون ریسک لانگ‌اسکوئیز
-✅ دیوارهای نقدینگی و عمق دفتر سفارشات اعتبارسنجی شد
-✅ تقویم کلان اقتصادی فاقد رویداد پرریسک خبر ارزیابی شد
-✅ ظرفیت پورتفو و سشن معاملاتی تایید شد
+✅ همسویی گرانش بیت‌کوین (همراه با جهت ریزش/رشد مارکت)
+✅ سوئیپ نقدینگی استاپ‌ها و تخلیه حجم نهادی (Judas Sweep) تایید شد
+✅ تله فاندینگ ریت منفی/مثبت و اسکوئیز صرافی اعتبارسنجی شد
+✅ دیوارهای نقدینگی اردربوک و عدم جذب فیک تایید شد
+✅ تقویم کلان اقتصادی آرام و فاقد انتشار داده تورمی
+✅ سقف ریسک سبد و تایم معاملاتی مورد تایید قرار گرفت
 
 ⏰ <b>زمان تایید:</b> {now_iran}
 🔒 <i>قفل زمانی ستاپ: ۴۵ دقیقه بدون نویز و تغییر نقطه ورود</i>

@@ -2040,15 +2040,27 @@ class CoinlegsScanner:
                 tp2_price = round(entry_high * 1.045, pDec)
                 tp3_price = round(entry_high * 1.080, pDec)
             
-            tp1_pct = round(((tp1_price - p_curr) / p_curr) * 100.0, 1)
-            tp2_pct = round(((tp2_price - p_curr) / p_curr) * 100.0, 1)
-            tp3_pct = round(((tp3_price - p_curr) / p_curr) * 100.0, 1)
-            sl_pct = round(((p_curr - sl_price) / p_curr) * 100.0, 1)
-            tp_pot_pct = tp2_pct
+            is_short = (trend_4h == "BEARISH" and alpha_rs < 0.5)
+            if is_short:
+                sl_price = round(p_curr * (1.0 + max(atr_est * 1.5 / p_curr, 0.0315)), pDec)
+                tp1_price = round(p_curr * 0.982, pDec)
+                tp2_price = round(p_curr * 0.955, pDec)
+                tp3_price = round(p_curr * 0.920, pDec)
+                tp1_pct = round(((p_curr - tp1_price) / p_curr) * 100.0, 1)
+                tp2_pct = round(((p_curr - tp2_price) / p_curr) * 100.0, 1)
+                tp3_pct = round(((p_curr - tp3_price) / p_curr) * 100.0, 1)
+                sl_pct = round(((sl_price - p_curr) / p_curr) * 100.0, 1)
+                risk_dist = max(1e-8, sl_price - p_curr)
+                reward_dist = max(1e-8, p_curr - tp2_price)
+            else:
+                tp1_pct = round(((tp1_price - p_curr) / p_curr) * 100.0, 1)
+                tp2_pct = round(((tp2_price - p_curr) / p_curr) * 100.0, 1)
+                tp3_pct = round(((tp3_price - p_curr) / p_curr) * 100.0, 1)
+                sl_pct = round(((p_curr - sl_price) / p_curr) * 100.0, 1)
+                risk_dist = max(1e-8, p_curr - sl_price)
+                reward_dist = max(1e-8, tp2_price - p_curr)
 
-            # Calculate precise Risk-to-Reward ratio
-            risk_dist = max(1e-8, p_curr - sl_price)
-            reward_dist = max(1e-8, tp2_price - p_curr)
+            tp_pot_pct = tp2_pct
             rr_ratio = round(reward_dist / risk_dist, 2)
             rr_text = f"1:{rr_ratio}"
 
@@ -2061,11 +2073,9 @@ class CoinlegsScanner:
             if rsi > 78 or rsi < 34:
                 return None
 
-            # 3. Macro 4H Trend Alignment: Reject 4H downtrends unless massive alpha > 3.0%
-            if trend_4h == "BEARISH" and alpha_rs < 3.0:
-                return None
-            if div_badge == "BEARISH_DIV":
-                return None
+            # 3. Macro 4H Trend Alignment: Allow strong trending setups (both long & short)
+            # If 4H is bearish, allow if momentum is clear or div is normal
+            is_bearish_setup = (trend_4h == "BEARISH" or btc_chg_24h < -1.5) and (div_badge == "BEARISH_DIV" or alpha_rs < 0)
 
             # 4. Confluence Gate: Must pass at least 3 of 6 elite filters!
             if pass_count < 3:

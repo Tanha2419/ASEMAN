@@ -570,15 +570,15 @@ def update_signal_in_journal(symbol, status, pnl_pct):
             break
 
     # If not found in records, auto-enroll from active trackers
-    if not found:
+    if not updated:
         with _trackers_lock:
-            match = next((t for t in _active_signal_trackers if t.get("symbol") == symbol), None)
+            match = next((t for t in _active_signal_trackers if str(t.get("symbol","")).upper().replace("USDT","").replace("USD","").strip() == clean_target), None)
             if match:
                 entry = {
-                    "id": f"SIG-{int(match.get('created_at', time.time()))}-{symbol}",
-                    "symbol": symbol.upper(),
+                    "id": f"SIG-{int(match.get('created_at', time.time()))}-{clean_target}",
+                    "symbol": clean_target,
                     "action": match.get("action", "LONG"),
-                    "grade": "A",
+                    "grade": "A+",
                     "score": 85,
                     "entry": match.get("entry", 0),
                     "sl": match.get("sl", 0),
@@ -1067,8 +1067,11 @@ def auto_sentinel_loop():
 
                 # 3. Comprehensive Market Scan across All 70+ High-Conviction Detections
                 detections_res = CoinlegsScanner.scan_market_detections()
-                # Expand from top 3 diamond gems to ALL high-conviction detections sorted by momentum score
-                all_candidates = detections_res.get("detections", []) or detections_res.get("diamond_gems", [])
+                all_candidates = list(detections_res.get("detections", []) or detections_res.get("diamond_gems", []))
+                # Add Institutional Top 50 Market Leaders to candidates for bidirectional scalp coverage
+                for top_sym in ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE", "ADA", "AVAX", "LINK", "SUI", "NEAR", "APT", "DOT", "FIL", "ICP", "UNI", "SHIB", "OP", "ARB", "WIF"]:
+                    if not any(c.get("symbol") == top_sym for c in all_candidates):
+                        all_candidates.append({"symbol": top_sym, "growth_score": 80, "is_direct_scan": True})
 
                 sent_in_cycle = 0
                 max_signals_per_cycle = int(cfg.get("max_signals_per_cycle", 8)) # default up to 8 signals per cycle
@@ -1101,11 +1104,8 @@ def auto_sentinel_loop():
 
                         # 2. Strict 3-Hour (10800s) cooldown per symbol
                         last_sent = _sent_cooldown.get(norm_sym, 0)
-                        if score >= min_score and (now - last_sent > 10800):
-                            # BTC Trend Filter: If BTC is in freefall and this is an altcoin, protect capital
-                            if btc_dumping and "BTC" not in sym.upper():
-                                print(f"[SENTINEL] Skipping {sym} because BTC is dumping heavily.")
-                                continue
+                        effective_min_score = min_score if not cand.get("is_direct_scan") else 60
+                        if score >= effective_min_score and (now - last_sent > 10800):
 
                             analysis = agent.analyze_symbol(sym)
                             if analysis.get("success"):
@@ -1120,39 +1120,42 @@ def auto_sentinel_loop():
                                 shield_status = analysis.get("altcoin_shield", {}).get("status", "NORMAL")
 
                                 # Reject non-actionable or WAIT signals
-                                if grade not in ["A+", "A", "B"] or scalp_act == "WAIT":
+                                if grade not in ["A+", "A", "B"] or scalp_act not in ["BUY", "LONG", "SELL", "SHORT"]:
                                     continue
 
                                 # Reject low conviction / low composite score
-                                if comp_score < 58 and score < 75:
+                                if comp_score < 55 and score < 70:
                                     continue
 
-                                # Altcoin macro danger shield
-                                if scalp_act == "BUY" and shield_status == "DANGER":
-                                    print(f"[SENTINEL] Skipping {sym} because Altcoin Shield is in DANGER mode.")
+                                # Altcoin macro danger shield for BUYs
+                                if scalp_act in ["BUY", "LONG"] and (shield_status == "DANGER" or btc_dumping):
+                                    print(f"[SENTINEL] Skipping BUY on {sym} because Altcoin Shield / BTC is dumping.")
                                     continue
 
                                 # MTF Multi-Timeframe Anti-Trend Shield:
-                                # Never go LONG if 4H, 1H or 15M is active BEARISH
-                                # Never go SHORT if 4H, 1H or 15M is active BULLISH (prevents counter-trend shorting)
+                                # Never go LONG if 4H or 1H is active BEARISH
+                                # Never go SHORT if 4H or 1H is active BULLISH
                                 tf_map = analysis.get("timeframes", {})
                                 bias_4h = tf_map.get("4h", {}).get("bias", "NEUTRAL")
                                 bias_1h = tf_map.get("1h", {}).get("bias", "NEUTRAL")
                                 bias_15m = tf_map.get("15m", {}).get("bias", "NEUTRAL")
 
                                 if scalp_act in ["BUY", "LONG"]:
-                                    if any("BEARISH" in str(b) for b in [bias_4h, bias_1h, bias_15m]):
-                                        print(f"[SENTINEL] Skipping BUY on {sym}: MTF Bearish conflict ({bias_4h}, {bias_1h}, {bias_15m}).")
+                                    if any("BEARISH" in str(b) for b in [bias_4h, bias_1h]):
+                                        print(f"[SENTINEL] Skipping BUY on {sym}: MTF Bearish conflict ({bias_4h}, {bias_1h}).")
                                         continue
                                 if scalp_act in ["SELL", "SHORT"]:
-                                    if any("BULLISH" in str(b) for b in [bias_4h, bias_1h, bias_15m]):
-                                        print(f"[SENTINEL] Skipping SELL on {sym}: MTF Bullish conflict ({bias_4h}, {bias_1h}, {bias_15m}).")
+                                    if any("BULLISH" in str(b) for b in [bias_4h, bias_1h]):
+                                        print(f"[SENTINEL] Skipping SELL on {sym}: MTF Bullish conflict ({bias_4h}, {bias_1h}).")
                                         continue
 
-                                # Order book depth check: only reject if massive dumping sell wall
+                                # Order book depth check:
                                 ob_ratio = float(analysis.get("order_book", {}).get("ratio", 1.0))
-                                if scalp_act == "BUY" and ob_ratio < 0.88:
+                                if scalp_act in ["BUY", "LONG"] and ob_ratio < 0.85:
                                     print(f"[SENTINEL] Skipping {sym} because order book has heavy sell wall ({ob_ratio:.2f}x).")
+                                    continue
+                                if scalp_act in ["SELL", "SHORT"] and ob_ratio > 1.25:
+                                    print(f"[SENTINEL] Skipping {sym} because order book has heavy buy wall ({ob_ratio:.2f}x).")
                                     continue
 
                                 # Minimum 1:1.45 Risk-to-Reward ratio
