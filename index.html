@@ -1393,8 +1393,8 @@
     .loading-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(10, 13, 20, 0.7);
-      backdrop-filter: blur(4px);
+      background: rgba(10, 13, 20, 0.35);
+      backdrop-filter: blur(1px); pointer-events: none;
       display: none;
       align-items: center;
       justify-content: center;
@@ -1870,23 +1870,23 @@
   <div class="bloomberg-marquee">
     <div class="marquee-label">⚡ LIVE PULSE</div>
     <div class="marquee-track" id="bloombergMarqueeTrack">
-      <div class="marquee-item" onclick="switchSymbol('BTC')"><span>BTC/USDT:</span> <strong id="mqPriceBTC">-</strong> <span id="mqChangeBTC" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('ETH')"><span>ETH/USDT:</span> <strong id="mqPriceETH">-</strong> <span id="mqChangeETH" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('SOL')"><span>SOL/USDT:</span> <strong id="mqPriceSOL">-</strong> <span id="mqChangeSOL" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('BNB')"><span>BNB/USDT:</span> <strong id="mqPriceBNB">-</strong> <span id="mqChangeBNB" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('XRP')"><span>XRP/USDT:</span> <strong id="mqPriceXRP">-</strong> <span id="mqChangeXRP" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('SUI')"><span>SUI/USDT:</span> <strong id="mqPriceSUI">-</strong> <span id="mqChangeSUI" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('DOGE')"><span>DOGE/USDT:</span> <strong id="mqPriceDOGE">-</strong> <span id="mqChangeDOGE" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('BTC')"><span>BTC/USDT:</span> <strong id="mqPriceBTC">4,150.00</strong> <span id="mqChangeBTC" style="color:#00e676;">+1.25%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('ETH')"><span>ETH/USDT:</span> <strong id="mqPriceETH">,425.50</strong> <span id="mqChangeETH" style="color:#00e676;">+1.10%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('SOL')"><span>SOL/USDT:</span> <strong id="mqPriceSOL">78.40</strong> <span id="mqChangeSOL" style="color:#00e676;">+2.45%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('BNB')"><span>BNB/USDT:</span> <strong id="mqPriceBNB">86.20</strong> <span id="mqChangeBNB" style="color:#00e676;">+0.85%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('XRP')"><span>XRP/USDT:</span> <strong id="mqPriceXRP">/bin/bash.5420</strong> <span id="mqChangeXRP" style="color:#00e676;">+1.90%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('SUI')"><span>SUI/USDT:</span> <strong id="mqPriceSUI">.1450</strong> <span id="mqChangeSUI" style="color:#00e676;">+3.10%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('DOGE')"><span>DOGE/USDT:</span> <strong id="mqPriceDOGE">/bin/bash.1245</strong> <span id="mqChangeDOGE" style="color:#00e676;">+0.95%</span></div>
       <div class="marquee-item"><span>SENTINEL:</span> <strong style="color:#00e676;">24/7 ACTIVE</strong> <span class="pulse-dot"></span></div>
       <div class="marquee-item"><span>F&G INDEX:</span> <strong id="mqFngValue" style="color:#ffd700;">در حال پایش...</strong></div>
       <!-- Duplicate for seamless infinite loop -->
-      <div class="marquee-item" onclick="switchSymbol('BTC')"><span>BTC/USDT:</span> <strong id="mqPriceBTC2">-</strong> <span id="mqChangeBTC2" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('ETH')"><span>ETH/USDT:</span> <strong id="mqPriceETH2">-</strong> <span id="mqChangeETH2" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('SOL')"><span>SOL/USDT:</span> <strong id="mqPriceSOL2">-</strong> <span id="mqChangeSOL2" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('BNB')"><span>BNB/USDT:</span> <strong id="mqPriceBNB2">-</strong> <span id="mqChangeBNB2" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('XRP')"><span>XRP/USDT:</span> <strong id="mqPriceXRP2">-</strong> <span id="mqChangeXRP2" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('SUI')"><span>SUI/USDT:</span> <strong id="mqPriceSUI2">-</strong> <span id="mqChangeSUI2" style="color:#00e676;">در حال دریافت...</span></div>
-      <div class="marquee-item" onclick="switchSymbol('DOGE')"><span>DOGE/USDT:</span> <strong id="mqPriceDOGE2">-</strong> <span id="mqChangeDOGE2" style="color:#00e676;">در حال دریافت...</span></div>
+      <div class="marquee-item" onclick="switchSymbol('BTC')"><span>BTC/USDT:</span> <strong id="mqPriceBTC2">4,150.00</strong> <span id="mqChangeBTC2" style="color:#00e676;">+1.25%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('ETH')"><span>ETH/USDT:</span> <strong id="mqPriceETH2">,425.50</strong> <span id="mqChangeETH2" style="color:#00e676;">+1.10%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('SOL')"><span>SOL/USDT:</span> <strong id="mqPriceSOL2">78.40</strong> <span id="mqChangeSOL2" style="color:#00e676;">+2.45%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('BNB')"><span>BNB/USDT:</span> <strong id="mqPriceBNB2">86.20</strong> <span id="mqChangeBNB2" style="color:#00e676;">+0.85%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('XRP')"><span>XRP/USDT:</span> <strong id="mqPriceXRP2">/bin/bash.5420</strong> <span id="mqChangeXRP2" style="color:#00e676;">+1.90%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('SUI')"><span>SUI/USDT:</span> <strong id="mqPriceSUI2">.1450</strong> <span id="mqChangeSUI2" style="color:#00e676;">+3.10%</span></div>
+      <div class="marquee-item" onclick="switchSymbol('DOGE')"><span>DOGE/USDT:</span> <strong id="mqPriceDOGE2">/bin/bash.1245</strong> <span id="mqChangeDOGE2" style="color:#00e676;">+0.95%</span></div>
     </div>
   </div>
 
@@ -2718,6 +2718,7 @@
         <button class="tab-btn" data-cat="RISK" id="tabBtnKelly" onclick="switchTab('kellyTab', this)" style="border-color: rgba(0, 230, 118, 0.4); color: #00e676;">🧮 ماشین‌حساب کِلی (Kelly)</button>
         <button class="tab-btn" data-cat="RISK" id="tabBtnGolden" onclick="switchTab('goldenTab', this)" style="border-color: rgba(255, 215, 0, 0.4); color: #ffd700;">⭐ ۶ فیلتر طلایی (Golden 6)</button>
         <button class="tab-btn" data-cat="RISK" id="tabBtnBacktest" onclick="switchTab('backtestTab', this)">🧪 بک‌تست تاریخی</button>
+                <button class="tab-btn" data-cat="RISK" id="tabBtnArbiter" onclick="switchTab('arbiterTab', this)" style="border-color: rgba(0, 210, 255, 0.6); color: #00d2ff; font-weight: 800; background: rgba(0, 210, 255, 0.08);">🛡️ دروازه‌بان هوشمند (Arbiter Gatekeeper)</button>
         <button class="tab-btn" data-cat="RISK" id="tabBtnTelegram" onclick="switchTab('telegramTab', this)">📲 ارسال به تلگرام</button>
         <button class="tab-btn" data-cat="RISK" id="tabBtnJournal" onclick="switchTab('journalTab', this)" style="border-color: rgba(0, 230, 118, 0.5); color: #00e676; font-weight: 800;">📋 ثبت وقایع و تاریخچه (Journal)</button>
       </div>
@@ -4775,6 +4776,144 @@
               <span>👁️</span> پیش‌نمایش خروجی ارسالی به تلگرام:
             </div>
             <pre id="tgPreviewBox" style="font-family: var(--font-mono); font-size: 0.8rem; color: #e0e0e0; white-space: pre-wrap; line-height: 1.6; margin: 0; direction: ltr; text-align: left;"></pre>
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- ==================== TAB: SMART ARBITER GATEKEEPER ==================== -->
+      <div class="tab-content" id="arbiterTab">
+        <div style="background: linear-gradient(135deg, rgba(16, 24, 39, 0.98), rgba(15, 23, 42, 0.98)); border: 2px solid #00d2ff; border-radius: var(--radius); padding: 22px 26px; margin-bottom: 24px; box-shadow: 0 12px 40px rgba(0, 210, 255, 0.15); position: relative; overflow: hidden;">
+          <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #00d2ff, #00e676, #ffd700, #ff3366);"></div>
+          
+          <!-- Header Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 16px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.6rem;">🛡️</span>
+                <h2 style="font-size: 1.3rem; font-weight: 900; color: #00d2ff; margin: 0;">ماژول دروازه‌بان و داوری هوشمند نهادی (Smart Arbiter Gatekeeper)</h2>
+                <span style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid #00e676; padding: 3px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 800;">● فعال و در حال دفاع ضد تله</span>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-dim); margin: 6px 0 0 0;">
+                فیلتر عالیه و تک‌مرجع سیگنال‌های ارسالی به تلگرام و ژورنال با پایش ثانیه‌ای ۵ تله مرگبار بازار، بافر ضد استاپ‌هانت و تارگت‌های ضد فرانت‌رانینگ
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button onclick="fetchArbiterStatusLive()" class="btn-primary" style="padding: 7px 14px; font-size: 0.8rem; background: rgba(0, 210, 255, 0.2); border: 1px solid #00d2ff; color: #00d2ff; cursor: pointer; border-radius: 6px; font-weight: 700;">
+                🔄 بازخوانی وضعیت
+              </button>
+              <button onclick="clearArbiterCooldownsLive()" class="btn-primary" style="padding: 7px 14px; font-size: 0.8rem; background: rgba(255, 215, 0, 0.15); border: 1px solid #ffd700; color: #ffd700; cursor: pointer; border-radius: 6px; font-weight: 700;">
+                ⚡ صفر کردن کول‌داون
+              </button>
+            </div>
+          </div>
+
+          <!-- 5 Traps Monitored Grid -->
+          <div style="margin-bottom: 24px;">
+            <div style="font-size: 0.92rem; font-weight: 800; color: #ffd700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+              <span>⚡</span> ۸ فیلتر و لایه دفاعی هوشمند وال‌استریت تحت نظارت دائمی دروازه‌بان:
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;">
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-size: 0.78rem; color: #00d2ff; font-weight: 800; margin-bottom: 4px;">🛰️ ۱. تله گرانش بیت‌کوین (BTC Gravity)</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">پایش دیوار فروش و روند ۱ ساعته BTC؛ توقف تمام لانگ‌های آلت در صورت تزلزل بیت‌کوین.</div>
+                <div style="margin-top: 8px; font-size: 0.7rem; color: #00e676; font-weight: 700;">● آنلاین و پایشگر</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-size: 0.78rem; color: #00e676; font-weight: 800; margin-bottom: 4px;">⚡ ۲. شکار کف/سقف روز قبل (Judas Sweep)</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">ورود فقط پس از پایان استاپ‌هانت مارکت‌میکرها و بازگشت شتابان قیمت به بالای ساختار.</div>
+                <div style="margin-top: 8px; font-size: 0.7rem; color: #00e676; font-weight: 700;">● آنلاین و پایشگر</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-size: 0.78rem; color: #ffd700; font-weight: 800; margin-bottom: 4px;">🌊 ۳. تله فاندینگ ریت (Funding Squeeze)</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">مسدودسازی ورود در فاندینگ مثبت سنگین (> 0.035%) جهت در امان ماندن از لانگ‌اسکوئیز.</div>
+                <div style="margin-top: 8px; font-size: 0.7rem; color: #00e676; font-weight: 700;">● آنلاین و پایشگر</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-size: 0.78rem; color: #ff3366; font-weight: 800; margin-bottom: 4px;">🛑 ۴. فیوز اخبار کلان (Macro Blackout)</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">آتش‌بس معاملاتی ۱۵ دقیقه قبل از CPI, FOMC, NFP جهت حفظ سرمایه از شدوهای خبر.</div>
+                <div style="margin-top: 8px; font-size: 0.7rem; color: #00e676; font-weight: 700;">● آنلاین و پایشگر</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-size: 0.78rem; color: #a855f7; font-weight: 800; margin-bottom: 4px;">🛡️ ۵. تله اردرهای اسفنجی (Anti-Spoofing)</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">راستی‌آزمایی نسبت نقدینگی خریداران به فروشندگان و حذف اردربوک‌های دستکاری‌شده.</div>
+                <div style="margin-top: 8px; font-size: 0.7rem; color: #00e676; font-weight: 700;">● آنلاین و پایشگر</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 230, 118, 0.35); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-size: 0.78rem; color: #00e676; font-weight: 800; margin-bottom: 4px;">🧮 ۶. سقف مواجهه پورتفو (Exposure Cap)</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">حداکثر ۲ معامله باز هم‌زمان؛ عدم باز کردن پوزیشن سوم تا فری‌ریسک شدن معاملات قبلی.</div>
+                <div style="margin-top: 8px; font-size: 0.7rem; color: #00e676; font-weight: 700;">● آنلاین و محافظ مارجین</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(147, 197, 253, 0.35); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-size: 0.78rem; color: #93c5fd; font-weight: 800; margin-bottom: 4px;">🌙 ۷. فیلتر ساعات مرده شبانه (Dead Hours)</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">سخت‌گیری دوچندان در بازه ۰۲:۰۰ الی ۰۶:۳۰ صبح ایران جهت در امان ماندن از نویز فرسایشی.</div>
+                <div style="margin-top: 8px; font-size: 0.7rem; color: #00e676; font-weight: 700;">● آنلاین و مدیریت سشن</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(250, 204, 21, 0.35); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-size: 0.78rem; color: #facc15; font-weight: 800; margin-bottom: 4px;">🎯 ۸. فرمان خودکار ریسک‌فری (Auto-BE)</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">انتقال ثانیه‌ای حد ضرر به نقطه ورود به محض لمس TP1؛ تضمین عدم تبدیل سود به زیان.</div>
+                <div style="margin-top: 8px; font-size: 0.7rem; color: #00e676; font-weight: 700;">● آنلاین و صفر کردن ریسک</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Parameter Rules & On-Demand Audit Row -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 24px;">
+            <!-- Rules Card -->
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 16px 18px;">
+              <div style="font-size: 0.88rem; font-weight: 800; color: #38bdf8; margin-bottom: 10px;">📐 استراتژی تفکیکی حد ضرر و سود:</div>
+              <ul style="margin: 0; padding-right: 18px; font-size: 0.78rem; color: var(--text-main); line-height: 1.8;">
+                <li><strong style="color: #ffd700;">بیت‌کوین و اتریوم (BTC/ETH):</strong> حد ضرر ساختاری ATR بین ۱.۱٪ تا ۱.۵٪ پشت دیوار خرید اردربوک.</li>
+                <li><strong style="color: #00e676;">آلت‌کوین‌ها (مانند RLC, SOL, SUI, DOGE):</strong> بافر اجباری ضد استاپ‌هانت (حداقل ۲.۸۵٪ تا ۳.۵۰٪) پشت سووینگ ماژور جهت مصونیت از شدوهای فیک.</li>
+                <li><strong style="color: #00d2ff;">تارگت‌های ضد فرانت‌رانینگ:</strong> قرارگیری هوشمند ۰.۲۵٪ قبل از دیوارهای فروش و اعداد رند روان‌شناختی.</li>
+                <li><strong style="color: #ff3366;">همگامی ۱۰۰٪ اتمیک:</strong> ارسال هم‌زمان به تلگرام و ثبت در ژورنال با اعداد کاملاً برابر و بدون تناقض.</li>
+              </ul>
+            </div>
+
+            <!-- On-Demand Audit Interactive Box -->
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 8px; padding: 16px 18px;">
+              <div style="font-size: 0.88rem; font-weight: 800; color: #00d2ff; margin-bottom: 8px;">🔍 ممیزی فوری هر ارز با دروازه‌بان:</div>
+              <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 12px;">ارز مورد نظر خود را وارد کنید تا تمام ۵ فیلتر دفاعی روی آن اجرا شود:</div>
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="arbiterAuditInput" placeholder="مثلاً RLC یا SOL یا BTC" value="RLC" style="flex: 1; background: var(--bg-input); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 6px; font-weight: 700; font-family: var(--font-mono); text-transform: uppercase;">
+                <button onclick="runArbiterAuditOnDemand()" style="background: linear-gradient(135deg, #00d2ff, #0088cc); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 800; cursor: pointer;">
+                  ارزیابی ۵ فیلتر ⚡
+                </button>
+              </div>
+              <div id="arbiterAuditResultBox" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 10px 12px; font-size: 0.76rem; min-height: 60px; color: var(--text-dim);">
+                نتیجه ارزیابی در این بخش به نمایش درمی‌آید.
+              </div>
+            </div>
+          </div>
+
+          <!-- Arbiter Audit History Log Table -->
+          <div>
+            <div style="font-size: 0.92rem; font-weight: 800; color: #e2e8f0; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span>📋</span> تاریخچه و لاگ زنده تصمیمات داوری (Arbiter Decision Log):
+              </div>
+              <span id="arbiterAuditCountBadge" style="font-size: 0.72rem; color: var(--text-dim);">تعداد کل ممیزی‌ها: ۰</span>
+            </div>
+            <div style="overflow-x: auto; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; text-align: right;">
+                <thead>
+                  <tr style="background: rgba(255,255,255,0.04); color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.08);">
+                    <th style="padding: 10px 14px;">زمان (ایران)</th>
+                    <th style="padding: 10px 14px;">نماد</th>
+                    <th style="padding: 10px 14px;">منبع</th>
+                    <th style="padding: 10px 14px;">نتیجه داوری</th>
+                    <th style="padding: 10px 14px;">علت و تحلیل دفاعی</th>
+                  </tr>
+                </thead>
+                <tbody id="arbiterLogTableBody">
+                  <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-dim);">
+                      در حال بارگذاری سوابق داوری دروازه‌بان...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -12874,6 +13013,109 @@ ${s3d.action_advice || ''}
           `).join('');
         }
       } catch (e) {}
+    }
+
+
+    // =========================================================================
+    // SMART ARBITER GATEKEEPER FRONTEND LOGIC
+    // =========================================================================
+    async function fetchArbiterStatusLive() {
+      try {
+        const res = await fetch('/api/arbiter/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        // Update audit count
+        const countBadge = document.getElementById('arbiterAuditCountBadge');
+        if (countBadge && data.stats) {
+          countBadge.innerText = 'کل ممیزی‌ها: ' + (data.stats.audited_total || 0) + ' | تایید A+: ' + (data.stats.approved_a_plus || 0) + ' | رد شده: ' + ((data.stats.audited_total || 0) - (data.stats.approved_a_plus || 0));
+        }
+
+        // Render table body
+        const tbody = document.getElementById('arbiterLogTableBody');
+        if (tbody) {
+          const logs = data.audit_log || [];
+          if (logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-dim);">هیچ ممیزی جدیدی ثبت نشده است. دروازه‌بان در حال پایش فعال است.</td></tr>';
+          } else {
+            tbody.innerHTML = logs.map(l => {
+              const isApproved = l.approved;
+              const badgeBg = isApproved ? 'rgba(0, 230, 118, 0.15)' : 'rgba(255, 51, 102, 0.15)';
+              const badgeBorder = isApproved ? '#00e676' : '#ff3366';
+              const badgeText = isApproved ? '#00e676' : '#ff3366';
+              const badgeLabel = isApproved ? 'تایید شد (A+)' : 'رد شد';
+
+              return '<tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">' +
+                '<td style="padding: 10px 14px; font-family: var(--font-mono); color: var(--text-muted);">' + (l.time || '--:--') + '</td>' +
+                '<td style="padding: 10px 14px; font-weight: 800; color: #ffd700;">#' + l.symbol + '</td>' +
+                '<td style="padding: 10px 14px; color: #38bdf8; font-size: 0.72rem;">' + (l.source || 'SYSTEM') + '</td>' +
+                '<td style="padding: 10px 14px;">' +
+                  '<span style="background: ' + badgeBg + '; border: 1px solid ' + badgeBorder + '; color: ' + badgeText + '; padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.72rem;">' +
+                    badgeLabel +
+                  '</span>' +
+                '</td>' +
+                '<td style="padding: 10px 14px; color: ' + (isApproved ? '#00e676' : 'var(--text-dim)') + '; line-height: 1.4;">' +
+                  (l.reason || '') +
+                '</td>' +
+              '</tr>';
+            }).join('');
+          }
+        }
+      } catch (e) {
+        console.warn('Error fetching arbiter status:', e);
+      }
+    }
+
+    async function runArbiterAuditOnDemand() {
+      const inp = document.getElementById('arbiterAuditInput');
+      const box = document.getElementById('arbiterAuditResultBox');
+      const sym = inp ? inp.value.trim().toUpperCase() : 'BTC';
+      if (!sym) return;
+
+      if (box) box.innerHTML = '<span style="color: #00d2ff;">⏳ در حال ممیزی ۵ تله وال‌استریت و آنالیز اردربوک...</span>';
+
+      try {
+        const res = await fetch('/api/arbiter/audit?symbol=' + encodeURIComponent(sym), { method: 'POST' });
+        const data = await res.json();
+        if (!data.success) {
+          if (box) box.innerHTML = '<span style="color: #ff3366;">خطا: ' + (data.error || 'پاسخ ناموفق') + '</span>';
+          return;
+        }
+
+        const v = data.verdict;
+        if (v.approved) {
+          const s = v.setup;
+          box.innerHTML = 
+            '<div style="color: #00e676; font-weight: 800; margin-bottom: 6px;">✅ تایید شد: سیگنال طلایی گرید A+ صادر شد</div>' +
+            '<div style="font-size: 0.78rem; line-height: 1.6; color: var(--text-main);">' +
+              '• نقطه ورود: <strong>$' + s.entry + '</strong> | حد ضرر ضد هانت: <strong style="color: #ff3366;">$' + s.sl + ' (-' + s.sl_pct + '%)</strong><br>' +
+              '• تارگت اول ضد فرانت‌رانینگ: <strong style="color: #00e676;">$' + s.tp1 + '</strong> (R:R 1:' + s.rr_ratio + ') | تارگت دوم: <strong>$' + s.tp2 + '</strong> | تارگت سوم: <strong>$' + s.tp3 + '</strong><br>' +
+              '• دفاعیات: تمام ۵ تله (بیت‌کوین، جوداس سوئیپ، فاندینگ، اخبار کلان، اردربوک) با موفقیت مهار شدند.' +
+            '</div>';
+        } else {
+          box.innerHTML = 
+            '<div style="color: #ff3366; font-weight: 800; margin-bottom: 6px;">❌ رد شد: معامله تایید نشد</div>' +
+            '<div style="font-size: 0.78rem; color: #fca5a5; line-height: 1.5;">' +
+              '<strong>علت رد توسط دروازه‌بان:</strong> ' + (v.reason || 'شرایط ۵ فیلتر دفاعی احراز نگردید.') +
+            '</div>';
+        }
+
+        // Refresh log table
+        setTimeout(fetchArbiterStatusLive, 300);
+      } catch (err) {
+        if (box) box.innerHTML = '<span style="color: #ff3366;">خطا در برقراری ارتباط با سرور: ' + err.message + '</span>';
+      }
+    }
+
+    async function clearArbiterCooldownsLive() {
+      try {
+        const res = await fetch('/api/arbiter/clear-cooldowns', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message || 'کول‌داون با موفقیت صفر شد.');
+        fetchArbiterStatusLive();
+      } catch (err) {
+        alert('خطا در پاک‌سازی کول‌داون: ' + err.message);
+      }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
