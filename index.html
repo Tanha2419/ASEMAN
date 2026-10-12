@@ -7401,8 +7401,12 @@
           statusBadge = `<span style="background: rgba(148,163,184,0.2); color: #94a3b8; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">⌛ منقضی شده (خروج)</span>`;
           pnlBadge = `<span style="color: #94a3b8; font-family: var(--font-mono);">0.00%</span>`;
         } else {
-          statusBadge = `<span style="background: rgba(0,210,255,0.15); color: #00d2ff; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">⚡ در حال پایش لایو</span>`;
-          pnlBadge = `<span style="color: #94a3b8; font-family: var(--font-mono);">در جریان...</span>`;
+          const floatPnl = Number(r.floating_pnl !== undefined ? r.floating_pnl : (r.pnl_pct || 0));
+          const floatColor = floatPnl >= 0 ? '#00e676' : '#ff3366';
+          const floatSign = floatPnl >= 0 ? '+' : '';
+          const pxLabel = r.cur_price ? ` ($${Number(r.cur_price).toLocaleString(undefined, {maximumFractionDigits: 4})})` : '';
+          statusBadge = `<span style="background: rgba(0,210,255,0.15); color: #00d2ff; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">⚡ در حال پایش لایو${pxLabel}</span>`;
+          pnlBadge = `<span style="color: ${floatColor}; font-weight: 800; font-family: var(--font-mono);">${floatSign}${floatPnl.toFixed(2)}% (شناور)</span>`;
         }
 
         const cleanSym = String(r.symbol || '').replace(/USDT$/i, '').toUpperCase().trim();
