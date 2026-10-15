@@ -77,7 +77,10 @@ def run_simulation():
         "price": 1.0420,
         "score": 88
     }
-    verdict_rlc = global_arbiter.audit_and_decide(rlc_candidate, source="RADAR_3M")
+    # Mock BTC gravity check so the test candidate RLC SHORT passes deterministically in live market conditions
+    import unittest.mock as mock
+    with mock.patch.object(global_arbiter, "check_trap_1_btc_gravity", return_value=(True, "ok", {})):
+        verdict_rlc = global_arbiter.audit_and_decide(rlc_candidate, source="RADAR_3M")
     print("نتیجه داوری برای RLC:")
     print(f"  • تاییدیه نهایی: {'✅ تایید شد (A+)' if verdict_rlc['approved'] else 'رد شد'}")
     print(f"  • امتیاز اعتبار: {verdict_rlc.get('conviction_score')}/100")
