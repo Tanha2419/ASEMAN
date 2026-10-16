@@ -1,51 +1,33 @@
-"""
-Supabase Cloud Database Engine for Aseman Trading Platform
-Seamless persistent storage for signals, journal, win rate, and bot settings.
-Automatically falls back to local JSON if cloud is unreachable.
-"""
-
 import os
 import json
-import time
 import logging
 import requests
-from typing import List, Dict, Any, Optional
+from datetime import datetime, timezone
+from typing import Dict, Any, List, Optional
 
-logger = logging.getLogger("SupabaseEngine")
-
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://dalwptypryarhkwqwalk.supabase.co").rstrip("/")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_3PeOamcSnFPTt-DrVzbGeg_e8uzFIit").strip()
+logger = logging.getLogger("SupabaseJournal")
 
 class SupabaseJournalManager:
-    def __init__(self, base_url: str = SUPABASE_URL, key: str = SUPABASE_KEY):
-        self.base_url = base_url
-        self.key = key
-        self.rest_endpoint = f"{self.base_url}/rest/v1/signals_journal"
+    """
+    Institutional Journal Engine for Supabase Cloud Database.
+    Ensures persistent cloud storage across container reboots, unified signal tracking,
+    and accurate win-rate calculations based exclusively on closed trades.
+    """
+    def __init__(self):
+        self.supabase_url = os.environ.get("SUPABASE_URL", "https://qnhgfevhqewdzzjlyhda.supabase.co").rstrip('/')
+        self.supabase_key = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFuaGdmZXZocWV3ZHp6amx5aGRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNzIzNTMsImV4cCI6MjA1OTk0ODM1M30.4s8v_VIdqj10gC7oD_Xn72-8qR5PZ9fF8gV4jX0j-wE")
         self.headers = {
-            "apikey": self.key,
-            "Authorization": f"Bearer {self.key}",
+            "apikey": self.supabase_key,
+            "Authorization": f"Bearer {self.supabase_key}",
             "Content-Type": "application/json",
             "Prefer": "return=representation"
         }
-        self.is_connected = False
-        self._check_connection()
-
-    def _check_connection(self):
-        try:
-            r = requests.get(f"{self.rest_endpoint}?select=id&limit=1", headers=self.headers, timeout=5)
-            if r.status_code in [200, 206]:
-                self.is_connected = True
-                logger.info("Connected to Supabase PostgreSQL Database successfully!")
-            else:
-                self.is_connected = False
-                logger.warning(f"Supabase check returned status {r.status_code}: {r.text}")
-        except Exception as e:
-            self.is_connected = False
-            logger.warning(f"Supabase connection test failed: {e}")
+        self.rest_endpoint = f"{self.supabase_url}/rest/v1/trade_journal"
 
     def insert_signal(self, record: Dict[str, Any]) -> bool:
-        """Inserts an approved master trade signal into Supabase."""
+        """Inserts or updates a trade setup into Supabase cloud."""
         try:
+            signal_id = record.get("id") or record.get("signal_id")
             payload = {
                 "symbol": record.get("symbol", "").upper(),
                 "action": record.get("action", "BUY").upper(),
@@ -55,9 +37,12 @@ class SupabaseJournalManager:
                 "tp2": float(record.get("tp2", 0.0)),
                 "tp3": float(record.get("tp3", 0.0)),
                 "pnl": float(record.get("pnl", 0.0)),
-                "status": record.get("status", "OPEN"),
+                "status": record.get("status", "TRACKING"),
                 "source": record.get("source", "MASTER_SIGNAL")
             }
+            if signal_id:
+                payload["signal_id"] = str(signal_id)
+            
             r = requests.post(self.rest_endpoint, headers=self.headers, json=payload, timeout=5)
             if r.status_code in [200, 201]:
                 return True
@@ -68,26 +53,34 @@ class SupabaseJournalManager:
             logger.error(f"Error inserting to Supabase: {e}")
             return False
 
-    def update_signal_status(self, symbol: str, status: str, pnl: float, new_sl: Optional[float] = None) -> bool:
-        """Updates open signal status, PnL and stop loss (e.g. Break-Even or TP hit)."""
+    def update_signal_status(self, symbol: str, status: str, pnl: float, new_sl: Optional[float] = None, signal_id: Optional[str] = None) -> bool:
+        """
+        Updates open/tracking signal status, PnL and stop loss.
+        Supports matching by unique signal_id or symbol with status in OPEN or TRACKING.
+        Uses valid ISO timestamp instead of raw string NOW().
+        """
         try:
-            clean_sym = symbol.upper().replace("USDT", "").replace("USD", "").strip()
-            # Find open record
-            patch_data = {"status": status, "pnl": float(pnl), "updated_at": "NOW()"}
+            now_iso = datetime.now(timezone.utc).isoformat()
+            patch_data = {"status": status, "pnl": float(pnl), "updated_at": now_iso}
             if new_sl is not None:
                 patch_data["sl"] = float(new_sl)
             
-            url = f"{self.rest_endpoint}?symbol=eq.{clean_sym}&status=eq.OPEN"
+            if signal_id:
+                url = f"{self.rest_endpoint}?signal_id=eq.{signal_id}"
+            else:
+                clean_sym = symbol.upper().replace("USDT", "").replace("USD", "").strip()
+                url = f"{self.rest_endpoint}?symbol=eq.{clean_sym}&status=in.(OPEN,TRACKING)&order=id.desc&limit=1"
+            
             r = requests.patch(url, headers=self.headers, json=patch_data, timeout=5)
             return r.status_code in [200, 204]
         except Exception as e:
             logger.error(f"Error updating Supabase signal: {e}")
             return False
 
-    def get_all_records(self) -> List[Dict[str, Any]]:
-        """Fetches all records from Supabase."""
+    def get_all_records(self, limit: int = 500) -> List[Dict[str, Any]]:
+        """Fetches up to limit records from Supabase."""
         try:
-            url = f"{self.rest_endpoint}?select=*&order=id.desc&limit=100"
+            url = f"{self.rest_endpoint}?select=*&order=id.desc&limit={limit}"
             r = requests.get(url, headers=self.headers, timeout=5)
             if r.status_code == 200:
                 return r.json()
@@ -97,8 +90,11 @@ class SupabaseJournalManager:
             return []
 
     def get_journal_stats(self) -> Dict[str, Any]:
-        """Calculates win rate, total PnL, profit factor from Supabase records."""
-        records = self.get_all_records()
+        """
+        Calculates win rate, total PnL and stats exclusively from CLOSED trades.
+        Open/Tracking positions are separated and never counted as win or loss.
+        """
+        records = self.get_all_records(limit=1000)
         if not records:
             return {
                 "total_trades": 0,
@@ -109,20 +105,42 @@ class SupabaseJournalManager:
                 "open_trades": 0
             }
 
-        wins = sum(1 for r in records if "TP" in str(r.get("status", "")).upper() or float(r.get("pnl", 0)) > 0)
-        losses = sum(1 for r in records if "SL" in str(r.get("status", "")).upper() or float(r.get("pnl", 0)) < 0)
-        open_t = sum(1 for r in records if str(r.get("status", "")).upper() == "OPEN")
-        closed = wins + losses
-        win_rate = round((wins / closed * 100), 1) if closed > 0 else 0.0
-        total_pnl = round(sum(float(r.get("pnl", 0)) for r in records), 2)
+        wins = 0
+        losses = 0
+        open_trades = 0
+        total_pnl = 0.0
+
+        for r in records:
+            status = str(r.get("status", "")).upper()
+            pnl = float(r.get("pnl", 0.0))
+
+            if status in ["OPEN", "TRACKING"]:
+                open_trades += 1
+                continue
+
+            # For closed trades only:
+            total_pnl += pnl
+            if "TP" in status or pnl > 0:
+                wins += 1
+            elif "SL" in status or pnl < 0:
+                losses += 1
+            elif "BREAKEVEN" in status:
+                if pnl >= 0:
+                    wins += 1
+                else:
+                    losses += 1
+
+        closed_trades = wins + losses
+        win_rate = round((wins / closed_trades * 100), 1) if closed_trades > 0 else 0.0
 
         return {
             "total_trades": len(records),
+            "closed_trades": closed_trades,
             "wins": wins,
             "losses": losses,
             "win_rate": win_rate,
-            "total_pnl": total_pnl,
-            "open_trades": open_t
+            "total_pnl": round(total_pnl, 2),
+            "open_trades": open_trades
         }
 
     def clear_all_records(self) -> bool:
@@ -135,5 +153,4 @@ class SupabaseJournalManager:
             logger.error(f"Error resetting Supabase table: {e}")
             return False
 
-# Global Singleton
 supabase_journal = SupabaseJournalManager()
