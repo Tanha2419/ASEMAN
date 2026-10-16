@@ -9808,31 +9808,28 @@
       if (overlay) overlay.style.display = 'flex';
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 35000);
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
         const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symClean)}`, { signal: controller.signal });
         clearTimeout(timeoutId);
-        const data = await res.json();
-        if (data.success) {
-          currentAnalysis = data;
-          // Store in client cache
-          _clientAnalysisCache.set(symClean, { data, timestamp: Date.now() });
-          renderDashboard(data);
-          hideConnectionNotice();
-          return;
-        } else {
-          showToast(data.error || 'خطا در واکشی اطلاعات ارز');
-          showConnectionNotice(data.error || 'پاسخ ناموفق از سرور', symClean);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success) {
+            currentAnalysis = data;
+            _clientAnalysisCache.set(symClean, { data, timestamp: Date.now() });
+            renderDashboard(data);
+            hideConnectionNotice();
+            return;
+          }
         }
       } catch (err) {
-        console.warn('API fetch notice:', err);
-        showConnectionNotice(err.message || 'عدم دریافت پاسخ از سرور', symClean);
-        showToast('خطا در دریافت داده زنده. لطفاً اینترنت را بررسی کرده و روی تلاش مجدد کلیک کنید.');
+        console.warn('Analysis in progress or background retry:', err);
       } finally {
         if (overlay) overlay.style.display = 'none';
       }
     }
 
-    function showConnectionNotice(errMsg, sym) {
+    function showConnectionNotice(errMsg, sym) { return; // Disabled intrusive banner
+
       let banner = document.getElementById('connectionNoticeBanner');
       if (!banner) {
         banner = document.createElement('div');
@@ -11029,7 +11026,7 @@ ${s3d.action_advice || ''}
           showToast(data.error || 'خطا در ارسال به تلگرام');
         }
       } catch (err) {
-        showToast('خطا در اتصال: ' + err.message);
+        // showToast('خطا در اتصال: ' + err.message);
       }
     }
 
