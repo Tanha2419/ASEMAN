@@ -14,7 +14,7 @@ from typing import List, Dict, Any, Optional
 logger = logging.getLogger("SupabaseEngine")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://dalwptypryarhkwqwalk.supabase.co").rstrip("/")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_secret_Hp8OM7VSr2fj2td8qgEeNQ_u3EMIHkZ").strip()
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_3PeOamcSnFPTt-DrVzbGeg_e8uzFIit").strip()
 
 class SupabaseJournalManager:
     def __init__(self, base_url: str = SUPABASE_URL, key: str = SUPABASE_KEY):

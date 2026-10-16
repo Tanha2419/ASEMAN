@@ -7439,6 +7439,32 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    
+    async function initFastDashboard(sym) {
+      const symClean = (sym || currentSymbol || 'BTC').toUpperCase().trim();
+      try {
+        const res = await fetch(`/api/ticker?symbol=${encodeURIComponent(symClean)}`);
+        const data = await res.json();
+        if (data && data.price > 0) {
+          const priceEl = document.getElementById('currentPrice');
+          if (priceEl) priceEl.innerText = formatPrice(data.price);
+          hideConnectionNotice();
+          const pill = document.getElementById('priceChangePill');
+          if (pill && data.price_change_pct !== undefined) {
+            const ch = Number(data.price_change_pct);
+            pill.innerText = `${ch >= 0 ? '+' : ''}${ch.toFixed(2)}% (24h)`;
+            pill.className = `price-change-pill ${ch >= 0 ? 'pill-green' : 'pill-red'}`;
+          }
+          const highEl = document.getElementById('statHigh24');
+          if (highEl && data.high_24h) highEl.innerText = formatPrice(data.high_24h);
+          const lowEl = document.getElementById('statLow24');
+          if (lowEl && data.low_24h) lowEl.innerText = formatPrice(data.low_24h);
+        }
+      } catch (e) {
+        console.warn('Fast ticker fetch error:', e);
+      }
+    }
+
     async function loadSymbol(sym) {
       if (!sym) return;
       currentSymbol = sym.toUpperCase().trim();
@@ -7469,6 +7495,7 @@
         c.classList.toggle('active', c.innerText.trim() === currentSymbol);
       });
 
+      initFastDashboard(currentSymbol);
       await fetchAnalysis(currentSymbol);
     }
 
@@ -11973,6 +12000,7 @@ ${s3d.action_advice || ''}
     }, 50);
 
     window.addEventListener('DOMContentLoaded', () => {
+      initFastDashboard('BTC');
       updateUtcClock();
       setInterval(updateUtcClock, 1000);
       fetchLiveFearAndGreed();
