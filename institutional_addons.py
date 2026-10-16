@@ -4591,7 +4591,7 @@ class ExchangeDataEngine:
     BYBIT_API_KEY = os.environ.get("BYBIT_API_KEY", "")
     BYBIT_API_SECRET = os.environ.get("BYBIT_API_SECRET", "")
     SKY_API_KEY = os.environ.get("SKY_API_KEY", "")
-    SKY_IP_WHITELIST = os.environ.get("SKY_IP_WHITELIST", "186.190.215.213")
+    SKY_IP_WHITELIST = os.environ.get("SKY_IP_WHITELIST", "")
     FINAGE_KEY = os.environ.get("FINAGE_KEY", "")
     CMC_KEY_RAW = os.environ.get("CMC_PRO_KEY", "")
 

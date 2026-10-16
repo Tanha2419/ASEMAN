@@ -406,17 +406,6 @@ class CryptoArbiterGatekeeper:
 
         self.stats["audited_total"] += 1
 
-        # Check Conviction Score Threshold
-        if raw_score < self.MIN_CONVICTION_SCORE:
-            verdict = {
-                "approved": False,
-                "symbol": sym,
-                "reason": f"امتیاز اعتبار سیگنال ({raw_score:.0f}) کمتر از حد نصاب ستاپ‌های طلایی A+ ({self.MIN_CONVICTION_SCORE}) است.",
-                "trap_failed": "LOW_CONVICTION_SCORE"
-            }
-            self._log_verdict(verdict, candidate, source)
-            return verdict
-
         # Check Symbol Cooldown Freeze (45-Minute Lock)
         last_sent = self._symbol_cooldowns.get(sym, 0.0)
         if now - last_sent < self.SYMBOL_COOLDOWN_SEC:
@@ -439,6 +428,17 @@ class CryptoArbiterGatekeeper:
                 "symbol": sym,
                 "reason": f"فاصله زمانی ۵ دقیقه‌ای ارسال‌ها برای جلوگیری از اسپم کانال فعال است ({gap_rem_s} ثانیه باقی‌مانده).",
                 "trap_failed": "GLOBAL_SPAM_GATE"
+            }
+            self._log_verdict(verdict, candidate, source)
+            return verdict
+
+        # MINIMUM CONVICTION SCORE CHECK (Gatekeeper Standard)
+        if raw_score < self.MIN_CONVICTION_SCORE:
+            verdict = {
+                'approved': False,
+                'symbol': sym,
+                'reason': f'امتیاز ستاپ ({raw_score:.0f}) کمتر از حداقل حد نصاب ورود نهادی ({self.MIN_CONVICTION_SCORE}) است. ستاپ فاقد قدرت حرکتی لازم ارزیابی شد.',
+                'trap_failed': 'LOW_SCORE'
             }
             self._log_verdict(verdict, candidate, source)
             return verdict
