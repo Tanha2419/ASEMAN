@@ -2512,3 +2512,23 @@ def audit_custom_symbol(symbol: str = Query("BTC")):
         }
     except Exception as e:
         return {"success": False, "symbol": clean_s, "error": str(e)}
+
+# Aliases for order flow endpoints to guarantee 100% 200 OK
+@app.get("/api/crypto/ninja")
+def get_crypto_ninja_direct(symbol: str = "BTC"):
+    return get_crypto_ninjatrader(symbol)
+
+@app.get("/api/crypto/sierra")
+def get_crypto_sierra_direct(symbol: str = "BTC"):
+    return get_crypto_sierrachart(symbol)
+
+@app.get("/api/orderbook")
+def get_orderbook_direct(symbol: str = "BTC"):
+    sym = clean_symbol(symbol)
+    ob = agent.fetcher.fetch_order_book(f"{sym}USDT", limit=50)
+    return {"ok": True, "symbol": sym, "orderbook": ob}
+
+# Alias for journal endpoint
+@app.get("/api/journal/live")
+def get_journal_live_alias():
+    return get_signal_journal()

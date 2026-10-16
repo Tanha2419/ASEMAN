@@ -23,6 +23,7 @@ class SupabaseJournalManager:
             "Prefer": "return=representation"
         }
         self.rest_endpoint = f"{self.supabase_url}/rest/v1/trade_journal"
+        self.is_connected = bool(self.supabase_url and self.supabase_key)
 
     def insert_signal(self, record: Dict[str, Any]) -> bool:
         """Inserts or updates a trade setup into Supabase cloud."""
