@@ -2692,14 +2692,14 @@
         <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoBankReports" onclick="switchTab('cryptoBankReportsTab', this)" style="border-color: rgba(255, 215, 0, 0.6); color: #ffd700; font-weight: 900;">🏦 گزارشات بانک‌ها & جریان ETFها (Wall Street)</button>
 
         <!-- Group 1: Institutional & Macro -->
-        <button class="tab-btn active" data-cat="INST" id="tabBtnInst" onclick="switchTab('instTab', this)">🏛️ جدول سیگنال نهادی</button>
+        <button class="tab-btn active" data-cat="INST" id="tabBtnInst" onclick="switchTab('instTab', this)" style="border-color: #38bdf8; color: #38bdf8; font-weight: 900; background: rgba(56, 189, 248, 0.1);">🎯 سیگنال جامع و اتاق فرمان (Master Signal)</button>
         <button class="tab-btn" data-cat="INST" id="tabBtnMacroDeep" onclick="switchTab('macroDeepTab', this)" style="border-color: rgba(255, 61, 113, 0.4); color: #ff3d71;">🏛️ اخبار کلان (CPI/FOMC)</button>
         <button class="tab-btn" data-cat="INST" id="tabBtnLiquidityTerminal" onclick="switchTab('liquidityTerminalTab', this)" style="border-color: rgba(255, 145, 0, 0.4); color: #ff9100;">🔥 هیت‌مپ نقدینگی و نهنگ‌ها</button>
         <button class="tab-btn" data-cat="INST" id="tabBtnPrecision" onclick="switchTab('precisionTab', this)" style="border-color: rgba(0, 210, 255, 0.4); color: #00d2ff;">💎 بسته ۵ گانه دقت نهادی</button>
         <button class="tab-btn" data-cat="INST" id="tabBtnAlpha" onclick="switchTab('alphaTab', this)" style="border-color: rgba(255, 193, 7, 0.4); color: #ffc107;">🗺️ ماتریس لیدرهای بازار (Alpha)</button>
 
         <!-- Group 2: ICT & Technical -->
-        <button class="tab-btn" data-cat="TECH" id="tabBtnSmc" onclick="switchTab('smcTab', this)">🧠 اسمارت‌مانی و FVG (ICT Hub)</button>
+        <button class="tab-btn" data-cat="TECH" id="tabBtnSmc" onclick="switchTab('smcTab', this)">🧠 شواهد اسمارت‌مانی و FVG</button>
         <button class="tab-btn" data-cat="TECH" id="tabBtnChart" onclick="switchTab('chartTab', this)">📊 چارت زنده (TradingView)</button>
         <button class="tab-btn" data-cat="TECH" id="tabBtnTa15m" onclick="switchTab('ta15mTab', this)">⏱️ تکنیکال ۱۵ دقیقه (اسکالپ)</button>
         <button class="tab-btn" data-cat="TECH" id="tabBtnTa4h" onclick="switchTab('ta4hTab', this)">📈 تکنیکال ۴ ساعته (سوئینگ)</button>
@@ -2945,7 +2945,7 @@
                   <span id="smartActionBadge" style="background: rgba(0, 230, 118, 0.2); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); font-weight: 800; font-size: 0.82rem; padding: 3px 10px; border-radius: 6px;">LONG / BUY</span>
                 </div>
                 <div id="smartVerdictTitle" style="font-size: 0.88rem; font-weight: 700; color: #f8fafc; line-height: 1.4; margin-bottom: 4px;">
-                  سیگنال نهادی طلایی با بالاترین احتمال موفقیت
+                  وضعیت اجرای اتمیک سیگنال مستر (تاییدیه ۸ لایه نهادی)
                 </div>
                 <div style="display: flex; gap: 12px; font-size: 0.75rem; color: #94a3b8;">
                   <span>جهت: <strong id="smartScoreDir" style="color: #38bdf8;">85</strong></span>
@@ -14655,7 +14655,90 @@ async function fetchMasterSignal() {
   }
 }
 
+function __old_render(data) {}
 function renderMasterSignalCard(data) {
+  const container = document.getElementById('masterSignalLiveCard');
+  if (!container) return;
+
+  const ms = data.master_signal || {};
+  if (ms.has_signal) {
+    const isLong = (ms.action || '').toUpperCase().includes('BUY') || (ms.action || '').toUpperCase().includes('LONG');
+    const badgeColor = isLong ? '#00e676' : '#ef5350';
+    const badgeBg = isLong ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 83, 80, 0.15)';
+    const actionText = isLong ? 'خرید (LONG)' : 'فروش (SHORT)';
+    const beText = ms.is_breakeven ? '<span style="background:#00e676; color:#0b0f19; font-size:0.72rem; font-weight:bold; padding:2px 8px; border-radius:12px; margin-right:8px;">🛡️ ریسک‌فری (BE فعال)</span>' : '';
+
+    container.innerHTML = `
+      <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid ${badgeColor}; border-radius: 12px; padding: 20px; box-shadow: 0 4px 25px ${badgeColor}40;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="background: ${badgeBg}; color: ${badgeColor}; border: 1.5px solid ${badgeColor}; padding: 6px 14px; border-radius: 8px; font-weight: 900; font-size: 1.1rem; letter-spacing: 0.5px;">
+              ${ms.symbol} • ${actionText}
+            </span>
+            <span style="font-size: 0.82rem; color: #94a3b8; background: #1e293b; padding: 4px 10px; border-radius: 6px;">تایم‌فریم اجرایی: ${ms.timeframe || '15M'}</span>
+            ${beText}
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 0.88rem; color: #ffd700; font-weight: 900;">⭐ امتیاز اعتبار: ${ms.conviction_score || 90}/100</span>
+            <span style="font-size: 0.75rem; background: #0284c7; color: #fff; padding: 3px 10px; border-radius: 6px; font-weight: bold;">تاییدیه A+ دروازه‌بان</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 12px;">
+          <div style="background: #0b111e; padding: 12px; border-radius: 8px; border: 1px solid #1e293b; text-align: center;">
+            <div style="font-size: 0.74rem; color: #94a3b8; margin-bottom: 4px;">نقطه ورود دقیق (Entry)</div>
+            <div style="font-size: 1.15rem; font-weight: 900; color: #38bdf8; font-family: monospace;">$${ms.entry}</div>
+          </div>
+          <div style="background: #0b111e; padding: 12px; border-radius: 8px; border: 1px solid rgba(239, 83, 80, 0.4); text-align: center;">
+            <div style="font-size: 0.74rem; color: #ef5350; margin-bottom: 4px;">حد ضرر ضد هانت (SL)</div>
+            <div style="font-size: 1.15rem; font-weight: 900; color: #ef5350; font-family: monospace;">$${ms.sl}</div>
+          </div>
+          <div style="background: #0b111e; padding: 12px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.4); text-align: center;">
+            <div style="font-size: 0.74rem; color: #00e676; margin-bottom: 4px;">تارگت اول (TP1)</div>
+            <div style="font-size: 1.15rem; font-weight: 900; color: #00e676; font-family: monospace;">$${ms.tp1}</div>
+          </div>
+          <div style="background: #0b111e; padding: 12px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.4); text-align: center;">
+            <div style="font-size: 0.74rem; color: #00e676; margin-bottom: 4px;">تارگت دوم (TP2)</div>
+            <div style="font-size: 1.15rem; font-weight: 900; color: #00e676; font-family: monospace;">$${ms.tp2}</div>
+          </div>
+          <div style="background: #0b111e; padding: 12px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.4); text-align: center;">
+            <div style="font-size: 0.74rem; color: #00e676; margin-bottom: 4px;">تارگت سوم (TP3)</div>
+            <div style="font-size: 1.15rem; font-weight: 900; color: #00e676; font-family: monospace;">$${ms.tp3}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Also sync the smartExecCard widgets below
+    const winEl = document.getElementById('smartWinPct');
+    if (winEl) winEl.innerText = (ms.conviction_score || 90) + '%';
+    const actionEl = document.getElementById('smartActionBadge');
+    if (actionEl) {
+      actionEl.innerText = actionText;
+      actionEl.style.color = badgeColor;
+    }
+  } else {
+    container.innerHTML = `
+      <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <span style="font-size: 32px;">🛡️</span>
+          <div>
+            <div style="font-size: 1.05rem; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">
+              وضعیت بازار: حالت انتظار و حفظ سرمایه (Cash Is A Position)
+            </div>
+            <div style="font-size: 0.84rem; color: #94a3b8; line-height: 1.5;">
+              ${ms.message || 'ستاپ بدون ریسک با تاییدیه ۸ لایه در حال حاضر وجود ندارد. سیستم صبورانه منتظر شکار نقدینگی است.'}
+            </div>
+          </div>
+        </div>
+        <div style="font-size: 0.8rem; background: #0f172a; padding: 8px 16px; border-radius: 8px; border: 1px solid #1e293b; color: #cbd5e1;">
+          ${ms.market_regime || 'رصد پیوسته لیدر بازار BTC'}
+        </div>
+      </div>
+    `;
+  }
+}
+
   const container = document.getElementById('masterSignalLiveCard');
   if (!container) return;
 
