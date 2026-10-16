@@ -7183,16 +7183,21 @@
         'ALL': 'jFilterAll',
         'TP': 'jFilterTp',
         'ACTIVE': 'jFilterActive',
-        'SL': 'jFilterSl',
-        'BREAKEVEN': 'jFilterBe'
+        'SL': 'jFilterSl'
       };
       Object.entries(btns).forEach(([k, btnId]) => {
         const el = document.getElementById(btnId);
         if (el) {
           if (k === status) {
-            el.classList.add('active');
+            el.style.background = '#00e676';
+            el.style.color = '#000';
+            el.style.fontWeight = '800';
+            el.style.borderColor = '#00e676';
           } else {
-            el.classList.remove('active');
+            el.style.background = 'transparent';
+            el.style.color = 'var(--text-muted)';
+            el.style.fontWeight = 'normal';
+            el.style.borderColor = 'var(--border-color)';
           }
         }
       });
@@ -7276,13 +7281,8 @@
         filtered = filtered.filter(r => (r.symbol || '').toUpperCase().includes(query));
       }
 
-      if (!_journalAllRecords || _journalAllRecords.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 32px; color: #94a3b8; font-size: 0.88rem;">✨ ژورنال کاملاً خالی است. هیچ معامله‌ای ثبت نیست. به محض صدور اولین سیگنال، عملکرد به صورت زنده رهگیری خواهد شد.</td></tr>`;
-        return;
-      }
-
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 24px; color: var(--text-dim);">هیچ معامله‌ای با شرایط فیلتر انتخاب‌شده یافت نشد.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 24px; color: var(--text-dim);">هیچ معامله‌ای با شرایط فیلتر انتخاب‌شده یافت نشد.</td></tr>`;
         return;
       }
 
@@ -7310,12 +7310,8 @@
           statusBadge = `<span style="background: rgba(148,163,184,0.2); color: #94a3b8; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">⌛ منقضی شده (خروج)</span>`;
           pnlBadge = `<span style="color: #94a3b8; font-family: var(--font-mono);">0.00%</span>`;
         } else {
-          const floatPnl = Number(r.floating_pnl !== undefined ? r.floating_pnl : (r.pnl_pct || 0));
-          const floatColor = floatPnl >= 0 ? '#00e676' : '#ff3366';
-          const floatSign = floatPnl >= 0 ? '+' : '';
-          const pxLabel = r.cur_price ? ` ($${Number(r.cur_price).toLocaleString(undefined, {maximumFractionDigits: 4})})` : '';
-          statusBadge = `<span style="background: rgba(0,210,255,0.15); color: #00d2ff; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">⚡ در حال پایش لایو${pxLabel}</span>`;
-          pnlBadge = `<span style="color: ${floatColor}; font-weight: 800; font-family: var(--font-mono);">${floatSign}${floatPnl.toFixed(2)}% (شناور)</span>`;
+          statusBadge = `<span style="background: rgba(0,210,255,0.15); color: #00d2ff; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">⚡ در حال پایش لایو</span>`;
+          pnlBadge = `<span style="color: #94a3b8; font-family: var(--font-mono);">در جریان...</span>`;
         }
 
         const cleanSym = String(r.symbol || '').replace(/USDT$/i, '').toUpperCase().trim();
@@ -7352,16 +7348,15 @@
               </div>
             </td>
             <td style="padding: 10px 14px;">
-              ${(r.timeframe === '4h' || (r.signal_type || '').includes('SWING'))
-                ? '<span style="background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid #c084fc; padding: 2px 7px; border-radius: 4px; font-weight: 800; font-size: 0.72rem;">🌊 سوئینگ (4h)</span>'
-                : '<span style="background: rgba(0,210,255,0.2); color: #00d2ff; border: 1px solid #00d2ff; padding: 2px 7px; border-radius: 4px; font-weight: 800; font-size: 0.72rem;">⚡ اسکالپ (15m)</span>'}
+              <span style="background: rgba(255,215,0,0.12); color: #ffd700; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 0.75rem;">
+                ${r.grade || 'A'} (${r.score || 85})
+              </span>
             </td>
             <td style="padding: 10px 14px; color: #fff; font-weight: 600;">${entryFmt}</td>
             <td style="padding: 10px 14px; color: #ff3366; font-weight: 600;">${slFmt}</td>
             <td style="padding: 10px 14px; color: #00e676; font-weight: 600;">${tp1Fmt}</td>
             <td style="padding: 10px 14px; color: #ffd700; font-weight: 600;">${tp2Fmt}</td>
-            <td style="padding: 10px 14px; color: #c084fc; font-weight: 700;">${tp3Fmt}</td>
-            <td style="padding: 10px 14px; color: #ffd700; font-size: 0.74rem; font-weight: 700;">${r.holding_duration || ((r.timeframe === '4h' || (r.signal_type || '').includes('SWING')) ? '۲ الی ۵ روز' : '۳۰ دقیقه الی ۲ ساعت')}</td>
+            <td style="padding: 10px 14px; color: #c084fc; font-weight: 800; text-shadow: 0 0 8px rgba(192, 132, 252, 0.35);">${tp3Fmt}</td>
             <td style="padding: 10px 14px;">${statusBadge}</td>
             <td style="padding: 10px 14px;">${pnlBadge}</td>
             <td style="padding: 10px 14px; color: #cbd5e1; font-size: 0.75rem; direction: ltr; text-align: right;">${r.time_iran || '-'}</td>
@@ -7488,42 +7483,18 @@
     }
 
     async function resetJournalData() {
-      const ok = confirm(`⚠️ اخطار مهم:\nآیا از پاک‌سازی و صفر کردن کامل تمام ژورنال‌ها (اسکالپ و ۴ ساعته) اطمینان دارید؟\nتمام رکوردهای قبلی برای همیشه پاک شده و آمار از صفر آغاز خواهد شد.`);
+      const modeName = (_activeJournalMode === '4h') ? "ژورنال معاملات ۴ ساعته و سوئینگ" : "ژورنال اسکالپ سریع";
+      const ok = confirm(`⚠️ اخطار مهم:\nآیا از پاک‌سازی و صفر کردن کامل ${modeName} اطمینان دارید؟\nتمام رکوردهای قبلی پاک شده و آمار از نو آغاز خواهد شد.`);
       if (!ok) return;
 
-      // Instant UI zero-out
-      const tbody = document.getElementById("journalTableBody");
-      if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 28px; color: var(--text-dim); font-size: 0.85rem;">ژورنال با موفقیت کاملاً پاک‌سازی شد. هیچ معامله‌ای ثبت نیست.</td></tr>`;
-      }
-      const wrEl = document.getElementById("journalWinRate");
-      if (wrEl) wrEl.innerText = "0.0%";
-      const totEl = document.getElementById("journalTotalTrades");
-      if (totEl) totEl.innerText = "0";
-      const tpEl = document.getElementById("journalTpHits");
-      if (tpEl) tpEl.innerText = "0";
-      const slEl = document.getElementById("journalSlHits");
-      if (slEl) slEl.innerText = "0";
-      const beEl = document.getElementById("journalBreakevenHits");
-      if (beEl) beEl.innerText = "0";
-      const netEl = document.getElementById("journalNetPnl");
-      if (netEl) netEl.innerText = "+0.00%";
-      const pnlEl = document.getElementById("journalTotalPnl");
-      if (pnlEl) pnlEl.innerText = "+0.00%";
-      const slPnlEl = document.getElementById("journalTotalSlPnl");
-      if (slPnlEl) slPnlEl.innerText = "-0.00%";
-
-      if (typeof renderJournalEquityCurve === 'function') {
-        renderJournalEquityCurve([100.0, 100.0]);
-      }
-
       try {
-        const res = await fetch("/api/journal/reset-all", { method: "POST" });
+        const resetUrl = (_activeJournalMode === '4h') ? "/api/journal/4h/reset" : "/api/journal/reset";
+        const res = await fetch(resetUrl, { method: "POST" });
         if (!res.ok) throw new Error("Server error");
         const data = await res.json();
         alert(data.message || "ژورنال با موفقیت ریست شد.");
-        await fetchJournalLive();
-        fetchSentinelStatus();
+        fetchJournalLive();
+      fetchSentinelStatus();
       } catch (err) {
         alert("خطا در ریست کردن ژورنال: " + err.message);
       }
@@ -7549,29 +7520,25 @@
 
       if (mode === '4h') {
         if (btn4H) {
-          btn4H.classList.add('active');
-          btn4H.style.background = 'linear-gradient(135deg, #00d2ff, #0077ff)';
-          btn4H.style.color = '#fff';
+          btn4H.style.background = '#00d2ff';
+          btn4H.style.color = '#0a0d14';
           btn4H.style.borderColor = '#00d2ff';
         }
         if (btnScalp) {
-          btnScalp.classList.remove('active');
-          btnScalp.style.background = 'rgba(255, 255, 255, 0.04)';
+          btnScalp.style.background = 'transparent';
           btnScalp.style.color = '#94a3b8';
-          btnScalp.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+          btnScalp.style.borderColor = 'var(--border-color)';
         }
       } else {
         if (btnScalp) {
-          btnScalp.classList.add('active');
-          btnScalp.style.background = 'linear-gradient(135deg, #00e676, #00b34d)';
-          btnScalp.style.color = '#030712';
+          btnScalp.style.background = '#00e676';
+          btnScalp.style.color = '#0a0d14';
           btnScalp.style.borderColor = '#00e676';
         }
         if (btn4H) {
-          btn4H.classList.remove('active');
-          btn4H.style.background = 'rgba(255, 255, 255, 0.04)';
+          btn4H.style.background = 'transparent';
           btn4H.style.color = '#94a3b8';
-          btn4H.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+          btn4H.style.borderColor = 'var(--border-color)';
         }
       }
       fetchJournalLive();
@@ -7596,62 +7563,6 @@
       }
     }
 
-    
-    // =========================================================================
-    // DYNAMIC NEON SVG EQUITY GROWTH CURVE ENGINE
-    // =========================================================================
-    function renderJournalEquityCurve(points) {
-      const svg = document.getElementById("journalEquitySvg");
-      if (!svg) return;
-      if (!points || points.length < 2) {
-        points = [100.0, 100.0];
-      }
-      const min = Math.min(...points) * 0.98;
-      const max = Math.max(...points) * 1.02;
-      const range = (max - min) || 1.0;
-      const w = svg.clientWidth || 800;
-      const h = svg.clientHeight || 125;
-      const padding = 14;
-
-      const coords = points.map((val, idx) => {
-        const x = padding + (idx / (points.length - 1)) * (w - padding * 2);
-        const y = h - padding - ((val - min) / range) * (h - padding * 2);
-        return { x, y, val };
-      });
-
-      const pathD = coords.reduce((acc, c, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`, "");
-      const fillD = `${pathD} L ${coords[coords.length - 1].x.toFixed(1)} ${h} L ${coords[0].x.toFixed(1)} ${h} Z`;
-
-      const isUp = points[points.length - 1] >= points[0];
-      const strokeColor = isUp ? "#00e676" : "#ff3366";
-
-      svg.innerHTML = `
-        <defs>
-          <linearGradient id="eqGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="${strokeColor}" stop-opacity="0.28" />
-            <stop offset="100%" stop-color="${strokeColor}" stop-opacity="0.0" />
-          </linearGradient>
-        </defs>
-        <line x1="${padding}" y1="${(h/2).toFixed(1)}" x2="${w - padding}" y2="${(h/2).toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="4,4" />
-        <path d="${fillD}" fill="url(#eqGrad)" />
-        <path d="${pathD}" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-        ${coords.map(c => `
-          <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3.5" fill="${strokeColor}" stroke="#0b1120" stroke-width="1.5">
-            <title>اکوئیتی: ${c.val.toFixed(2)}</title>
-          </circle>
-        `).join('')}
-      `;
-
-      const peakEl = document.getElementById("equityPeakVal");
-      if (peakEl) peakEl.innerText = Math.max(...points).toFixed(1);
-      const curEl = document.getElementById("equityCurrentVal");
-      if (curEl) {
-        const last = points[points.length - 1];
-        curEl.innerText = last.toFixed(1);
-        curEl.style.color = last >= 100 ? "#00e676" : "#ff3366";
-      }
-    }
-
     async function fetchJournalLive() {
       const tbody = document.getElementById("journalTableBody");
       try {
@@ -7660,7 +7571,7 @@
         const data = await res.json();
         
         if (!data || !data.records) {
-          if (tbody) tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 20px; color: var(--text-dim);">هیچ معامله‌ای تا این لحظه ثبت نشده است.</td></tr>`;
+          if (tbody) tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 20px; color: var(--text-dim);">هیچ معامله‌ای تا این لحظه ثبت نشده است.</td></tr>`;
           return;
         }
 
@@ -7670,9 +7581,6 @@
         document.getElementById("journalTotalTrades").innerText = stats.total_trades || 0;
         document.getElementById("journalTpHits").innerText = stats.tp_hits || 0;
         document.getElementById("journalSlHits").innerText = stats.sl_hits || 0;
-        if (data.equity_curve) {
-          renderJournalEquityCurve(data.equity_curve);
-        }
         const beEl = document.getElementById("journalBreakevenHits");
         if (beEl) beEl.innerText = stats.breakeven_hits || 0;
 
@@ -7701,7 +7609,7 @@
         _journalAllRecords = data.records || [];
         applyJournalFilters();
       } catch (err) {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 20px; color: #ff3366;">خطا در دریافت اطلاعات ژورنال عملکرد.</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 20px; color: #ff3366;">خطا در دریافت اطلاعات ژورنال عملکرد.</td></tr>`;
       }
     }
 
@@ -7751,7 +7659,6 @@
     function filterTabCategory(cat) {
       const pills = {
         'ALL': 'catBtnAll',
-        'ORDERFLOW': 'catBtnOrderflow',
         'INST': 'catBtnInst',
         'TECH': 'catBtnTechnical',
         'EXCH': 'catBtnExchanges',
@@ -7784,8 +7691,7 @@
 
       const hintEl = document.getElementById('activeCategoryHint');
       const hints = {
-        'ALL': 'نمایش تمامی ۲۹ ماژول تحلیلی',
-        'ORDERFLOW': 'فیلتر ۷ ترمینال پیشرفته اردر فلو وال‌استریت، بوک‌مپ، نینجاتریدر و بانک‌ها',
+        'ALL': 'نمایش تمامی ۲۲ ماژول تحلیلی',
         'INST': 'فیلتر ۵ اتاق تحلیل نهادی، هیت‌مپ و کلان',
         'TECH': 'فیلتر ۶ اتاق چارت زنده، اسمارت‌مانی و FVG',
         'EXCH': 'فیلتر ۶ ابزار پایش صرافی‌ها، دکس و مارکت‌مپ',
@@ -7839,8 +7745,9 @@
       } else if (tabId === 'precisionTab') {
         if (currentAnalysis && currentAnalysis.precision_suite) {
           renderPrecisionSuite(currentAnalysis.precision_suite);
+        } else {
+          fetchPrecisionSuite(currentSymbol);
         }
-        fetchPrecisionSuite(currentSymbol);
       } else if (tabId === 'alphaTab') {
         fetchAlphaMatrix();
       } else if (tabId === 'kellyTab') {
@@ -7853,20 +7760,6 @@
         }
       } else if (tabId === 'exchangeTab') {
         fetchExchangeData(currentSymbol);
-      } else if (tabId === 'cryptoBookmapTab') {
-        fetchCryptoBookmap();
-      } else if (tabId === 'cryptoNinjaTab') {
-        fetchCryptoNinja();
-      } else if (tabId === 'cryptoAtasTab') {
-        fetchCryptoAtas();
-      } else if (tabId === 'cryptoQuantowerTab') {
-        fetchCryptoQuantower();
-      } else if (tabId === 'cryptoSierraTab') {
-        fetchCryptoSierra();
-      } else if (tabId === 'cryptoGeopoliticsTab') {
-        fetchCryptoGeopolitics();
-      } else if (tabId === 'cryptoBankReportsTab') {
-        fetchCryptoBankReports();
       }
     }
 
@@ -7941,36 +7834,6 @@
       }
     }
 
-    async function fetchFastPrice(sym) {
-      if (!sym) return;
-      try {
-        const res = await fetch('/api/ticker?symbol=' + encodeURIComponent(sym));
-        const data = await res.json();
-        if (data && data.price > 0) {
-          lastKnownPrice = data.price;
-          const curPriceEl = document.getElementById('currentPrice');
-          if (curPriceEl) curPriceEl.innerText = formatPrice(data.price);
-          document.title = formatPrice(data.price) + ' | ' + sym + ' - ربات ترید هوشمند آسمان';
-
-          const pill = document.getElementById('priceChangePill');
-          if (pill && data.price_change_pct !== undefined) {
-            const ch = Number(data.price_change_pct);
-            const sign = ch >= 0 ? '+' : '';
-            pill.innerText = sign + ch.toFixed(2) + '% (24h)';
-            pill.className = 'price-change-pill ' + (ch >= 0 ? 'pill-green' : 'pill-red');
-          }
-
-          const coinBadge = document.getElementById('coinBadge');
-          if (coinBadge) coinBadge.innerText = sym;
-          const coinSym = document.getElementById('coinSymbol');
-          if (coinSym) coinSym.innerText = sym + '/USDT';
-
-          const heroPrice = document.getElementById('heroLivePrice');
-          if (heroPrice) heroPrice.innerText = formatPrice(data.price);
-        }
-      } catch (e) {}
-    }
-
     function switchSymbol(sym) {
       loadSymbol(sym);
       switchTab('instTab', document.querySelector('.tab-btn'));
@@ -7987,25 +7850,6 @@
       if (heroInp) heroInp.value = currentSymbol;
 
       const dexLabel = document.getElementById('dexCurrentSymbolLabel');
-      
-      // Sync Order Flow Symbols
-      _cryptoBmSym = currentSymbol;
-      _cryptoNtSym = currentSymbol;
-      _cryptoAtasSym = currentSymbol;
-      _cryptoQtSym = currentSymbol;
-      _cryptoScSym = currentSymbol;
-
-      const bmSel = document.getElementById('cryptoBmSymbolSelect');
-      if (bmSel && Array.from(bmSel.options).some(o => o.value === currentSymbol)) bmSel.value = currentSymbol;
-      const ntSel = document.getElementById('cryptoNtSymbolSelect');
-      if (ntSel && Array.from(ntSel.options).some(o => o.value === currentSymbol)) ntSel.value = currentSymbol;
-      const atSel = document.getElementById('cryptoAtasSymbolSelect');
-      if (atSel && Array.from(atSel.options).some(o => o.value === currentSymbol)) atSel.value = currentSymbol;
-      const qtSel = document.getElementById('cryptoQtSymbolSelect');
-      if (qtSel && Array.from(qtSel.options).some(o => o.value === currentSymbol)) qtSel.value = currentSymbol;
-      const scSel = document.getElementById('cryptoScSymbolSelect');
-      if (scSel && Array.from(scSel.options).some(o => o.value === currentSymbol)) scSel.value = currentSymbol;
-
       if (dexLabel) dexLabel.innerText = currentSymbol;
 
       const liqSelect = document.getElementById('liqTerminalSymbolSelect');
@@ -8026,8 +7870,6 @@
         c.classList.toggle('active', c.innerText.trim() === currentSymbol);
       });
 
-      // Fast initial price update (< 80ms)
-      fetchFastPrice(currentSymbol);
       await fetchAnalysis(currentSymbol);
     }
 
@@ -8046,398 +7888,69 @@
       }
     }
 
-    // --- Coin360 Heatmap Engine (50 Elite Cryptos, Multi-Timeframe, Horizontal Scroll) ---
-    let _activeHeatmapTf = '24h';
-
-    function changeHeatmapTimeframe(tf) {
-      _activeHeatmapTf = tf;
-      ['1h', '24h', '7d'].forEach(k => {
-        const btn = document.getElementById(`btnHeatmap${k}`);
-        if (btn) {
-          if (k === tf) {
-            btn.style.background = 'rgba(0, 210, 255, 0.25)';
-            btn.style.borderColor = '#00d2ff';
-            btn.style.color = '#00d2ff';
-          } else {
-            btn.style.background = 'transparent';
-            btn.style.borderColor = 'transparent';
-            btn.style.color = '#94a3b8';
-          }
-        }
-      });
-
-      const topGLabel = document.getElementById('c360TopGainerLabel');
-      const topLLabel = document.getElementById('c360TopLoserLabel');
-      const lbl = tf === '1h' ? '۱ ساعته (1H)' : (tf === '7d' ? '۷ روزه (7D)' : '۲۴ ساعته (24H)');
-      if (topGLabel) topGLabel.innerText = `بیشترین رشد ${lbl}`;
-      if (topLLabel) topLLabel.innerText = `بیشترین اصلاح ${lbl}`;
-
-      fetchHeatmap(_activeHeatmapTf);
-    }
-
-    function scrollHeatmapGrid(delta) {
+    // --- Coin360 Heatmap Engine ---
+    async function fetchHeatmap() {
       const grid = document.getElementById('heatmapGrid');
-      if (grid) {
-        grid.scrollBy({ left: delta, behavior: 'smooth' });
-      }
-    }
-
-    async function fetchHeatmap(tf = _activeHeatmapTf) {
-      const grid = document.getElementById('heatmapGrid');
-      if (grid) {
-        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-dim);">در حال ارتباط با موتور هیت‌مپ ۵۰ ارز برتر به سبک Coin360...</div>';
-      }
+      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-dim);">در حال ارتباط با موتور هیت‌مپ زنده بازار به سبک Coin360...</div>';
       try {
-        const res = await fetch(`/api/heatmap?timeframe=${tf}`);
+        const res = await fetch('/api/heatmap');
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Failed to fetch heatmap');
 
-        const stateEl = document.getElementById('c360MarketState');
-        if (stateEl) stateEl.innerText = `${data.market_state || 'متعادل'} (${data.timeframe_label || tf})`;
-
+        document.getElementById('c360MarketState').innerText = data.market_state || 'متعادل';
         if (data.top_gainer) {
-          const tgEl = document.getElementById('c360TopGainer');
-          if (tgEl) tgEl.innerText = `${data.top_gainer.symbol} (+${data.top_gainer.change_pct}%)`;
+          document.getElementById('c360TopGainer').innerText = `${data.top_gainer.symbol} (+${data.top_gainer.change_pct}%)`;
         }
         if (data.top_loser) {
-          const tlEl = document.getElementById('c360TopLoser');
-          if (tlEl) tlEl.innerText = `${data.top_loser.symbol} (${data.top_loser.change_pct}%)`;
+          document.getElementById('c360TopLoser').innerText = `${data.top_loser.symbol} (${data.top_loser.change_pct}%)`;
         }
 
         const tiles = data.tiles || data.blocks || [];
-        if (grid) {
-          grid.innerHTML = '';
-          tiles.forEach(tile => {
-            const isUp = tile.change_pct >= 0;
-            const isLeader = tile.rank <= 3;
-            const bgRgba = isUp 
-              ? `rgba(0, 230, 118, ${Math.min(0.85, 0.20 + Math.abs(tile.change_pct)/10)})`
-              : `rgba(255, 51, 102, ${Math.min(0.85, 0.20 + Math.abs(tile.change_pct)/10)})`;
-            const borderCol = isUp ? '#00e676' : '#ff3366';
+        grid.innerHTML = '';
+        tiles.forEach(tile => {
+          const isUp = tile.change_pct >= 0;
+          const isLarge = tile.weight >= 20;
+          const bgRgba = isUp 
+            ? `rgba(0, 230, 118, ${Math.min(0.85, 0.20 + Math.abs(tile.change_pct)/12)})`
+            : `rgba(255, 51, 102, ${Math.min(0.85, 0.20 + Math.abs(tile.change_pct)/12)})`;
+          const borderCol = isUp ? '#00e676' : '#ff3366';
 
-            const card = document.createElement('div');
-            card.className = `heatmap-tile ${isLeader ? 'large' : ''}`;
-            card.style.background = bgRgba;
-            card.style.border = `1.5px solid ${borderCol}`;
-            card.style.minWidth = '140px';
-            card.style.borderRadius = '8px';
-            card.style.padding = '10px 12px';
-            card.style.display = 'flex';
-            card.style.flexDirection = 'column';
-            card.style.justifyContent = 'space-between';
-            card.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
-            card.style.cursor = 'pointer';
-            card.style.transition = 'transform 0.15s';
-            card.onmouseover = () => card.style.transform = 'translateY(-2px)';
-            card.onmouseout = () => card.style.transform = 'translateY(0)';
-            card.title = `رتبه ${tile.rank} | کلیک کنید تا تحلیل کامل ${tile.symbol} باز شود`;
-            card.onclick = () => {
-              loadSymbol(tile.symbol);
-              switchTab('instTab', document.querySelector('.tab-btn'));
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              showToast(`نماد ${tile.symbol} برای تحلیل انتخاب شد.`);
-            };
+          const card = document.createElement('div');
+          card.className = `heatmap-tile ${isLarge ? 'large' : ''}`;
+          card.style.background = bgRgba;
+          card.style.border = `1px solid ${borderCol}`;
+          card.title = `کلیک کنید تا تحلیل کامل ${tile.symbol} باز شود`;
+          card.onclick = () => {
+            loadSymbol(tile.symbol);
+            switchTab('instTab', document.querySelector('.tab-btn'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast(`نماد ${tile.symbol} انتخاب شد.`);
+          };
 
-            card.innerHTML = `
-              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div style="display: flex; align-items: baseline; gap: 4px;">
-                  <span style="font-weight: 900; font-size: ${isLeader ? '1.25rem' : '1.05rem'}; color: #fff;">${tile.symbol}</span>
-                  <span style="font-size: 0.65rem; color: #cbd5e1;">#${tile.rank}</span>
-                </div>
-                <span style="font-size: 0.65rem; background: rgba(0,0,0,0.45); padding: 1px 5px; border-radius: 4px; color: #fff;">${tile.volume_fmt || ''}</span>
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <span style="font-weight: 900; font-size: ${isLarge ? '1.5rem' : '1.1rem'}; color: #fff;">${tile.symbol}</span>
+              <span style="font-size: 0.72rem; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; color: #fff;">${tile.volume_fmt || ''}</span>
+            </div>
+            <div style="margin-top: auto; padding-top: 10px;">
+              <div style="font-family: var(--font-mono); font-size: ${isLarge ? '1.25rem' : '0.95rem'}; font-weight: 800; color: #fff;">${formatPrice(tile.price)}</div>
+              <div style="font-size: ${isLarge ? '1.1rem' : '0.9rem'}; font-weight: 800; color: #fff; margin-top: 2px;">
+                ${isUp ? '▲ +' : '▼ '}${tile.change_pct}%
               </div>
-              <div style="margin-top: auto; padding-top: 6px;">
-                <div style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 800; color: #fff;">$${formatPrice(tile.price)}</div>
-                <div style="font-size: 0.82rem; font-weight: 900; color: #fff; margin-top: 2px;">
-                  ${isUp ? '▲ +' : '▼ '}${tile.change_pct}%
-                </div>
-              </div>
-            `;
-            grid.appendChild(card);
-          });
-        }
-      } catch (e) {
-        if (grid) grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #ff3366;">خطا در دریافت هیت‌مپ: ${e.message}</div>`;
-      }
-    }
-
-    // --- Coinlegs Sub-Tab Controller ---
-    let _lastDetectedDiamondGems = [];
-
-    function switchRadarSubTab(view) {
-      const liveSection = document.getElementById('radarLiveSection');
-      const deepSection = document.getElementById('radarDeepSection');
-      const btnLive = document.getElementById('btnRadarViewLive');
-      const btnDeep = document.getElementById('btnRadarViewDeep');
-
-      if (view === 'deep') {
-        if (liveSection) liveSection.style.display = 'none';
-        if (deepSection) deepSection.style.display = 'block';
-        if (btnLive) {
-          btnLive.classList.remove('active');
-          btnLive.style.background = 'transparent';
-          btnLive.style.borderColor = 'rgba(255,255,255,0.15)';
-          btnLive.style.color = '#94a3b8';
-        }
-        if (btnDeep) {
-          btnDeep.classList.add('active');
-          btnDeep.style.background = 'rgba(0, 210, 255, 0.2)';
-          btnDeep.style.borderColor = '#00d2ff';
-          btnDeep.style.color = '#00d2ff';
-        }
-        if (_lastDetectedDiamondGems && _lastDetectedDiamondGems.length > 0) {
-          renderDeepRadarDossier(_lastDetectedDiamondGems);
-        } else {
-          fetchCoinlegsDetections();
-        }
-      } else {
-        if (liveSection) liveSection.style.display = 'block';
-        if (deepSection) deepSection.style.display = 'none';
-        if (btnLive) {
-          btnLive.classList.add('active');
-          btnLive.style.background = 'rgba(255, 215, 0, 0.15)';
-          btnLive.style.borderColor = 'rgba(255, 215, 0, 0.4)';
-          btnLive.style.color = '#ffd700';
-        }
-        if (btnDeep) {
-          btnDeep.classList.remove('active');
-          btnDeep.style.background = 'rgba(0, 210, 255, 0.08)';
-          btnDeep.style.borderColor = 'rgba(0, 210, 255, 0.35)';
-          btnDeep.style.color = '#00d2ff';
-        }
-      }
-    }
-
-
-    function filterRadarDeepDossier(key) {
-      document.querySelectorAll('.dossier-filter-btn').forEach(b => {
-        b.style.background = 'transparent';
-        b.style.borderColor = 'rgba(255,255,255,0.15)';
-        b.style.color = '#cbd5e1';
-      });
-
-      const activeBtn = document.getElementById('dossierBtn_' + key);
-      if (activeBtn) {
-        activeBtn.style.background = key === 'MATRIX' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0, 210, 255, 0.2)';
-        activeBtn.style.borderColor = key === 'MATRIX' ? '#ffd700' : '#00d2ff';
-        activeBtn.style.color = key === 'MATRIX' ? '#ffd700' : '#00d2ff';
-      }
-
-      const allCards = document.querySelectorAll('.dossier-card-item');
-      if (key === 'ALL') {
-        allCards.forEach(c => c.style.display = 'block');
-      } else {
-        allCards.forEach(c => {
-          c.style.display = (c.getAttribute('data-dossier-key') === key) ? 'block' : 'none';
+            </div>
+          `;
+          grid.appendChild(card);
         });
+      } catch (e) {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #ff3366;">خطا در دریافت هیت‌مپ: ${e.message}</div>`;
       }
-    }
-
-    function renderDeepRadarDossier(gems) {
-      const container = document.getElementById('dynamicRadarDossierContainer');
-      if (!container) return;
-
-      if (!gems || gems.length === 0) {
-        container.innerHTML = `
-          <div style="text-align: center; padding: 40px; color: #ffd700; background: rgba(255,215,0,0.05); border: 1px solid rgba(255,215,0,0.2); border-radius: 12px;">
-            <div style="font-size: 1.15rem; font-weight: 800; margin-bottom: 6px;">در حال حاضر هیچ ارزی بالاتر از حد نصاب نمره ۸۰ قرار نگرفته است.</div>
-            <div style="font-size: 0.82rem; color: #94a3b8;">لطفاً روی دکمه «اسکن زنده کل بازار بایننس» کلیک کنید تا فرصت‌های جدید استخراج شوند.</div>
-          </div>
-        `;
-        return;
-      }
-
-      const top3 = gems.slice(0, 3);
-
-      let html = `
-        <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95)); border: 1px solid rgba(0, 210, 255, 0.35); border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px; margin-bottom: 18px;">
-            <div>
-              <div style="font-size: 1.15rem; font-weight: 900; color: #00d2ff; display: flex; align-items: center; gap: 10px;">
-                <span>🔬</span> کالبدشکافی فوق‌تخصصی ۳ الماس لایو رادار (شناسنامه نهادی، هشدارهای پنهان و استراتژی ورود)
-              </div>
-              <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 4px;">
-                تحلیل جامع، موشکافانه و زنده برای ۳ ارز منتخب رادار: <strong style="color: #ffd700;">${top3.map(g => g.symbol).join(' • ')}</strong> | تفکیک کاتالیزورها 🟢، تله‌های مارکت‌میکر 🔴 و دستورالعمل ورود 🛡️
-              </div>
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button onclick="filterRadarDeepDossier('ALL')" id="dossierBtn_ALL" class="copy-btn dossier-filter-btn" style="padding: 6px 14px; font-size: 0.78rem; font-weight: 800; background: rgba(0, 210, 255, 0.2); border-color: #00d2ff; color: #00d2ff;">نمایش هر ۳ ارز</button>
-              ${top3.map((g, idx) => `
-                <button onclick="filterRadarDeepDossier('${g.symbol}')" id="dossierBtn_${g.symbol}" class="copy-btn dossier-filter-btn" style="padding: 6px 14px; font-size: 0.78rem; font-weight: 800; background: transparent; border-color: rgba(255,255,255,0.15); color: #cbd5e1;">الماس ${idx+1}: ${g.symbol}</button>
-              `).join('')}
-              <button onclick="filterRadarDeepDossier('MATRIX')" id="dossierBtn_MATRIX" class="copy-btn dossier-filter-btn" style="padding: 6px 14px; font-size: 0.78rem; font-weight: 800; background: transparent; border-color: #ffd700; color: #ffd700;">📊 جدول مقایسه جامع</button>
-            </div>
-          </div>
-      `;
-
-      top3.forEach((g, idx) => {
-        const isNo1 = idx === 0;
-        const rankColor = isNo1 ? '#ffd700' : (idx === 1 ? '#00e676' : '#00d2ff');
-        const pFmt = formatPrice(g.price);
-        const slFmt = formatPrice(g.sl_price);
-        const tp1Fmt = formatPrice(g.tp1_price);
-        const tp2Fmt = formatPrice(g.tp2_price);
-
-        let reasons = [];
-        let traps = [];
-        let execution = "";
-        let riskLevel = "متوسط";
-        let magnetFmt = "";
-
-        if (g.symbol === 'ENA') {
-          reasons = [
-            "<strong>۱. شکست ساختار در تایم ۴ ساعته (4H BOS):</strong> ENA توانسته سقف تثبیت چند روزه خود را در تایم‌فریم ۴ ساعته به سمت بالا بشکند و ساختار روند (Market Structure) آن کاملاً صعودی است.",
-            "<strong>۲. فشردگی فنر نوسان (Volatility Squeeze = 2.2%):</strong> پهنای باندهای بولینگر و ATR فشرده شده‌اند؛ یعنی انرژی نوسانی بازار درون یک باکس متراکم شده و در آستانه باز شدن فنر (Expansion) قرار دارد.",
-            "<strong>۳. قدرت آلفا نسبت به بیت‌کوین (+2.06% Alpha RS):</strong> در شرایطی که بیت‌کوین درجا می‌زند، ENA نرخ رشد بهتری ثبت کرده و ورود نقدینگی فعال دارد.",
-            `<strong>۴. گردش مالی بالا:</strong> حجم ۲۴ ساعته بیش از ${g.volume_usd_fmt || '$24M'} نقدشوندگی بسیار روانی به آن می‌دهد.`
-          ];
-          traps = [
-            "<strong>مگنت نقدینگی منفی است ($0.2204؛ یعنی -3.5% پایین‌تر):</strong> این یک هشدار کلیدی است! تعداد زیادی خریدار اهرم‌دار تازه‌وارد در قیمت‌های فعلی سوار شده‌اند و استخرهای لیکوئیدیشن آن‌ها زیر $0.224 قرار دارد. اگر مارکت‌میکر قبل از صعود بخواهد استاپ‌ها را بزند، ابتدا یک شدوی نزولی به سمت $0.221-$0.223 خواهد زد.",
-            `<strong>شاخص RSI روی ${g.rsi || 68.6} است:</strong> به مرز اشباع خرید نزدیک شده و خرید در سقف فعلی ریسک اصلاح زودهنگام دارد.`
-          ];
-          execution = `به هیچ عنوان نباید با قیمت مارکت (FOMO) وارد شد. منطقی‌ترین ورود، کاشتن لیمیت اردر در محدوده پولبک <strong style="color: #38bdf8;">$0.222 تا $0.225</strong> با حد ضرر پشت کف حمایتی (<strong style="color: #ff3366;">$0.218</strong>) و تارگت اول <strong style="color: #00e676;">$0.232</strong> و تارگت دوم <strong style="color: #00e676;">$0.239</strong> است.`;
-          riskLevel = "⚠️ متوسط تا زیاد (نیاز به ورود در پولبک)";
-          magnetFmt = "$0.220 (نزولی 🔻)";
-        } else if (g.symbol === 'RLC') {
-          reasons = [
-            "<strong>۱. آهنربای جذب صعودی (Bullish Magnet در $1.079):</strong> مگنت نقدینگی ۳.۵٪ بالاتر از قیمت فعلی است. بالای سطح ۱.۰۷ دلار استخر بزرگی از استاپ‌های فروشندگان شورت قرار دارد که مثل یک آهنربا قیمت را به بالا می‌کشد (Short Squeeze).",
-            `<strong>۲. سپر بتنی خریداران سازمانی:</strong> میانگین خرید نهنگ‌ها روی <strong style="color: #38bdf8;">$0.994</strong> محاسبه شده است. محدوده ۱.۰۰ تا ۱.۰۲ دلار چندین بار توسط خریداران با حجم سنگین جذب (Absorb) شده است.`,
-            "<strong>۳. سابقه شکار نقدینگی (Turtle Soup):</strong> این ارز سابقه شدوی بلند نقدینگی و سپس رسیدن به تارگت دوم را دارد؛ یعنی بازیگر ابتدا کف‌سازی و شکار نقدینگی می‌کند، سپس حرکت اصلی را کلید می‌زند."
-          ];
-          traps = [
-            "<strong>طبیعت شدوزن و استاپ‌هانتر (High-Wick Spikes):</strong> مارکت‌میکر RLC علاقه عجیبی به زدن استاپ‌های نزدیک دارد. اگر حد ضرر شما تنگ (مثلاً زیر ۱.۵٪) باشد، ۱۰۰٪ با یک شدو استاپ اوت می‌شوید و بعد می‌بینید قیمت به تارگت ۲ رفته است!"
-          ];
-          execution = `ورود در قیمت فعلی (<strong style="color: #38bdf8;">${pFmt}</strong>) با <strong style="color: #ff3366;">حد ضرر پهن و منطقی در $1.012</strong> (پشت کف ساختاری) و تارگت اول <strong style="color: #00e676;">$1.059</strong> و تارگت دوم <strong style="color: #00e676;">$1.085</strong>.`;
-          riskLevel = "⚠️ متوسط (خطر شدوی استاپ‌هانتر)";
-          magnetFmt = "$1.079 (صعودی 🟢)";
-        } else if (g.symbol === 'AVAX') {
-          reasons = [
-            "<strong>۱. لارج‌کپ با عمق دفتر سفارشات واقعی (High Order Book Depth):</strong> برخلاف آلت‌کوین‌های کوچک، آواکس دفتر سفارشات ضخیمی در بایننس و کوین‌بیس دارد و اسلیپیج یا تکان‌های بی‌پشتوانه ندارد.",
-            "<strong>۲. مگنت لیکوئیدیشن در $11.15 (+3.5% صعودی):</strong> حجم قابل توجهی از پوزیشن‌های شورت با اهرم‌های ۲۵x و ۵۰x بالای مقاومت ۱۱ دلاری جمع شده‌اند که شکست ۱۱ دلار می‌تواند جهش سریعی به $11.30 ایجاد کند.",
-            "<strong>۳. ریسک به ریوارد متوازن (1:2.1):</strong> فاصله ورود تا استاپ حدود ۲٪ ($10.46) در برابر تارگت‌های $10.95 و $11.29 است که تناسب ریاضی درستی دارد."
-          ];
-          traps = [
-            "<strong>همبستگی شدید (Beta) با بیت‌کوین:</strong> آواکس استقلال حرکتی زیادی ندارد. اگر بیت‌کوین زیر ۸۲,۵۰۰ دلار فشار فروش بگیرد، آواکس به راحتی حمایت ۱۰.۶۰ را از دست می‌دهد و به سمت استخرهای لانگ در ۱۰.۲۰ دلار سر می‌خورد."
-          ];
-          execution = `مناسب برای افرادی که اهل نوسانات شدید میم‌کوین‌ها نیستند؛ ورود ترجیحاً بین <strong style="color: #38bdf8;">$10.65 تا $10.75</strong> با استاپ <strong style="color: #ff3366;">$10.46</strong> و تارگت‌های اول <strong style="color: #00e676;">$10.95</strong> و دوم <strong style="color: #00e676;">$11.29</strong>.`;
-          riskLevel = "🛡️ کم تا متعادل (بسته به جهت بیت‌کوین)";
-          magnetFmt = "$11.15 (صعودی 🟢)";
-        } else {
-          const alphaSign = (g.alpha_rs || 0) >= 0 ? '+' : '';
-          reasons = [
-            `<strong>۱. شکست و تثبیت ساختار ۴ ساعته (4H BOS):</strong> وضعیت ساختار روند کلان برابر با <strong style="color: #00e676;">${g.trend_4h_fa || 'صعودی'}</strong> است و قیمت بالاتر از میانگین‌های متحرک ۴ ساعته معامله می‌شود.`,
-            `<strong>۲. قدرت آلفا نسبت به بیت‌کوین (${alphaSign}${g.alpha_rs || 0}% Alpha RS):</strong> این نماد شتاب صعودی قوی‌تری از بیت‌کوین ثبت کرده و ورود نقدینگی فعال دارد.`,
-            `<strong>۳. سوخت نقدینگی و مومنتوم:</strong> گردش معاملات ۲۴ ساعته برابر با <strong style="color: #ffd700;">${g.volume_usd_fmt || '-'}</strong> و امتیاز رشد سیستم ${g.growth_score || 85}/100 می‌باشد.`
-          ];
-          traps = [
-            `<strong>خطر بازگشت ناگهانی در صورت اصلاح بیت‌کوین:</strong> مانند اکثر آلت‌کوین‌ها، تداوم صعود مستلزم حفظ ساختار صعودی بیت‌کوین است.`,
-            `<strong>اشباع مومنتوم مقطعی (RSI = ${g.rsi || 55}):</strong> ورود در قیمت بالا بدون پولبک خطر شدوی منفی موقت دارد.`
-          ];
-          execution = `ورود بهینه در پولبک در محدوده <strong style="color: #38bdf8;">${g.entry_zone || pFmt}</strong> با حد ضرر <strong style="color: #ff3366;">${slFmt} (-${g.sl_pct || 2.5}%)</strong> و تارگت‌های اول <strong style="color: #00e676;">${tp1Fmt}</strong> و دوم <strong style="color: #00e676;">${tp2Fmt}</strong>.`;
-          riskLevel = (g.sl_pct || 2.5) > 3.0 ? "⚠️ متوسط تا بالا" : "🛡️ متعادل و منطقی";
-          magnetFmt = "هم‌سو با تارگت ۲";
-        }
-
-        g._dossier = { reasons, traps, execution, riskLevel, magnetFmt };
-
-        html += `
-          <div id="dossierCard_${g.symbol}" class="dossier-card-item" data-dossier-key="${g.symbol}" style="background: rgba(15, 23, 42, 0.75); border: 1px solid ${rankColor}55; border-radius: 10px; padding: 18px; margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="background: ${rankColor}; color: #000; font-weight: 900; font-size: 0.82rem; padding: 4px 10px; border-radius: 6px;">الماس ${idx+1}</span>
-                <h3 style="margin: 0; font-size: 1.25rem; font-weight: 900; color: #fff;">ارز ${g.symbol} <span style="color: #94a3b8; font-size: 0.9rem;">- ${g.pair || (g.symbol + 'USDT')}</span></h3>
-              </div>
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 1.15rem; font-weight: 800; color: #00e676; font-family: var(--font-mono);">قیمت زنده: ${pFmt}</span>
-                <button onclick="loadSymbol('${g.symbol}'); switchTab('instTab', document.querySelector('.tab-btn')); window.scrollTo({top:0, behavior:'smooth'});" class="copy-btn" style="padding: 5px 12px; font-size: 0.76rem; background: rgba(0, 230, 118, 0.2); border-color: #00e676; color: #00e676;">⚡ تحلیل ۳۶۰ درجه ${g.symbol}</button>
-              </div>
-            </div>
-
-            <!-- 🟢 Bullish Catalysts -->
-            <div style="background: rgba(0, 230, 118, 0.06); border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
-              <strong style="color: #00e676; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
-                <span>🟢</span> دلایلی که رادار آن را صعودی و مستعد جهش دیده است:
-              </strong>
-              <ul style="margin: 0; padding-right: 20px; line-height: 1.85; font-size: 0.83rem; color: #e2e8f0;">
-                ${reasons.map(r => `<li>${r}</li>`).join('')}
-              </ul>
-            </div>
-
-            <!-- 🔴 Hidden Traps -->
-            <div style="background: rgba(255, 51, 102, 0.06); border: 1px solid rgba(255, 51, 102, 0.25); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
-              <strong style="color: #ff3366; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
-                <span>🔴</span> تله‌ها و خطرات پنهان ${g.symbol} (ایراداتی که تریدر حتماً باید بداند):
-              </strong>
-              <ul style="margin: 0; padding-right: 20px; line-height: 1.85; font-size: 0.83rem; color: #e2e8f0;">
-                ${traps.map(t => `<li>${t}</li>`).join('')}
-              </ul>
-            </div>
-
-            <!-- 🛡️ Trader Execution Protocol -->
-            <div style="background: rgba(0, 210, 255, 0.06); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px; padding: 12px 14px;">
-              <strong style="color: #00d2ff; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                <span>🛡️</span> جمع‌بندی ترید و دستورالعمل ورود ${g.symbol}:
-              </strong>
-              <div style="font-size: 0.83rem; line-height: 1.8; color: #cbd5e1;">
-                ${execution}
-              </div>
-            </div>
-          </div>
-        `;
-      });
-
-      // Comparison Matrix Table
-      html += `
-        <div id="dossierCard_MATRIX" class="dossier-card-item" data-dossier-key="MATRIX" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 215, 0, 0.35); border-radius: 10px; padding: 18px;">
-          <div style="font-size: 1.05rem; font-weight: 800; color: #ffd700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-            <span>📊</span> مقایسه خلاصه و ماتریس تصمیم‌گیری معامله‌گر برای ۳ ارز منتخب لایو رادار:
-          </div>
-          <div style="overflow-x: auto;">
-            <table class="crypto-table" style="width: 100%; font-size: 0.82rem; text-align: center;">
-              <thead>
-                <tr style="background: rgba(255,255,255,0.05);">
-                  <th style="text-align: right; padding: 10px;">ارز</th>
-                  <th>قیمت فعلی</th>
-                  <th>استاپ‌لاس پیشنهادی</th>
-                  <th>تارگت اول / دوم</th>
-                  <th>مگنت قیمت</th>
-                  <th>میزان و نوع ریسک پنهان</th>
-                  <th>استراتژی کلیدی ورود</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${top3.map((g, idx) => {
-                  const d = g._dossier || {};
-                  const col = idx === 0 ? '#ffd700' : (idx === 1 ? '#00e676' : '#00d2ff');
-                  return `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                      <td style="text-align: right; padding: 12px; font-weight: 800; color: ${col};">
-                        ${idx === 0 ? '👑' : (idx === 1 ? '⭐' : '✨')} ${g.symbol}
-                      </td>
-                      <td style="font-family: var(--font-mono); font-weight: 700;">${formatPrice(g.price)}</td>
-                      <td style="color: #ff3366; font-family: var(--font-mono); font-weight: 700;">${formatPrice(g.sl_price)}</td>
-                      <td style="color: #00e676; font-family: var(--font-mono); font-weight: 700;">${formatPrice(g.tp1_price)} / ${formatPrice(g.tp2_price)}</td>
-                      <td style="color: #ffd166; font-family: var(--font-mono);">${d.magnetFmt || '-'}</td>
-                      <td><span style="background: rgba(255,152,0,0.18); color: #ffa726; padding: 3px 8px; border-radius: 4px; font-weight: 700;">${d.riskLevel}</span></td>
-                      <td style="color: #38bdf8; font-size: 0.78rem;">${d.execution ? d.execution.replace(/<[^>]+>/g, '').slice(0, 75) + '...' : '-'}</td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        </div>
-      `;
-
-      container.innerHTML = html;
     }
 
     // --- Coinlegs Scanner Engine ---
     async function fetchCoinlegsDetections() {
       const tbody = document.getElementById('detectionsTbody');
       const gemsGrid = document.getElementById('diamondGemsGrid');
-      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">در حال اسکن همزمان ۵۰ نماد برتر با ۶ فیلتر کوانتومی و ۴ لایه ارتقای دقت (گارد روندی BTC، تله فاندینگ‌ریت و جذب CVD)...</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">در حال اسکن همزمان ۷۰ نماد برتر با ۶ فیلتر کوانتومی (قدرت نسبی به BTC، شکست فنر بولینگر و اردر فلو)...</td></tr>';
       if (gemsGrid) gemsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #ffd700;">در حال شناسایی و اعتبارسنجی ۳ کاندیدای پرواز الماسی...</div>';
       
       try {
@@ -8447,13 +7960,11 @@
 
         const statsEl = document.getElementById('coinlegsFilterStats');
         if (statsEl) {
-          statsEl.innerText = `${data.total_scanned || 50} نماد ارزیابی شد | ${data.neutral_filtered || 0} نماد فاقد مومنتوم فیلتر شد | ${data.high_conviction_count || 0} فرصت الیت با ۳ الماس لیدر استخراج شد`;
+          statsEl.innerText = `${data.total_scanned || 70} نماد ارزیابی شد | ${data.neutral_filtered || 0} نماد خنثی حذف شد | ${data.high_conviction_count || 0} فرصت الیت با ۳ الماس لیدر استخراج شد`;
         }
 
         // 1. Render Top 3 Diamond Gems Spotlight
         const gems = data.diamond_gems || [];
-        _lastDetectedDiamondGems = gems;
-        renderDeepRadarDossier(gems);
         if (gemsGrid) {
           if (gems.length === 0) {
             gemsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 18px; color: var(--text-dim); background: rgba(255,255,255,0.02); border-radius: 8px;">در این کندل هیچ نمادی نمره الیت بالای ۸۰ کسب نکرده است (بازار در فشردگی کامل).</div>';
@@ -8488,7 +7999,6 @@
                       <span style="font-size: 0.74rem; font-weight: 800; background: rgba(255, 215, 0, 0.2); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.4); padding: 3px 8px; border-radius: 4px;">
                         امتیاز رشد: ${g.growth_score}/100
                       </span>
-                      ${g.accuracy_grade ? `<span style="font-size: 0.74rem; font-weight: 800; background: rgba(0, 230, 118, 0.18); color: #00e676; border: 1px solid #00e676; padding: 3px 8px; border-radius: 4px;">${g.accuracy_grade}</span>` : ''}
                       <span style="font-size: 0.74rem; font-weight: 700; background: ${g.alpha_rs >= 0 ? 'rgba(0, 230, 118, 0.18)' : 'rgba(255, 51, 102, 0.18)'}; color: ${g.alpha_rs >= 0 ? '#00e676' : '#ff3366'}; border: 1px solid ${g.alpha_rs >= 0 ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 51, 102, 0.35)'}; padding: 3px 8px; border-radius: 4px;">
                         آلفا به BTC: ${g.alpha_rs >= 0 ? '+' : ''}${g.alpha_rs}%
                       </span>
@@ -8767,42 +8277,21 @@
       // 1. Liquidations
       if (suite.liquidations) {
         const l = suite.liquidations;
-        const totalLongsEl = document.getElementById('liqTotalLongs');
-        if (totalLongsEl) totalLongsEl.innerText = l.total_long_liq_fmt || '$0.0M';
-        const totalShortsEl = document.getElementById('liqTotalShorts');
-        if (totalShortsEl) totalShortsEl.innerText = l.total_short_liq_fmt || '$0.0M';
-        
-        const magVal = (l.magnet_price !== undefined && l.magnet_price !== null && !isNaN(Number(l.magnet_price)))
-          ? formatPrice(l.magnet_price)
-          : (lastKnownPrice ? formatPrice(lastKnownPrice) : '$0.00');
+        document.getElementById('liqTotalLongs').innerText = l.total_long_liq_fmt || '$0.0M';
+        document.getElementById('liqTotalShorts').innerText = l.total_short_liq_fmt || '$0.0M';
+        document.getElementById('liqMagnetPrice').innerText = formatPrice(l.magnet_price);
+        document.getElementById('liqMagnetDist').innerText = `فاصله: ${l.magnet_distance_pct > 0 ? '+' : ''}${l.magnet_distance_pct}% (${l.magnet_direction === 'BULLISH_MAGNET' ? 'بالای قیمت' : 'پایین قیمت'})`;
 
-        const magPriceEl = document.getElementById('liqMagnetPrice');
-        if (magPriceEl) magPriceEl.innerText = magVal;
-        const termMagEl = document.getElementById('terminalLiqMagnetPrice');
-        if (termMagEl) termMagEl.innerText = magVal;
-
-        const magDistEl = document.getElementById('liqMagnetDist');
-        if (magDistEl) {
-          const dVal = (l.magnet_distance_pct !== undefined && l.magnet_distance_pct !== null) ? Number(l.magnet_distance_pct) : 0;
-          const sign = dVal > 0 ? '+' : '';
-          const dirPersian = l.magnet_direction === 'BULLISH_MAGNET' ? 'بالای قیمت' : 'پایین قیمت';
-          magDistEl.innerText = `فاصله: ${sign}${dVal.toFixed(2)}% (${dirPersian})`;
+        const cBadge = document.getElementById('liqCascadeBadge');
+        if (l.cascade_warning) {
+          cBadge.style.background = 'rgba(255, 51, 102, 0.2)';
+          cBadge.style.color = '#ff3366';
+          cBadge.innerText = '⚠️ هشدار شکست آبشاری لیکوئیدیشن';
+        } else {
+          cBadge.style.background = 'rgba(0, 230, 118, 0.15)';
+          cBadge.style.color = '#00e676';
+          cBadge.innerText = 'محدوده باثبات و نرمال';
         }
-
-        const updateCascadeBadge = (badgeEl) => {
-          if (!badgeEl) return;
-          if (l.cascade_warning) {
-            badgeEl.style.background = 'rgba(255, 51, 102, 0.2)';
-            badgeEl.style.color = '#ff3366';
-            badgeEl.innerText = '⚠️ هشدار شکست آبشاری لیکوئیدیشن';
-          } else {
-            badgeEl.style.background = 'rgba(0, 230, 118, 0.15)';
-            badgeEl.style.color = '#00e676';
-            badgeEl.innerText = 'محدوده باثبات و نرمال';
-          }
-        };
-        updateCascadeBadge(document.getElementById('liqCascadeBadge'));
-        updateCascadeBadge(document.getElementById('terminalLiqCascadeBadge'));
 
         const longList = document.getElementById('longClustersList');
         longList.innerHTML = '';
@@ -9341,41 +8830,22 @@
 
         // 1. Render Column 1: Liquidation Heatmap
         const pDecimals = (data.current_price < 1) ? 6 : ((data.current_price < 10) ? 4 : 2);
-        const magVal = (liq.magnet_price !== undefined && liq.magnet_price !== null && !isNaN(Number(liq.magnet_price)))
-          ? `$${Number(liq.magnet_price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}`
-          : (data.current_price ? `$${Number(data.current_price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}` : "-");
+        const magEl = document.getElementById("liqMagnetPrice");
+        if (magEl) magEl.innerText = liq.magnet_price ? `$${Number(liq.magnet_price).toLocaleString(undefined, {minimumFractionDigits: pDecimals, maximumFractionDigits: pDecimals})}` : "-";
 
-        const magEl = document.getElementById("terminalLiqMagnetPrice");
-        if (magEl) magEl.innerText = magVal;
-        const precMagEl = document.getElementById("liqMagnetPrice");
-        if (precMagEl) precMagEl.innerText = magVal;
-
-        const dirEl = document.getElementById("terminalLiqMagnetDir");
+        const dirEl = document.getElementById("liqMagnetDir");
         if (dirEl) {
           const isBull = liq.magnet_direction === "BULLISH_MAGNET";
           dirEl.innerText = isBull ? "🟢 مگنت صعودی (جذب به سمت استخر شورت‌ها)" : "🔴 مگنت نزولی (جذب به سمت استخر لانگ‌ها)";
           dirEl.style.color = isBull ? "#00e676" : "#ff3366";
         }
 
-        const riskEl = document.getElementById("terminalLiqTotalRisk");
+        const riskEl = document.getElementById("liqTotalRisk");
         if (riskEl) {
           riskEl.innerText = `لانگ: ${liq.total_long_liq_fmt || "-"} | شورت: ${liq.total_short_liq_fmt || "-"}`;
         }
 
-        const cascadeEl = document.getElementById("terminalLiqCascadeBadge");
-        if (cascadeEl) {
-          if (liq.cascade_warning) {
-            cascadeEl.style.background = "rgba(255, 51, 102, 0.2)";
-            cascadeEl.style.color = "#ff3366";
-            cascadeEl.style.borderColor = "rgba(255, 51, 102, 0.4)";
-            cascadeEl.innerText = "⚠️ ریسک شکست آبشاری";
-          } else {
-            cascadeEl.style.background = "rgba(0, 230, 118, 0.15)";
-            cascadeEl.style.color = "#00e676";
-            cascadeEl.style.borderColor = "rgba(0, 230, 118, 0.3)";
-            cascadeEl.innerText = "محدوده باثبات و نرمال";
-          }
-        }
+        const cascadeEl = document.getElementById("liqCascadeBadge");
                 // Update Visual Pull Gauge
         const shortPullBar = document.getElementById("liqShortPullBar");
         const longPullBar = document.getElementById("liqLongPullBar");
@@ -10710,34 +10180,30 @@
 
       const overlay = document.getElementById('loadingOverlay');
       if (overlay) overlay.style.display = 'flex';
-      let attempt = 0;
-      let lastErr = null;
-      while (attempt < 2) {
-        attempt++;
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 45000);
-          const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symClean)}`, { signal: controller.signal });
-          clearTimeout(timeoutId);
-          const data = await res.json();
-          if (data.success) {
-            currentAnalysis = data;
-            _clientAnalysisCache.set(symClean, { data, timestamp: Date.now() });
-            renderDashboard(data);
-            hideConnectionNotice();
-            if (overlay) overlay.style.display = 'none';
-            return;
-          } else {
-            lastErr = data.error || 'پاسخ ناموفق از سرور';
-          }
-        } catch (err) {
-          lastErr = err.message || 'عدم دریافت پاسخ از سرور';
-          console.warn(`API fetch attempt ${attempt} notice:`, err);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 35000);
+        const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symClean)}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await res.json();
+        if (data.success) {
+          currentAnalysis = data;
+          // Store in client cache
+          _clientAnalysisCache.set(symClean, { data, timestamp: Date.now() });
+          renderDashboard(data);
+          hideConnectionNotice();
+          return;
+        } else {
+          showToast(data.error || 'خطا در واکشی اطلاعات ارز');
+          showConnectionNotice(data.error || 'پاسخ ناموفق از سرور', symClean);
         }
+      } catch (err) {
+        console.warn('API fetch notice:', err);
+        showConnectionNotice(err.message || 'عدم دریافت پاسخ از سرور', symClean);
+        showToast('خطا در دریافت داده زنده. لطفاً اینترنت را بررسی کرده و روی تلاش مجدد کلیک کنید.');
+      } finally {
+        if (overlay) overlay.style.display = 'none';
       }
-      if (overlay) overlay.style.display = 'none';
-      showConnectionNotice(lastErr || 'عدم دریافت پاسخ از سرور', symClean);
-      showToast('ارتباط با سرور کند است یا داده با تاخیر مواجه گردید. مجدداً روی نماد یا تلاش مجدد کلیک کنید.');
     }
 
     function showConnectionNotice(errMsg, sym) {
@@ -11915,60 +11381,29 @@ ${s3d.action_advice || ''}
       }
     }
 
-    async function dispatchTelegramSignal(sigType = 'scalp') {
-      const sym = (currentAnalysis ? currentAnalysis.symbol : (typeof _cryptoBmSym !== 'undefined' ? _cryptoBmSym : 'BTC'));
-      const token = (document.getElementById('tgBotToken') ? document.getElementById('tgBotToken').value : '') || '';
-      const chat = (document.getElementById('tgChatId') ? document.getElementById('tgChatId').value : '') || '';
-      showToast('در حال مخابره سیگنال سازمانی به تلگرام و ثبت در ژورنال...');
+    async function dispatchTelegramSignal() {
+      if (!currentAnalysis) return;
+      const token = document.getElementById('tgBotToken').value;
+      const chat = document.getElementById('tgChatId').value;
+      showToast('در حال مخابره سیگنال سازمانی به تلگرام...');
       try {
         const res = await fetch('/api/telegram/send', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
-            symbol: sym,
+            symbol: currentAnalysis.symbol,
             bot_token: token,
-            chat_id: chat,
-            signal_type: sigType
+            chat_id: chat
           })
         });
         const data = await res.json();
         if (data.success) {
-          showToast(data.message || 'سیگنال به تلگرام ارسال شد و در ژورنال هوشمند ثبت گردید!');
-          fetchJournalLive();
+          showToast(data.message || 'سیگنال به تلگرام ارسال شد!');
         } else {
           showToast(data.error || 'خطا در ارسال به تلگرام');
         }
       } catch (err) {
         showToast('خطا در اتصال: ' + err.message);
-      }
-    }
-
-    async function dispatchSpecificSignal(sigType) {
-      const sym = typeof _cryptoBmSym !== 'undefined' ? _cryptoBmSym : (currentAnalysis ? currentAnalysis.symbol : 'BTC');
-      const token = (document.getElementById('tgBotToken') ? document.getElementById('tgBotToken').value : '') || '';
-      const chat = (document.getElementById('tgChatId') ? document.getElementById('tgChatId').value : '') || '';
-      const title = sigType === 'swing' ? 'سوئینگ (4H)' : 'اسکالپ (15M)';
-      showToast(`در حال ارسال سیگنال ${title} به تلگرام و ثبت در ژورنال...`);
-      try {
-        const res = await fetch('/api/telegram/send', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            symbol: sym,
-            bot_token: token,
-            chat_id: chat,
-            signal_type: sigType
-          })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast(`سیگنال ${title} [${sym}] با موفقیت در تلگرام و ژورنال ثبت شد!`);
-          fetchJournalLive();
-        } else {
-          showToast(data.error || 'خطا در ارسال سیگنال');
-        }
-      } catch (err) {
-        showToast('خطا در ارتباط با سرور: ' + err.message);
       }
     }
 
@@ -12932,127 +12367,17 @@ ${s3d.action_advice || ''}
       } catch (e) {}
     }
 
-
-    // =========================================================================
-    // SMART ARBITER GATEKEEPER FRONTEND LOGIC
-    // =========================================================================
-    async function fetchArbiterStatusLive() {
-      try {
-        const res = await fetch('/api/arbiter/status');
-        if (!res.ok) return;
-        const data = await res.json();
-        
-        // Update audit count
-        const countBadge = document.getElementById('arbiterAuditCountBadge');
-        if (countBadge && data.stats) {
-          countBadge.innerText = 'کل ممیزی‌ها: ' + (data.stats.audited_total || 0) + ' | تایید A+: ' + (data.stats.approved_a_plus || 0) + ' | رد شده: ' + ((data.stats.audited_total || 0) - (data.stats.approved_a_plus || 0));
-        }
-
-        // Render table body
-        const tbody = document.getElementById('arbiterLogTableBody');
-        if (tbody) {
-          const logs = data.audit_log || [];
-          if (logs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--text-dim);">هیچ ممیزی جدیدی ثبت نشده است. دروازه‌بان در حال پایش فعال است.</td></tr>';
-          } else {
-            tbody.innerHTML = logs.map(l => {
-              const isApproved = l.approved;
-              const badgeBg = isApproved ? 'rgba(0, 230, 118, 0.15)' : 'rgba(255, 51, 102, 0.15)';
-              const badgeBorder = isApproved ? '#00e676' : '#ff3366';
-              const badgeText = isApproved ? '#00e676' : '#ff3366';
-              const badgeLabel = isApproved ? 'تایید شد (A+)' : 'رد شد';
-
-              return '<tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">' +
-                '<td style="padding: 10px 14px; font-family: var(--font-mono); color: var(--text-muted);">' + (l.time || '--:--') + '</td>' +
-                '<td style="padding: 10px 14px; font-weight: 800; color: #ffd700;">#' + l.symbol + '</td>' +
-                '<td style="padding: 10px 14px; color: #38bdf8; font-size: 0.72rem;">' + (l.source || 'SYSTEM') + '</td>' +
-                '<td style="padding: 10px 14px;">' +
-                  '<span style="background: ' + badgeBg + '; border: 1px solid ' + badgeBorder + '; color: ' + badgeText + '; padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.72rem;">' +
-                    badgeLabel +
-                  '</span>' +
-                '</td>' +
-                '<td style="padding: 10px 14px; color: ' + (isApproved ? '#00e676' : 'var(--text-dim)') + '; line-height: 1.4;">' +
-                  (l.reason || '') +
-                '</td>' +
-              '</tr>';
-            }).join('');
-          }
-        }
-      } catch (e) {
-        console.warn('Error fetching arbiter status:', e);
-      }
-    }
-
-    async function runArbiterAuditOnDemand() {
-      const inp = document.getElementById('arbiterAuditInput');
-      const box = document.getElementById('arbiterAuditResultBox');
-      const sym = inp ? inp.value.trim().toUpperCase() : 'BTC';
-      if (!sym) return;
-
-      if (box) box.innerHTML = '<span style="color: #00d2ff;">⏳ در حال ممیزی ۵ تله وال‌استریت و آنالیز اردربوک...</span>';
-
-      try {
-        const res = await fetch('/api/arbiter/audit?symbol=' + encodeURIComponent(sym), { method: 'POST' });
-        const data = await res.json();
-        if (!data.success) {
-          if (box) box.innerHTML = '<span style="color: #ff3366;">خطا: ' + (data.error || 'پاسخ ناموفق') + '</span>';
-          return;
-        }
-
-        const v = data.verdict;
-        if (v.approved) {
-          const s = v.setup;
-          box.innerHTML = 
-            '<div style="color: #00e676; font-weight: 800; margin-bottom: 6px;">✅ تایید شد: سیگنال طلایی گرید A+ صادر شد</div>' +
-            '<div style="font-size: 0.78rem; line-height: 1.6; color: var(--text-main);">' +
-              '• نقطه ورود: <strong>$' + s.entry + '</strong> | حد ضرر ضد هانت: <strong style="color: #ff3366;">$' + s.sl + ' (-' + s.sl_pct + '%)</strong><br>' +
-              '• تارگت اول ضد فرانت‌رانینگ: <strong style="color: #00e676;">$' + s.tp1 + '</strong> (R:R 1:' + s.rr_ratio + ') | تارگت دوم: <strong>$' + s.tp2 + '</strong> | تارگت سوم: <strong>$' + s.tp3 + '</strong><br>' +
-              '• دفاعیات: تمام ۵ تله (بیت‌کوین، جوداس سوئیپ، فاندینگ، اخبار کلان، اردربوک) با موفقیت مهار شدند.' +
-            '</div>';
-        } else {
-          box.innerHTML = 
-            '<div style="color: #ff3366; font-weight: 800; margin-bottom: 6px;">❌ رد شد: معامله تایید نشد</div>' +
-            '<div style="font-size: 0.78rem; color: #fca5a5; line-height: 1.5;">' +
-              '<strong>علت رد توسط دروازه‌بان:</strong> ' + (v.reason || 'شرایط ۵ فیلتر دفاعی احراز نگردید.') +
-            '</div>';
-        }
-
-        // Refresh log table
-        setTimeout(fetchArbiterStatusLive, 300);
-      } catch (err) {
-        if (box) box.innerHTML = '<span style="color: #ff3366;">خطا در برقراری ارتباط با سرور: ' + err.message + '</span>';
-      }
-    }
-
-    async function clearArbiterCooldownsLive() {
-      try {
-        const res = await fetch('/api/arbiter/clear-cooldowns', { method: 'POST' });
-        const data = await res.json();
-        alert(data.message || 'کول‌داون با موفقیت صفر شد.');
-        fetchArbiterStatusLive();
-      } catch (err) {
-        alert('خطا در پاک‌سازی کول‌داون: ' + err.message);
-      }
-    }
-
     window.addEventListener('DOMContentLoaded', () => {
       updateUtcClock();
       setInterval(updateUtcClock, 1000);
-      // Instant Live Price in < 80ms
-      fetchFastPrice('BTC');
-      loadSymbol('BTC');
-      setTimeout(fetchLiveFearAndGreed, 150);
+      fetchLiveFearAndGreed();
       setInterval(fetchLiveFearAndGreed, 60000);
+      loadSymbol('BTC');
       setInterval(tickLivePrice, 3000);
       loadTelegramConfig();
       fetchJournalLive();
       setInterval(loadTelegramConfig, 20000);
       setInterval(fetchJournalLive, 30000);
-      // Auto-poll live signals every 15 seconds without requiring page refresh
-      fetchCryptoUnifiedSignals(true);
-      setInterval(() => {
-        if (!document.hidden) fetchCryptoUnifiedSignals(false);
-      }, 15000);
     });
   
     // Education Modal Functions
@@ -13102,1545 +12427,6 @@ ${s3d.action_advice || ''}
 
 
 
-    /* ====================================================================
-       INSTITUTIONAL ORDER FLOW & WALL STREET PLATFORMS ENGINE (CRYPTO)
-       Bookmap, NinjaTrader 8, ATAS, Quantower, Sierra Chart, Geopolitics, Bank Reports
-       ==================================================================== */
-
-    // Global states
-    let _cryptoBmSym = 'BTC';
-    let _cryptoBmTimeframe = '15m';
-    let _cryptoBmViewMode = 'canvas';
-    let _cryptoBmAnimFrame = null;
-    let _cryptoBmLivePoints = [];
-    let _cryptoBmAskWalls = [];
-    let _cryptoBmBidWalls = [];
-    let _cryptoBmIcebergs = [];
-    let _cryptoBmTrades = [];
-
-    let _cryptoNtSym = 'BTC';
-    let _cryptoNtTimeframe = '15m';
-
-    let _cryptoAtasSym = 'BTC';
-
-    let _cryptoQtSym = 'BTC';
-    let _cryptoQtTimeframe = '1h';
-
-    let _cryptoScSym = 'BTC';
-    let _cryptoScTimeframe = '15m';
-
-    // Universal TradingView Embedding Function for Crypto Modules
-    function embedGenericCryptoChart(containerId, symbol, interval) {
-      const container = document.getElementById(containerId);
-      if (!container) return;
-
-      let clean = (symbol || 'BTC').replace('/', '').toUpperCase();
-      if (!clean.endsWith('USDT') && !clean.endsWith('USD')) clean += 'USDT';
-      const tvSymbol = `BINANCE:${clean}`;
-      const tvInterval = interval === '1m' ? '1' : (interval === '5m' ? '5' : (interval === '15m' ? '15' : (interval === '1h' ? '60' : (interval === '4h' ? '240' : 'D'))));
-
-      const extLink = document.getElementById('cryptoQtTvExtLink');
-      if (extLink) {
-        extLink.href = `https://www.tradingview.com/chart/?symbol=${tvSymbol}`;
-      }
-
-      const widgetConfig = {
-        "autosize": true,
-        "symbol": tvSymbol,
-        "interval": tvInterval,
-        "timezone": "Asia/Tehran",
-        "theme": "dark",
-        "style": "1",
-        "locale": "fa_IR",
-        "enable_publishing": false,
-        "hide_top_toolbar": false,
-        "hide_legend": false,
-        "save_image": false,
-        "withdateranges": true
-      };
-      const encoded = encodeURIComponent(JSON.stringify(widgetConfig));
-      container.innerHTML = `<iframe src="https://www.tradingview-widget.com/embed-widget/advanced-chart/?locale=fa_IR#${encoded}" style="width:100%;height:100%;border:none;border-radius:6px;display:block;" allowtransparency="true" scrolling="no" allowfullscreen></iframe>`;
-    }
-
-    
-    
-    /* --------------------------------------------------------------------
-       0. UNIFIED DUAL SIGNALS (SCALP 15m & SWING 4h) ENGINE
-       -------------------------------------------------------------------- */
-    async function fetchCryptoUnifiedSignals(force = false) {
-      try {
-        const curSym = typeof _cryptoBmSym !== 'undefined' ? _cryptoBmSym : 'BTC';
-        const res = await fetch(`/api/crypto/unified-signals?symbol=${curSym}`);
-        const data = await res.json();
-        if (!data || !data.ok) return;
-
-        // Timestamp
-        const tb = document.getElementById('unifTimeBadge');
-        if (tb) tb.innerText = `بروزرسانی: ${data.updated_at_iran}`;
-
-        // Alignment Bar
-        const alignStatus = document.getElementById('unifAlignmentStatus');
-        const alignNote = document.getElementById('unifAlignmentNote');
-        const alignBar = document.getElementById('unifAlignmentBar');
-
-        if (alignStatus) alignStatus.innerText = data.alignment_status;
-        if (alignNote) alignNote.innerText = data.alignment_note;
-        if (alignBar) {
-          if (data.is_aligned) {
-            alignBar.style.background = 'rgba(0, 230, 118, 0.08)';
-            alignBar.style.borderColor = 'rgba(0, 230, 118, 0.3)';
-            if (alignStatus) alignStatus.style.color = '#00e676';
-          } else {
-            alignBar.style.background = 'rgba(255, 215, 0, 0.08)';
-            alignBar.style.borderColor = 'rgba(255, 215, 0, 0.3)';
-            if (alignStatus) alignStatus.style.color = '#ffd700';
-          }
-        }
-
-        // SCALP (15m)
-        const sc = data.scalp || {};
-        const scBadge = document.getElementById('scalpDirectionBadge');
-        if (scBadge) {
-          scBadge.innerText = `${sc.direction_emoji || '🟢'} ${sc.direction || 'خرید (LONG)'}`;
-          scBadge.style.background = sc.direction_code === 'LONG' ? '#00e676' : '#ff3366';
-          scBadge.style.color = sc.direction_code === 'LONG' ? '#000' : '#fff';
-        }
-        const scEntry = document.getElementById('scalpEntryVal');
-        if (scEntry) scEntry.innerText = sc.entry_fmt || '-';
-        const scSl = document.getElementById('scalpSlVal');
-        if (scSl) scSl.innerText = sc.stop_loss_fmt || '-';
-        const scTp1 = document.getElementById('scalpTp1Val');
-        if (scTp1) scTp1.innerText = sc.tp1_fmt || '-';
-        const scTp2 = document.getElementById('scalpTp2Val');
-        if (scTp2) scTp2.innerText = sc.tp2_fmt || '-';
-        const scHold = document.getElementById('scalpHoldingVal');
-        if (scHold) scHold.innerText = sc.holding_duration || '۳۰ دقیقه الی ۲ ساعت';
-
-        // SWING (4h)
-        const sw = data.swing || {};
-        const swBadge = document.getElementById('swingDirectionBadge');
-        if (swBadge) {
-          swBadge.innerText = `${sw.direction_emoji || '🟢'} ${sw.direction || 'خرید (LONG)'}`;
-          swBadge.style.background = sw.direction_code === 'LONG' ? '#c084fc' : '#ff3366';
-          swBadge.style.color = sw.direction_code === 'LONG' ? '#000' : '#fff';
-        }
-        const swEntry = document.getElementById('swingEntryVal');
-        if (swEntry) swEntry.innerText = sw.entry_fmt || '-';
-        const swSl = document.getElementById('swingSlVal');
-        if (swSl) swSl.innerText = sw.stop_loss_fmt || '-';
-        const swTp1 = document.getElementById('swingTp1Val');
-        if (swTp1) swTp1.innerText = sw.tp1_fmt || '-';
-        const swTp2 = document.getElementById('swingTp2Val');
-        if (swTp2) swTp2.innerText = sw.tp2_fmt || '-';
-        const swHold = document.getElementById('swingHoldingVal');
-        if (swHold) swHold.innerText = sw.holding_duration || '۲ الی ۵ روز';
-
-        // SMT & Liquidation Heatmap
-        if (data.smt_and_liquidation) {
-          const sl = data.smt_and_liquidation;
-          if (sl.smt) {
-            const smtBadge = document.getElementById('cryptoSmtBadge');
-            if (smtBadge) {
-              smtBadge.innerText = sl.smt.badge;
-              smtBadge.style.color = sl.smt.color || '#38bdf8';
-              smtBadge.style.borderColor = sl.smt.color || '#38bdf8';
-            }
-            const smtDesc = document.getElementById('cryptoSmtDescText');
-            if (smtDesc && sl.smt.desc) smtDesc.innerText = sl.smt.desc;
-            if (sl.smt.triad && sl.smt.triad.length >= 3) {
-              const btcEl = document.getElementById('cryptoSmtBtcVal');
-              const ethEl = document.getElementById('cryptoSmtEthVal');
-              const solEl = document.getElementById('cryptoSmtSolVal');
-              if (btcEl) btcEl.innerText = `${sl.smt.triad[0].change_24h > 0 ? '+' : ''}${sl.smt.triad[0].change_24h.toFixed(2)}%`;
-              if (ethEl) ethEl.innerText = `${sl.smt.triad[1].change_24h > 0 ? '+' : ''}${sl.smt.triad[1].change_24h.toFixed(2)}%`;
-              if (solEl) solEl.innerText = `${sl.smt.triad[2].change_24h > 0 ? '+' : ''}${sl.smt.triad[2].change_24h.toFixed(2)}%`;
-            }
-          }
-          if (sl.liquidation_heatmap) {
-            const lq = sl.liquidation_heatmap;
-            const fundBadge = document.getElementById('cryptoFundingBadge');
-            if (fundBadge) {
-              fundBadge.innerText = lq.funding_badge;
-              fundBadge.style.color = lq.funding_color || '#00e676';
-              fundBadge.style.borderColor = lq.funding_color || '#00e676';
-            }
-            const fundAdvice = document.getElementById('cryptoFundingAdviceText');
-            if (fundAdvice && lq.funding_advice) fundAdvice.innerText = lq.funding_advice;
-            if (lq.clusters && lq.clusters.length >= 3) {
-              const shortEl = document.getElementById('cryptoLiqShortVal');
-              const longEl = document.getElementById('cryptoLiqLongVal');
-              if (shortEl) shortEl.innerText = `$${Number(lq.clusters[1].price).toLocaleString()} (${lq.clusters[1].volume_usd})`;
-              if (longEl) longEl.innerText = `$${Number(lq.clusters[2].price).toLocaleString()} (${lq.clusters[2].volume_usd})`;
-            }
-          }
-        }
-
-      } catch (err) {
-        console.error('Error fetching Unified Signals:', err);
-      }
-    }
-
-/* --------------------------------------------------------------------
-       0. INSTITUTIONAL SNIPER 90%+ WIN-RATE ENGINE
-       -------------------------------------------------------------------- */
-    async function fetchCryptoSniperSignal(force = false) {
-      try {
-        const curSym = typeof _cryptoBmSym !== 'undefined' ? _cryptoBmSym : 'BTC';
-        const res = await fetch(`/api/crypto/sniper-signal?symbol=${curSym}`);
-        const data = await res.json();
-        if (!data || !data.ok) return;
-
-        // Score Badge
-        const sb = document.getElementById('sniperScoreBadge');
-        if (sb) {
-          sb.innerText = `امتیاز هم‌پوشانی: ${data.confluence_score}/100`;
-          sb.style.color = data.is_active_signal ? '#00e676' : '#ffd700';
-          sb.style.borderColor = data.is_active_signal ? '#00e676' : '#ffd700';
-        }
-
-        // Time Badge
-        const tb = document.getElementById('sniperTimeBadge');
-        if (tb) tb.innerText = `بروزرسانی: ${data.updated_at_iran}`;
-
-        // Signal Container & Titles
-        const sigIcon = document.getElementById('sniperSignalIcon');
-        const sigTitle = document.getElementById('sniperSignalTitle');
-        const sigSub = document.getElementById('sniperSignalSubtitle');
-        const rrBadge = document.getElementById('sniperRrBadge');
-
-        if (sigIcon && sigTitle && sigSub) {
-          if (data.is_active_signal) {
-            sigIcon.innerText = '🟢';
-            sigTitle.innerText = `سیگنال قطعی تک‌تیرانداز: ${data.direction} (وین‌ریت ${data.winrate_projection})`;
-            sigTitle.style.color = '#00e676';
-            sigSub.innerText = data.setup_name;
-          } else {
-            sigIcon.innerText = '🔒';
-            sigTitle.innerText = `فیلتر نویز فعال (حفظ سرمایه): امتیاز ${data.confluence_score}/100 - ستاپ در حال آماده‌سازی`;
-            sigTitle.style.color = '#ffd700';
-            sigSub.innerText = 'جهت حفظ وین‌ریت بالای ۹۰٪، بازار تا زمان هم‌پوشانی کامل ۶ گذرگاه در حالت نظاره‌گر قرار دارد.';
-          }
-        }
-
-        if (rrBadge) {
-          rrBadge.innerText = `ریسک به ریوارد: ${data.risk_reward_ratio} 💎`;
-        }
-
-        // Parameters
-        const pEntry = document.getElementById('sniperParamEntry');
-        if (pEntry) pEntry.innerText = `$${Number(data.entry_exact).toLocaleString()}`;
-        const pSl = document.getElementById('sniperParamSl');
-        if (pSl) pSl.innerText = `$${Number(data.stop_loss).toLocaleString()}`;
-        const pSlPct = document.getElementById('sniperParamSlPct');
-        if (pSlPct) pSlPct.innerText = data.stop_loss_pct;
-
-        const pTp1 = document.getElementById('sniperParamTp1');
-        if (pTp1) pTp1.innerText = `$${Number(data.tp1).toLocaleString()}`;
-        const pTp1Pct = document.getElementById('sniperParamTp1Pct');
-        if (pTp1Pct) pTp1Pct.innerText = data.tp1_pct;
-
-        const pTp2 = document.getElementById('sniperParamTp2');
-        if (pTp2) pTp2.innerText = `$${Number(data.tp2).toLocaleString()}`;
-        const pTp2Pct = document.getElementById('sniperParamTp2Pct');
-        if (pTp2Pct) pTp2Pct.innerText = data.tp2_pct;
-
-        const pTp3 = document.getElementById('sniperParamTp3');
-        if (pTp3) pTp3.innerText = `$${Number(data.tp3).toLocaleString()}`;
-        const pTp3Pct = document.getElementById('sniperParamTp3Pct');
-        if (pTp3Pct) pTp3Pct.innerText = data.tp3_pct;
-
-        // Gates Grid
-        const gatesGrid = document.getElementById('sniperGatesGrid');
-        const passedText = document.getElementById('sniperPassedGatesText');
-        if (passedText) {
-          passedText.innerText = `${data.passed_gates_count} از ${data.total_gates_count} گذرگاه تایید شده`;
-        }
-
-        if (gatesGrid && data.gatekeepers) {
-          gatesGrid.innerHTML = data.gatekeepers.map(g => {
-            const isPass = g.passed;
-            const borderCol = isPass ? 'rgba(0, 230, 118, 0.4)' : 'rgba(255, 215, 0, 0.3)';
-            const bgCol = isPass ? 'rgba(0, 230, 118, 0.05)' : 'rgba(255, 215, 0, 0.03)';
-            const statusBadge = isPass
-              ? '<span style="color:#00e676; font-weight:800;">✅ تایید شد</span>'
-              : '<span style="color:#ffd700; font-weight:800;">⏳ پایش فعال</span>';
-
-            return `
-              <div style="background:${bgCol}; border:1px solid ${borderCol}; border-radius:6px; padding:8px 10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                  <strong style="color:#f1f5f9; display:flex; align-items:center; gap:5px;">
-                    <span>${g.icon}</span> ${g.name}
-                  </strong>
-                  <div>${statusBadge} <span style="font-family:monospace; color:#cbd5e1; font-size:0.7rem;">(${g.score}/${g.max_score})</span></div>
-                </div>
-                <div style="color:#94a3b8; font-size:0.72rem; line-height:1.4;">${g.details}</div>
-              </div>
-            `;
-          }).join('');
-        }
-
-      } catch (err) {
-        console.error('Error fetching Sniper Signal:', err);
-      }
-    }
-
-/* --------------------------------------------------------------------
-       1. BOOKMAP L2/L3 HEATMAP & ICEBERGS
-       -------------------------------------------------------------------- */
-    function setCryptoBmTimeframe(tf) {
-      _cryptoBmTimeframe = tf;
-      document.querySelectorAll('.bm-tf-btn').forEach(btn => {
-        if (btn.getAttribute('data-tf') === tf) {
-          btn.classList.add('active');
-          btn.style.border = '1.5px solid #ff8c00';
-          btn.style.background = 'rgba(255,140,0,0.25)';
-          btn.style.color = '#ff8c00';
-          btn.style.fontWeight = '800';
-        } else {
-          btn.classList.remove('active');
-          btn.style.border = '1px solid rgba(255,255,255,0.1)';
-          btn.style.background = 'transparent';
-          btn.style.color = '#cbd5e1';
-          btn.style.fontWeight = 'normal';
-        }
-      });
-      fetchCryptoBookmap(true);
-      fetchCryptoUnifiedSignals(true);
-      fetchCryptoSniperSignal(true);
-      if (_cryptoBmViewMode === 'tv' || _cryptoBmViewMode === 'split') { embedGenericCryptoChart('cryptoBmTvChart', _cryptoBmSym, _cryptoBmTimeframe); }
-    }
-
-    function onCryptoBmChange() {
-      const el = document.getElementById('cryptoBmSymbolSelect');
-      if (el) _cryptoBmSym = el.value;
-      fetchCryptoBookmap(true);
-      fetchCryptoUnifiedSignals(true);
-      fetchCryptoSniperSignal(true);
-      if (_cryptoBmViewMode === 'tv' || _cryptoBmViewMode === 'split') { embedGenericCryptoChart('cryptoBmTvChart', _cryptoBmSym, _cryptoBmTimeframe); }
-    }
-
-    function setCryptoBmViewMode(mode) {
-      _cryptoBmViewMode = mode;
-      const cvWrap = document.getElementById('cryptoBmCanvasWrap');
-      const tvWrap = document.getElementById('cryptoBmTvWrap');
-      const btnCv = document.getElementById('cryptoBmModeCanvasBtn');
-      const btnTv = document.getElementById('cryptoBmModeTvBtn');
-      const btnSp = document.getElementById('cryptoBmModeSplitBtn');
-
-      [btnCv, btnTv, btnSp].forEach(b => {
-        if (b) {
-          b.style.border = '1px solid rgba(255,255,255,0.15)';
-          b.style.background = 'rgba(255,255,255,0.05)';
-          b.style.color = '#94a3b8';
-          b.style.fontWeight = 'normal';
-        }
-      });
-
-      if (mode === 'canvas') {
-        if (cvWrap) cvWrap.style.display = 'block';
-        if (tvWrap) tvWrap.style.display = 'none';
-        if (btnCv) {
-          btnCv.style.border = '1.5px solid #ff8c00';
-          btnCv.style.background = 'rgba(255,140,0,0.25)';
-          btnCv.style.color = '#ff8c00';
-          btnCv.style.fontWeight = '800';
-        }
-      } else if (mode === 'tv') {
-        if (cvWrap) cvWrap.style.display = 'none';
-        if (tvWrap) {
-          tvWrap.style.display = 'block';
-          embedGenericCryptoChart('cryptoBmTvChart', _cryptoBmSym, _cryptoBmTimeframe);
-        }
-        if (btnTv) {
-          btnTv.style.border = '1.5px solid #ff8c00';
-          btnTv.style.background = 'rgba(255,140,0,0.25)';
-          btnTv.style.color = '#ff8c00';
-          btnTv.style.fontWeight = '800';
-        }
-      } else {
-        if (cvWrap) cvWrap.style.display = 'block';
-        if (tvWrap) {
-          tvWrap.style.display = 'block';
-          embedGenericCryptoChart('cryptoBmTvChart', _cryptoBmSym, _cryptoBmTimeframe);
-        }
-        if (btnSp) {
-          btnSp.style.border = '1.5px solid #ff8c00';
-          btnSp.style.background = 'rgba(255,140,0,0.25)';
-          btnSp.style.color = '#ff8c00';
-          btnSp.style.fontWeight = '800';
-        }
-      }
-    }
-
-    function formatCryptoPriceAdaptive(val) {
-      if (val === undefined || val === null || isNaN(val)) return '$0.00';
-      const n = Number(val);
-      const abs = Math.abs(n);
-      if (abs >= 1000) {
-        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
-      } else if (abs >= 10) {
-        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
-      } else if (abs >= 1) {
-        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 4 });
-      } else if (abs >= 0.01) {
-        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 5 });
-      } else if (abs >= 0.0001) {
-        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 7 });
-      } else {
-        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
-      }
-    }
-
-    async function fetchCryptoBookmap(force = false) {
-      try {
-        const res = await fetch(`/api/crypto/bookmap?symbol=${_cryptoBmSym}&timeframe=${_cryptoBmTimeframe}`);
-        const data = await res.json();
-        if (!data || !data.ok) return;
-
-        // Price & Ratio Badges
-        const priceBadge = document.getElementById('cryptoBmPriceBadge');
-        if (priceBadge) {
-          priceBadge.innerText = `${_cryptoBmSym}: ${formatCryptoPriceAdaptive(data.current_price || 0)}`;
-        }
-        const ratioBadge = document.getElementById('cryptoBmRatioBadge');
-        if (ratioBadge) {
-          ratioBadge.innerText = `دیواره: ${data.wall_ratio?.bid_pct || 50}% خرید / ${data.wall_ratio?.ask_pct || 50}% فروش`;
-        }
-
-        // Cache for canvas animation
-        _cryptoBmAskWalls = data.ask_levels || [];
-        _cryptoBmBidWalls = data.bid_levels || [];
-        _cryptoBmIcebergs = data.icebergs || [];
-        _cryptoBmTrades = data.recent_trades || [];
-
-        // Build continuous live price path points directly from real Binance trades
-        const baseP = Number(data.current_price) || 82000;
-        _cryptoBmLivePoints = [];
-        if (data.recent_trades && data.recent_trades.length > 0) {
-          data.recent_trades.forEach((tr, i) => {
-            _cryptoBmLivePoints.push({ x: i, price: Number(tr.price || baseP) });
-          });
-        }
-        if (_cryptoBmLivePoints.length === 0) {
-          for (let i = 0; i < 20; i++) {
-            _cryptoBmLivePoints.push({ x: i, price: baseP });
-          }
-        }
-
-        // Institutional Liquidity Replenishment Rate Banner
-        if (data.liquidity_replenishment_rate) {
-          const repB = document.getElementById('cryptoBmReplenishmentBanner');
-          if (repB) {
-            repB.style.display = 'flex';
-            const bEl = document.getElementById('cryptoBmRepBadge');
-            if (bEl) bEl.innerText = data.liquidity_replenishment_rate.badge || '';
-            const vEl = document.getElementById('cryptoBmRepVerdict');
-            if (vEl) vEl.innerText = data.liquidity_replenishment_rate.verdict_fa || '';
-            const hftEl = document.getElementById('cryptoBmRepHft');
-            if (hftEl) hftEl.innerText = `سهم الگوریتم HFT: ${data.liquidity_replenishment_rate.hft_share_pct || 68}%`;
-          }
-        }
-
-        // Icebergs List
-        const iceCont = document.getElementById('cryptoBmIcebergsList');
-        if (iceCont && data.icebergs) {
-          iceCont.innerHTML = data.icebergs.map(ic => `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,215,0,0.08); border-left:3px solid #ffd700; padding:5px 8px; border-radius:4px;">
-              <span style="color:#ffd700; font-weight:800;">🧊 ${formatCryptoPriceAdaptive(ic.price)}</span>
-              <span style="color:#cbd5e1; font-family:monospace;">${ic.estimated_hidden_vol || ic.size_btc || 150} ${_cryptoBmSym} (${ic.side === 'BID' ? 'خرید' : 'فروش'})</span>
-              <span style="font-size:0.7rem; color:#00e676;">${ic.status || ic.absorption_status || "در حال جذب"}</span>
-            </div>
-          `).join('');
-        }
-
-        // Resting Walls List
-        const wallsCont = document.getElementById('cryptoBmWallsList');
-        if (wallsCont) {
-          const topAsks = (data.ask_levels || []).slice(0, 2);
-          const topBids = (data.bid_levels || []).slice(0, 2);
-          wallsCont.innerHTML = [
-            ...topAsks.map(a => `
-              <div style="display:flex; justify-content:space-between; background:rgba(255,51,102,0.08); border-left:3px solid #ff3366; padding:4px 8px; border-radius:4px;">
-                <span style="color:#ff3366;">سقف Ask: ${formatCryptoPriceAdaptive(a.price)}</span>
-                <span style="font-family:monospace; color:#cbd5e1;">${a.volume_lots || a.volume_btc || 200} ${_cryptoBmSym} (${a.depth_pct || a.share_pct || 25}%)</span>
-              </div>
-            `),
-            ...topBids.map(b => `
-              <div style="display:flex; justify-content:space-between; background:rgba(0,230,118,0.08); border-left:3px solid #00e676; padding:4px 8px; border-radius:4px;">
-                <span style="color:#00e676;">کف Bid: ${formatCryptoPriceAdaptive(b.price)}</span>
-                <span style="font-family:monospace; color:#cbd5e1;">${b.volume_lots || b.volume_btc || 200} ${_cryptoBmSym} (${b.depth_pct || b.share_pct || 25}%)</span>
-              </div>
-            `)
-          ].join('');
-        }
-
-        // Delta & Speed
-        const deltaCont = document.getElementById('cryptoBmDeltaInfo');
-        if (deltaCont && data.delta_1m) {
-          const d = data.delta_1m;
-          deltaCont.innerHTML = `
-            • دلتای ۱ دقیقه: <strong style="color:${d.net_delta >= 0 ? '#00e676' : '#ff3366'};">${d.net_delta >= 0 ? '+' : ''}${d.net_delta} ${_cryptoBmSym}</strong><br>
-            • نسبت خریدار به فروشنده: <strong style="color:#00d2ff;">${d.buy_vol} خرید / ${d.sell_vol} فروش</strong><br>
-            • وضعیت جذب نقدینگی: <strong style="color:#ffd700;">${d.absorption}</strong>
-          `;
-        }
-
-        // Verdict
-        const vCont = document.getElementById('cryptoBmVerdictText');
-        if (vCont && data.verdict) {
-          vCont.innerHTML = `
-            <div style="margin-bottom:4px;"><strong style="color:#ff8c00;">سوگیری سازمانی:</strong> ${data.verdict.bias}</div>
-            <div style="color:#94a3b8;">${data.verdict.summary}</div>
-            <div style="margin-top:4px; color:#00e676;"><strong>راهبرد تریدر:</strong> ${data.verdict.actionable_takeaway}</div>
-          `;
-        }
-
-        // Start animation loop if not running
-        if (!_cryptoBmAnimFrame) {
-          startCryptoBookmapLoop();
-        }
-
-      } catch (err) {
-        console.error('Error fetching Bookmap:', err);
-      }
-    }
-
-    function startCryptoBookmapLoop() {
-      function frame() {
-        _cryptoBmAnimFrame = requestAnimationFrame(frame);
-        const tab = document.getElementById('cryptoBookmapTab');
-        if (!tab || !tab.classList.contains('active')) return;
-        if (_cryptoBmViewMode === 'tv') return;
-
-        const cv = document.getElementById('cryptoBmCanvas');
-        if (!cv) return;
-        const ctx = cv.getContext('2d');
-
-        // Retina Scaling
-        const dpr = window.devicePixelRatio || 1;
-        const cssW = cv.clientWidth || 900;
-        const cssH = 350;
-        if (cv.width !== Math.round(cssW * dpr) || cv.height !== Math.round(cssH * dpr)) {
-          cv.width = Math.round(cssW * dpr);
-          cv.height = Math.round(cssH * dpr);
-        }
-
-        ctx.save();
-        ctx.scale(dpr, dpr);
-
-        const w = cssW;
-        const h = cssH;
-        const domW = 110;
-        const chartW = w - domW;
-        const t = Date.now() * 0.0025;
-
-        // Background
-        ctx.fillStyle = '#030712';
-        ctx.fillRect(0, 0, w, h);
-
-        // Price Bounds
-        let allP = [];
-        _cryptoBmLivePoints.forEach(p => allP.push(p.price));
-        _cryptoBmAskWalls.forEach(a => allP.push(a.price));
-        _cryptoBmBidWalls.forEach(b => allP.push(b.price));
-        if (allP.length === 0) allP = [82000];
-
-        let minP = Math.min(...allP);
-        let maxP = Math.max(...allP);
-        if (maxP <= minP) {
-          const spread = Math.max(0.002, Math.abs(minP) * 0.01);
-          maxP += spread;
-          minP -= spread;
-        }
-        const pad = Math.max((maxP - minP) * 0.12, Math.abs(minP) * 0.005);
-        minP -= pad;
-        maxP += pad;
-
-        const getY = (val) => {
-          const norm = (val - minP) / (maxP - minP);
-          return h - (norm * (h - 40) + 20);
-        };
-
-        // Grid & Ultra-Crisp Price Axis (Adaptive Step for any Asset: BTC, ETH, SOL, or Sub-Dollar Altcoins)
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-        ctx.lineWidth = 1;
-        const range = maxP - minP;
-        let pStep;
-        if (range >= 500) {
-          pStep = Math.max(50, Math.round(range / 6 / 50) * 50);
-        } else if (range >= 50) {
-          pStep = Math.max(10, Math.round(range / 6 / 10) * 10);
-        } else if (range >= 5) {
-          pStep = Math.max(1, Math.round(range / 6));
-        } else if (range >= 0.5) {
-          pStep = Math.max(0.1, Math.round((range / 6) * 10) / 10);
-        } else if (range >= 0.05) {
-          pStep = Math.max(0.01, Math.round((range / 6) * 100) / 100);
-        } else if (range >= 0.005) {
-          pStep = Math.max(0.001, Math.round((range / 6) * 1000) / 1000);
-        } else if (range >= 0.0005) {
-          pStep = Math.max(0.0001, Math.round((range / 6) * 10000) / 10000);
-        } else {
-          pStep = Math.max(0.00001, range / 6);
-        }
-        const startP = Math.floor(minP / pStep) * pStep;
-        for (let p = startP; p <= maxP; p += pStep) {
-          const y = getY(p);
-          if (y >= 16 && y <= h - 16) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(chartW, y);
-            ctx.stroke();
-
-            // High-Contrast Bold Price Badge on Axis
-            const pStr = formatCryptoPriceAdaptive(p);
-            ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
-            const tw = ctx.measureText(pStr).width;
-            
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            if (ctx.roundRect) ctx.roundRect(chartW - tw - 16, y - 9, tw + 12, 17, 3);
-            else ctx.rect(chartW - tw - 16, y - 9, tw + 12, 17);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'right';
-            ctx.fillText(pStr, chartW - 10, y + 4);
-          }
-        }
-
-        // Thermal Liquidity Highway Beams (Ask - Amber/Red)
-        _cryptoBmAskWalls.forEach((a, i) => {
-          const y = getY(a.price);
-          const pulse = Math.sin(t + i * 0.7) * 0.15 + 0.85;
-          const vol = Number(a.volume_btc || a.volume_lots || 120);
-          const beamH = Math.min(24, Math.max(7, (vol / 25) * pulse));
-          const grad = ctx.createLinearGradient(0, y, chartW, y);
-          grad.addColorStop(0, 'rgba(255, 51, 102, 0.12)');
-          grad.addColorStop(0.4, 'rgba(255, 140, 0, 0.4)');
-          grad.addColorStop(1, 'rgba(255, 215, 0, 0.88)');
-
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, y - beamH / 2, chartW, beamH);
-
-          ctx.strokeStyle = 'rgba(255, 140, 0, 0.75)';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(chartW, y);
-          ctx.stroke();
-
-          // High-Visibility Ask Price & Volume Pill on Left Edge
-          const askVolStr = vol >= 1000 ? (vol / 1000).toFixed(1) + 'k' : Math.round(vol);
-          const askPStr = `🔴 ${formatCryptoPriceAdaptive(a.price)} (${askVolStr} ${_cryptoBmSym})`;
-          ctx.font = 'bold 10px monospace';
-          const askTw = ctx.measureText(askPStr).width;
-          ctx.fillStyle = 'rgba(20, 10, 15, 0.94)';
-          ctx.strokeStyle = '#ff3366';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          if (ctx.roundRect) ctx.roundRect(10, y - 9, askTw + 12, 18, 4);
-          else ctx.rect(10, y - 9, askTw + 12, 18);
-          ctx.fill();
-          ctx.stroke();
-
-          ctx.fillStyle = '#ff6b8b';
-          ctx.textAlign = 'left';
-          ctx.fillText(askPStr, 16, y + 4);
-
-          // Iceberg Badge (Positioned safely)
-          if (vol > 30) {
-            const bx = 180 + (i * 95);
-            if (bx + 85 < chartW - 80) {
-              ctx.fillStyle = 'rgba(10, 15, 29, 0.94)';
-              ctx.strokeStyle = '#ffd700';
-              ctx.lineWidth = 1;
-              ctx.beginPath();
-              if (ctx.roundRect) ctx.roundRect(bx, y - 9, 82, 18, 4);
-              else ctx.rect(bx, y - 9, 82, 18);
-              ctx.fill();
-              ctx.stroke();
-
-              ctx.fillStyle = '#ffd700';
-              ctx.font = 'bold 9px monospace';
-              ctx.textAlign = 'center';
-              ctx.fillText(`🧊 ${askVolStr} ${_cryptoBmSym}`, bx + 41, y + 4);
-            }
-          }
-        });
-
-        // Thermal Liquidity Highway Beams (Bid - Cyan/Emerald)
-        _cryptoBmBidWalls.forEach((b, i) => {
-          const y = getY(b.price);
-          const pulse = Math.sin(t + i * 0.9) * 0.15 + 0.85;
-          const vol = Number(b.volume_btc || b.volume_lots || 120);
-          const beamH = Math.min(24, Math.max(7, (vol / 25) * pulse));
-          const grad = ctx.createLinearGradient(0, y, chartW, y);
-          grad.addColorStop(0, 'rgba(0, 210, 255, 0.12)');
-          grad.addColorStop(0.4, 'rgba(0, 230, 118, 0.4)');
-          grad.addColorStop(1, 'rgba(0, 210, 255, 0.88)');
-
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, y - beamH / 2, chartW, beamH);
-
-          ctx.strokeStyle = 'rgba(0, 210, 255, 0.75)';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(chartW, y);
-          ctx.stroke();
-
-          // High-Visibility Bid Price & Volume Pill on Left Edge
-          const bidVolStr = vol >= 1000 ? (vol / 1000).toFixed(1) + 'k' : Math.round(vol);
-          const bidPStr = `🟢 ${formatCryptoPriceAdaptive(b.price)} (${bidVolStr} ${_cryptoBmSym})`;
-          ctx.font = 'bold 10px monospace';
-          const bidTw = ctx.measureText(bidPStr).width;
-          ctx.fillStyle = 'rgba(10, 20, 25, 0.94)';
-          ctx.strokeStyle = '#00e676';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          if (ctx.roundRect) ctx.roundRect(10, y - 9, bidTw + 12, 18, 4);
-          else ctx.rect(10, y - 9, bidTw + 12, 18);
-          ctx.fill();
-          ctx.stroke();
-
-          ctx.fillStyle = '#00e676';
-          ctx.textAlign = 'left';
-          ctx.fillText(bidPStr, 16, y + 4);
-
-          // Bid Iceberg Badge
-          if (vol > 30) {
-            const bx = 180 + (i * 95);
-            if (bx + 85 < chartW - 80) {
-              ctx.fillStyle = 'rgba(10, 15, 29, 0.94)';
-              ctx.strokeStyle = '#00d2ff';
-              ctx.lineWidth = 1;
-              ctx.beginPath();
-              if (ctx.roundRect) ctx.roundRect(bx, y - 9, 82, 18, 4);
-              else ctx.rect(bx, y - 9, 82, 18);
-              ctx.fill();
-              ctx.stroke();
-
-              ctx.fillStyle = '#00d2ff';
-              ctx.font = 'bold 9px monospace';
-              ctx.textAlign = 'center';
-              ctx.fillText(`🧊 ${bidVolStr} ${_cryptoBmSym}`, bx + 41, y + 4);
-            }
-          }
-        });
-
-        // Dynamic Continuous Price Line
-        if (_cryptoBmLivePoints.length > 1) {
-          ctx.beginPath();
-          _cryptoBmLivePoints.forEach((p, idx) => {
-            const px = (idx / (_cryptoBmLivePoints.length - 1)) * (chartW - 80);
-            const py = getY(p.price);
-            if (idx === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-          });
-          ctx.strokeStyle = '#00e676';
-          ctx.lineWidth = 2.5;
-          ctx.shadowColor = '#00e676';
-          ctx.shadowBlur = 10;
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-
-          // Glowing Head Cursor & Crisp Price Badge
-          const last = _cryptoBmLivePoints[_cryptoBmLivePoints.length - 1];
-          const headX = chartW - 80;
-          const headY = getY(last.price);
-
-          // Horizontal dotted crosshair line
-          ctx.save();
-          ctx.setLineDash([3, 3]);
-          ctx.strokeStyle = 'rgba(0, 230, 118, 0.6)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(headX, headY);
-          ctx.lineTo(chartW, headY);
-          ctx.stroke();
-          ctx.restore();
-
-          // Dot
-          ctx.fillStyle = '#fff';
-          ctx.beginPath();
-          ctx.arc(headX, headY, 5, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#00e676';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-
-          // Large High-Contrast Live Price Tag on chart edge
-          const curPriceStr = formatCryptoPriceAdaptive(last.price);
-          ctx.font = 'bold 11px monospace';
-          const cpTw = ctx.measureText(curPriceStr).width;
-          ctx.fillStyle = '#00e676';
-          ctx.beginPath();
-          if (ctx.roundRect) ctx.roundRect(chartW - cpTw - 16, headY - 10, cpTw + 12, 20, 4);
-          else ctx.rect(chartW - cpTw - 16, headY - 10, cpTw + 12, 20);
-          ctx.fill();
-
-          ctx.fillStyle = '#021206';
-          ctx.textAlign = 'center';
-          ctx.fillText(curPriceStr, chartW - cpTw / 2 - 10, headY + 4);
-        }
-
-        // Live Execution Bubbles
-        _cryptoBmTrades.forEach((tr, i) => {
-          const bx = Math.max(30, Math.min(chartW - 40, (i + 1) * (chartW / (_cryptoBmTrades.length + 1))));
-          const by = getY(tr.price);
-          const amt = Number(tr.amount || tr.volume_lots || 3.5);
-          const rad = Math.min(14, Math.max(5, amt * 1.3));
-          const isBuy = tr.side === 'BUY';
-
-          ctx.beginPath();
-          ctx.arc(bx, by, rad, 0, Math.PI * 2);
-          ctx.fillStyle = isBuy ? 'rgba(0, 230, 118, 0.55)' : 'rgba(255, 51, 102, 0.55)';
-          ctx.strokeStyle = isBuy ? '#00e676' : '#ff3366';
-          ctx.lineWidth = 1.5;
-          ctx.fill();
-          ctx.stroke();
-
-          if (amt > 2.5) {
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 9px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${amt}`, bx, by + 3);
-          }
-        });
-
-        // Right-Side SuperDOM Column
-        ctx.fillStyle = 'rgba(10, 15, 29, 0.98)';
-        ctx.fillRect(chartW, 0, domW, h);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
-        ctx.beginPath();
-        ctx.moveTo(chartW, 0);
-        ctx.lineTo(chartW, h);
-        ctx.stroke();
-
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = 'bold 10px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('SuperDOM L2', chartW + domW / 2, 15);
-
-        // Draw sample depth bars in DOM with sharp numbers
-        _cryptoBmAskWalls.forEach(a => {
-          const ay = getY(a.price);
-          const avol = Number(a.volume_btc || a.volume_lots || 60);
-          const barW = Math.min(domW - 14, (avol / 300) * (domW - 20) + 16);
-          ctx.fillStyle = 'rgba(255, 51, 102, 0.45)';
-          ctx.fillRect(chartW + 4, ay - 5, barW, 11);
-          ctx.fillStyle = '#ff4d6d';
-          ctx.font = 'bold 9px monospace';
-          ctx.textAlign = 'left';
-          ctx.fillText(`${avol >= 1000 ? (avol/1000).toFixed(1) + 'k' : Math.round(avol)}`, chartW + 6, ay + 4);
-        });
-
-        _cryptoBmBidWalls.forEach(b => {
-          const by = getY(b.price);
-          const bvol = Number(b.volume_btc || b.volume_lots || 60);
-          const barW = Math.min(domW - 14, (bvol / 300) * (domW - 20) + 16);
-          ctx.fillStyle = 'rgba(0, 230, 118, 0.45)';
-          ctx.fillRect(chartW + 4, by - 5, barW, 11);
-          ctx.fillStyle = '#00e676';
-          ctx.font = 'bold 9px monospace';
-          ctx.textAlign = 'left';
-          ctx.fillText(`${bvol >= 1000 ? (bvol/1000).toFixed(1) + 'k' : Math.round(bvol)}`, chartW + 6, by + 4);
-        });
-
-        // Prominent Price Pin in DOM (High-Contrast Gold Banner)
-        const curY = getY(_cryptoBmLivePoints[_cryptoBmLivePoints.length - 1]?.price || 82000);
-        ctx.fillStyle = '#ffd700';
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(chartW + 2, curY - 9, domW - 4, 18, 3);
-        else ctx.rect(chartW + 2, curY - 9, domW - 4, 18);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#000';
-        ctx.font = 'bold 10px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(formatCryptoPriceAdaptive(_cryptoBmLivePoints[_cryptoBmLivePoints.length - 1]?.price || 82000), chartW + domW / 2, curY + 4);
-
-        ctx.restore();
-      }
-      _cryptoBmAnimFrame = requestAnimationFrame(frame);
-    }
-
-    /* --------------------------------------------------------------------
-       2. NINJATRADER 8 FOOTPRINT & SUPERDOM
-       -------------------------------------------------------------------- */
-    function setCryptoNtTimeframe(tf) {
-      _cryptoNtTimeframe = tf;
-      document.querySelectorAll('.nt-tf-btn').forEach(btn => {
-        if (btn.getAttribute('data-tf') === tf) {
-          btn.classList.add('active');
-          btn.style.border = '1.5px solid #00e676';
-          btn.style.background = 'rgba(0,230,118,0.25)';
-          btn.style.color = '#00e676';
-          btn.style.fontWeight = '800';
-        } else {
-          btn.classList.remove('active');
-          btn.style.border = '1px solid rgba(255,255,255,0.1)';
-          btn.style.background = 'transparent';
-          btn.style.color = '#cbd5e1';
-          btn.style.fontWeight = 'normal';
-        }
-      });
-      fetchCryptoNinja(true);
-    }
-
-    function onCryptoNtChange() {
-      const el = document.getElementById('cryptoNtSymbolSelect');
-      if (el) _cryptoNtSym = el.value;
-      fetchCryptoNinja(true);
-    }
-
-    async function fetchCryptoNinja(force = false) {
-      try {
-        const res = await fetch(`/api/crypto/ninjatrader?symbol=${_cryptoNtSym}&timeframe=${_cryptoNtTimeframe}`);
-        const data = await res.json();
-        if (!data || !data.ok) return;
-
-        // Badges
-        const pb = document.getElementById('cryptoNtPriceBadge');
-        if (pb) pb.innerText = `${_cryptoNtSym}: $${Number(data.current_price || 0).toLocaleString()}`;
-        const cb = document.getElementById('cryptoNtCvdBadge');
-        if (cb) {
-          let cvdVal = 0;
-          if (typeof data.cvd === 'object' && data.cvd !== null) {
-            cvdVal = Number(data.cvd.value !== undefined ? data.cvd.value : 0);
-          } else {
-            cvdVal = Number(data.cvd || 0);
-          }
-          cb.innerText = `CVD: ${cvdVal >= 0 ? '+' : ''}${cvdVal.toLocaleString()} ${_cryptoNtSym}`;
-          cb.style.color = cvdVal >= 0 ? '#00e676' : '#ff3366';
-        }
-
-        // SuperDOM Body
-        const sdb = document.getElementById('cryptoNtSuperDomBody');
-        if (sdb && data.superdom_levels) {
-          sdb.innerHTML = data.superdom_levels.map(row => `
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.03); ${row.is_current ? 'background:rgba(255,215,0,0.15);' : ''}">
-              <td style="padding:6px 10px; text-align:right; width:38%; position:relative;">
-                <div style="position:absolute; right:0; top:2px; bottom:2px; width:${row.bid_bar_pct}%; background:rgba(0,230,118,0.25); border-radius:3px;"></div>
-                <span style="position:relative; z-index:1; color:#00e676; font-weight:800;">${row.bid_vol > 0 ? row.bid_vol + ' (' + row.bid_bar_pct + '%)' : '-'}</span>
-              </td>
-              <td style="padding:6px 8px; font-weight:900; color:${row.is_current ? '#ffd700' : '#e2e8f0'}; width:24%; background:${row.is_current ? 'rgba(255,215,0,0.3)' : 'rgba(0,0,0,0.3)'};">
-                ${row.is_current ? '⚡ ' : ''}$${Number(row.price).toLocaleString()}
-              </td>
-              <td style="padding:6px 10px; text-align:left; width:38%; position:relative;">
-                <div style="position:absolute; left:0; top:2px; bottom:2px; width:${row.ask_bar_pct}%; background:rgba(255,51,102,0.25); border-radius:3px;"></div>
-                <span style="position:relative; z-index:1; color:#ff3366; font-weight:800;">${row.ask_vol > 0 ? row.ask_vol + ' (' + row.ask_bar_pct + '%)' : '-'}</span>
-              </td>
-            </tr>
-          `).join('');
-        }
-
-        // Institutional Unfinished Auction Banner
-        if (data.unfinished_auction) {
-          const uab = document.getElementById('cryptoNtUnfinishedAuctionBanner');
-          if (uab) {
-            uab.style.display = 'flex';
-            const bEl = document.getElementById('cryptoNtUaBadge');
-            if (bEl) bEl.innerText = data.unfinished_auction.badge || 'حراج ناقص شناسایی شد';
-            const vEl = document.getElementById('cryptoNtUaVerdict');
-            if (vEl) vEl.innerText = data.unfinished_auction.verdict_fa || '';
-          }
-        }
-
-        // Footprint Clusters (Spacious 3-Column Grid)
-        const fpCont = document.getElementById('cryptoNtFootprintContainer');
-        if (fpCont && data.footprint_candles) {
-          fpCont.innerHTML = data.footprint_candles.map(c => {
-            const isBull = c.is_bullish;
-            const borderCol = isBull ? 'rgba(0, 230, 118, 0.45)' : 'rgba(255, 51, 102, 0.45)';
-            const bgCol = isBull ? 'linear-gradient(180deg, rgba(0, 230, 118, 0.08), rgba(10, 25, 18, 0.9))' : 'linear-gradient(180deg, rgba(255, 51, 102, 0.08), rgba(28, 12, 18, 0.9))';
-            const deltaCol = c.candle_delta >= 0 ? '#00e676' : '#ff3366';
-
-            return `
-              <div style="min-width:260px; background:${bgCol}; border:1.5px solid ${borderCol}; border-radius:10px; padding:10px 12px; font-family:var(--font-mono); box-shadow:0 6px 20px rgba(0,0,0,0.5);">
-                <!-- Candle Top Bar -->
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:6px; margin-bottom:6px;">
-                  <span style="font-weight:800; font-size:0.82rem; color:#fff;">${isBull ? '🟢' : '🔴'} ${c.time}</span>
-                  <span style="font-size:0.74rem; color:${deltaCol}; font-weight:900; background:${deltaCol}22; border:1px solid ${deltaCol}66; padding:2px 8px; border-radius:5px;">
-                    ${c.candle_delta >= 0 ? '+' : ''}${c.candle_delta} Δ
-                  </span>
-                </div>
-
-                <!-- Wick Stub -->
-                <div style="width:3px; height:8px; background:${isBull ? '#00e676' : '#ff3366'}; margin:0 auto 4px auto; border-radius:1px;"></div>
-
-                <!-- Column Header -->
-                <div style="display:grid; grid-template-columns:80px 84px 80px; font-size:0.68rem; color:#94a3b8; font-weight:800; text-align:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px; margin-bottom:6px;">
-                  <span style="color:#00e676; text-align:right; padding-right:6px;">حجم خرید</span>
-                  <span style="color:#ffd700;">قیمت</span>
-                  <span style="color:#ff3366; text-align:left; padding-left:6px;">حجم فروش</span>
-                </div>
-
-                <!-- Footprint Clusters -->
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                  ${c.clusters.map(cl => {
-                    const isPoc = cl.is_poc;
-                    const isBuyImb = cl.imbalance === 'BUY';
-                    const isSellImb = cl.imbalance === 'SELL';
-                    const rowBorder = isPoc ? 'border:1.5px solid #ffd700; box-shadow:0 0 8px rgba(255,215,0,0.3);' : 'border:1px solid rgba(255,255,255,0.04);';
-                    const rowBg = isPoc ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.02)';
-
-                    return `
-                      <div style="display:grid; grid-template-columns:80px 84px 80px; align-items:center; min-height:24px; padding:2px 0; border-radius:4px; ${rowBorder} background:${rowBg}; position:relative;">
-                        <!-- Bid Side -->
-                        <div style="text-align:right; padding-right:8px; position:relative; height:100%; display:flex; align-items:center; justify-content:flex-end;">
-                          <div style="position:absolute; right:0; top:0; bottom:0; width:${cl.bid_bar_pct}%; background:rgba(0,230,118,0.25); border-radius:2px;"></div>
-                          <span style="position:relative; z-index:1; color:#00e676; font-weight:800; font-size:0.78rem;">
-                            ${isSellImb ? '<span style="color:#ff3366; font-size:0.7rem;">⚡</span>' : ''}
-                            ${cl.bid}
-                          </span>
-                        </div>
-
-                        <!-- Price Step -->
-                        <div style="text-align:center; padding:2px 4px; font-weight:900; font-size:0.76rem; color:${isPoc ? '#ffd700' : '#e2e8f0'}; background:${isPoc ? 'rgba(255,215,0,0.25)' : 'rgba(0,0,0,0.4)'};">
-                          ${isPoc ? '👑 ' : ''}$${Number(cl.price).toLocaleString()}
-                        </div>
-
-                        <!-- Ask Side -->
-                        <div style="text-align:left; padding-left:8px; position:relative; height:100%; display:flex; align-items:center; justify-content:flex-start;">
-                          <div style="position:absolute; left:0; top:0; bottom:0; width:${cl.ask_bar_pct}%; background:rgba(255,51,102,0.25); border-radius:2px;"></div>
-                          <span style="position:relative; z-index:1; color:#ff3366; font-weight:800; font-size:0.78rem;">
-                            ${cl.ask}
-                            ${isBuyImb ? '<span style="color:#00e676; font-size:0.7rem;">⚡</span>' : ''}
-                          </span>
-                        </div>
-                      </div>
-                    `;
-                  }).join('')}
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-
-        // VWAP Bands
-        const vm = document.getElementById('cryptoNtVwapMid');
-        if (vm) vm.innerText = formatCryptoPriceAdaptive(data.session_vwap);
-        const s1u = document.getElementById('cryptoNtVwapSd1Up');
-        if (s1u) s1u.innerText = formatCryptoPriceAdaptive(data.vwap_sd1_up);
-        const s1d = document.getElementById('cryptoNtVwapSd1Dn');
-        if (s1d) s1d.innerText = formatCryptoPriceAdaptive(data.vwap_sd1_dn);
-        const s2u = document.getElementById('cryptoNtVwapSd2Up');
-        if (s2u) s2u.innerText = formatCryptoPriceAdaptive(data.vwap_sd2_up);
-        const s2d = document.getElementById('cryptoNtVwapSd2Dn');
-        if (s2d) s2d.innerText = formatCryptoPriceAdaptive(data.vwap_sd2_dn);
-
-        // Scalp Rationale
-        const sr = document.getElementById('cryptoNtScalpStrategyText');
-        if (sr && data.verdict) {
-          sr.innerHTML = `
-            • سیگنال اسکالپ: <strong style="color:#00e676;">${data.verdict.scalp_bias}</strong><br>
-            • ترازهای استراتژیک: نقطه ورود: <strong style="color:#00d2ff;">${formatCryptoPriceAdaptive(data.session_vwap)}</strong> | حد ضرر: <strong style="color:#ff3366;">${formatCryptoPriceAdaptive(data.vwap_sd2_dn)}</strong> | تارگت: <strong style="color:#00e676;">${formatCryptoPriceAdaptive(data.vwap_sd2_up)}</strong><br>
-            • دلیل فوت‌پرینت: ${data.verdict.rationale}
-          `;
-        }
-
-        // Embed TradingView Scalp Chart
-        embedGenericCryptoChart('cryptoNtTvChart', _cryptoNtSym, _cryptoNtTimeframe);
-
-      } catch (err) {
-        console.error('Error fetching NinjaTrader:', err);
-      }
-    }
-
-    /* --------------------------------------------------------------------
-       3. ATAS TIME & SALES / BIG TRADES
-       -------------------------------------------------------------------- */
-    function onCryptoAtasChange() {
-      const el = document.getElementById('cryptoAtasSymbolSelect');
-      if (el) _cryptoAtasSym = el.value;
-      fetchCryptoAtas(true);
-    }
-
-    async function fetchCryptoAtas(force = false) {
-      try {
-        const res = await fetch(`/api/crypto/atas?symbol=${_cryptoAtasSym}`);
-        const data = await res.json();
-        if (!data || !data.ok) return;
-
-        // Tape Speed Badge
-        const tsb = document.getElementById('cryptoAtasTapeSpeedBadge');
-        if (tsb) {
-          tsb.innerText = `سرعت نوار: ${data.tape_speed_tps} تیک/ثانیه (${data.tape_speed_status})`;
-          tsb.style.color = data.tape_speed_tps > 50 ? '#ff8c00' : '#00d2ff';
-        }
-
-        // Institutional CVD Divergence Banner
-        if (data.cvd_divergence) {
-          const cdb = document.getElementById('cryptoAtasCvdDivBanner');
-          if (cdb) {
-            cdb.style.display = 'flex';
-            const bEl = document.getElementById('cryptoAtasCvdBadge');
-            if (bEl) bEl.innerText = data.cvd_divergence.badge || '';
-            const vEl = document.getElementById('cryptoAtasCvdVerdict');
-            if (vEl) vEl.innerText = data.cvd_divergence.verdict_fa || '';
-            const arEl = document.getElementById('cryptoAtasAbsRatio');
-            if (arEl) arEl.innerText = `ضریب جذب: ${data.cvd_divergence.absorption_ratio || 1.58}x`;
-          }
-        }
-
-        // Big Trades
-        const btList = document.getElementById('cryptoAtasBigTradesList');
-        if (btList && data.big_trades) {
-          btList.innerHTML = data.big_trades.map(tr => {
-            const isBuy = tr.side === 'BUY';
-            const col = isBuy ? '#00e676' : '#ff3366';
-            return `
-              <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border-right:3px solid ${col}; padding:8px 10px; border-radius:6px; font-family:monospace; font-size:0.78rem;">
-                <span style="color:#94a3b8;">${tr.time}</span>
-                <span style="font-weight:900; color:${col};">${isBuy ? '🟢 خرید مارکت' : '🔴 فروش مارکت'}</span>
-                <span style="color:#ffd700; font-weight:800;">${tr.size_btc || tr.volume_lots || 50} ${_cryptoAtasSym} (${tr.value_usd})</span>
-                <span style="color:#e2e8f0;">$${Number(tr.price).toLocaleString()}</span>
-                <span style="font-size:0.7rem; color:#94a3b8;">${tr.exchange}</span>
-              </div>
-            `;
-          }).join('');
-        }
-
-        // Diagonal Imbalances
-        const imbList = document.getElementById('cryptoAtasImbalanceList');
-        if (imbList && data.diagonal_imbalances) {
-          imbList.innerHTML = data.diagonal_imbalances.map(imb => {
-            const isBuy = imb.type === 'BUY';
-            const col = isBuy ? '#00e676' : '#ff3366';
-            return `
-              <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border-right:3px solid ${col}; padding:8px 10px; border-radius:6px; font-size:0.78rem;">
-                <span style="color:#ffd700; font-family:monospace;">$${Number(imb.price).toLocaleString()}</span>
-                <span style="color:${col}; font-weight:800;">⚡ عدم تعادل ${imb.imbalance_pct}% ${isBuy ? 'خرید' : 'فروش'}</span>
-                <span style="color:#cbd5e1; font-size:0.72rem;">${imb.intensity}</span>
-              </div>
-            `;
-          }).join('');
-        }
-
-        // Verdict
-        const vText = document.getElementById('cryptoAtasVerdictText');
-        if (vText && data.verdict) {
-          vText.innerHTML = `
-            ${data.verdict.tape_flow} &bull; <strong style="color:#00e676;">${data.verdict.hft_activity}</strong> &bull; <span style="color:#ffd700;">${data.verdict.scalp_edge}</span>
-          `;
-        }
-
-        // TradingView
-        embedGenericCryptoChart('cryptoAtasTvChart', _cryptoAtasSym, '15m');
-
-      } catch (err) {
-        console.error('Error fetching ATAS:', err);
-      }
-    }
-
-    /* --------------------------------------------------------------------
-       4. QUANTOWER TPO MARKET PROFILE
-       -------------------------------------------------------------------- */
-    function setCryptoQtTimeframe(tf) {
-      _cryptoQtTimeframe = tf;
-      document.querySelectorAll('.qt-tf-btn').forEach(btn => {
-        if (btn.getAttribute('data-tf') === tf) {
-          btn.classList.add('active');
-          btn.style.border = '1.5px solid #a855f7';
-          btn.style.background = 'rgba(168,85,247,0.25)';
-          btn.style.color = '#a855f7';
-          btn.style.fontWeight = '800';
-        } else {
-          btn.classList.remove('active');
-          btn.style.border = '1px solid rgba(255,255,255,0.1)';
-          btn.style.background = 'transparent';
-          btn.style.color = '#cbd5e1';
-          btn.style.fontWeight = 'normal';
-        }
-      });
-      fetchCryptoQuantower(true);
-    }
-
-    function onCryptoQtChange() {
-      const el = document.getElementById('cryptoQtSymbolSelect');
-      if (el) _cryptoQtSym = el.value;
-      fetchCryptoQuantower(true);
-    }
-
-    async function fetchCryptoQuantower(force = false) {
-      try {
-        const res = await fetch(`/api/crypto/quantower?symbol=${_cryptoQtSym}&timeframe=${_cryptoQtTimeframe}`);
-        const data = await res.json();
-        if (!data || !data.ok) return;
-
-        // Badges
-        const rgb = document.getElementById('cryptoQtRegimeBadge');
-        if (rgb) rgb.innerText = `رژیم: ${data.day_type || 'حراج متوازن'}`;
-
-        const vah = document.getElementById('cryptoQtVahPrice');
-        if (vah) vah.innerText = `$${Number(data.vah).toLocaleString()}`;
-        const poc = document.getElementById('cryptoQtPocPrice');
-        if (poc) poc.innerText = `$${Number(data.vpoc).toLocaleString()}`;
-        const val = document.getElementById('cryptoQtValPrice');
-        if (val) val.innerText = `$${Number(data.val).toLocaleString()}`;
-        const ib = document.getElementById('cryptoQtIbRange');
-        if (ib && data.initial_balance) {
-          ib.innerText = `$${Number(data.initial_balance.ib_low).toLocaleString()} - $${Number(data.initial_balance.ib_high).toLocaleString()}`;
-        }
-
-        // Institutional Initial Balance Extension Banner
-        if (data.initial_balance_extension) {
-          const ibB = document.getElementById('cryptoQtIbBanner');
-          if (ibB) {
-            ibB.style.display = 'flex';
-            const bEl = document.getElementById('cryptoQtIbBadge');
-            if (bEl) bEl.innerText = data.initial_balance_extension.badge || '';
-            const vEl = document.getElementById('cryptoQtIbVerdict');
-            if (vEl) vEl.innerText = data.initial_balance_extension.verdict_fa || '';
-            const rEl = document.getElementById('cryptoQtIbRatio');
-            if (rEl) rEl.innerText = `گسترش: ${data.initial_balance_extension.expansion_ratio || 1.48}x`;
-          }
-        }
-
-        // Nodes
-        const nodesList = document.getElementById('cryptoQtNodesList');
-        if (nodesList && data.volume_nodes) {
-          nodesList.innerHTML = data.volume_nodes.map(n => `
-            <div style="display:flex; justify-content:space-between; padding:4px 8px; border-radius:4px; background:${n.type === 'HVN' ? 'rgba(0,230,118,0.08)' : 'rgba(255,51,102,0.08)'};">
-              <span style="color:${n.type === 'HVN' ? '#00e676' : '#ff3366'}; font-weight:800;">${n.type} ($${Number(n.price).toLocaleString()}):</span>
-              <span style="color:#cbd5e1;">${n.significance} (${n.volume_btc} BTC)</span>
-            </div>
-          `).join('');
-        }
-
-        // Spread
-        const sp = document.getElementById('cryptoQtSpreadText');
-        if (sp) {
-          sp.innerHTML = `
-            • اسپرد تعهدی فیوچرز به اسپات (Basis Spread): <strong>${data.basis_spread || '+0.42% کانتانگو'}</strong><br>
-            • وضعیت حراج: <strong>${data.synthetic_spread || 'پرمیوم صعودی'}</strong>
-          `;
-        }
-
-        // Verdict
-        const vText = document.getElementById('cryptoQtVerdictText');
-        if (vText && data.verdict) {
-          vText.innerHTML = `
-            <strong style="color:#a855f7;">استراتژی مارکت پروفایل کوانت‌تاور:</strong> ${data.verdict.auction_phase}<br>
-            • تراز هدف خریدار: <strong style="color:#00e676;">$${Number(data.vah).toLocaleString()}</strong> | حمایت خریدار نهادی: <strong style="color:#00d2ff;">$${Number(data.val).toLocaleString()}</strong><br>
-            • توصیه: ${data.verdict.strategy_recommendation}
-          `;
-        }
-
-        // TradingView
-        embedGenericCryptoChart('cryptoQtTvChart', _cryptoQtSym, _cryptoQtTimeframe);
-
-      } catch (err) {
-        console.error('Error fetching Quantower:', err);
-      }
-    }
-
-    /* --------------------------------------------------------------------
-       5. SIERRA CHART NUMBERED BARS & VERTICAL VBP
-       -------------------------------------------------------------------- */
-    function setCryptoScTimeframe(tf) {
-      _cryptoScTimeframe = tf;
-      document.querySelectorAll('.sc-tf-btn').forEach(btn => {
-        if (btn.getAttribute('data-tf') === tf) {
-          btn.classList.add('active');
-          btn.style.border = '1.5px solid #eab308';
-          btn.style.background = 'rgba(234,179,8,0.25)';
-          btn.style.color = '#eab308';
-          btn.style.fontWeight = '800';
-        } else {
-          btn.classList.remove('active');
-          btn.style.border = '1px solid rgba(255,255,255,0.1)';
-          btn.style.background = 'transparent';
-          btn.style.color = '#cbd5e1';
-          btn.style.fontWeight = 'normal';
-        }
-      });
-      fetchCryptoSierra(true);
-      if (typeof _cryptoScViewMode !== 'undefined' && (_cryptoScViewMode === 'tv' || _cryptoScViewMode === 'split')) { embedGenericCryptoChart('cryptoScTvChart', _cryptoScSym, _cryptoScTimeframe); }
-    }
-
-    function onCryptoScChange() {
-      const el = document.getElementById('cryptoScSymbolSelect');
-      if (el) _cryptoScSym = el.value;
-      fetchCryptoSierra(true);
-      if (typeof _cryptoScViewMode !== 'undefined' && (_cryptoScViewMode === 'tv' || _cryptoScViewMode === 'split')) { embedGenericCryptoChart('cryptoScTvChart', _cryptoScSym, _cryptoScTimeframe); }
-    }
-
-    async function fetchCryptoSierra(force = false) {
-      try {
-        const res = await fetch(`/api/crypto/sierrachart?symbol=${_cryptoScSym}&timeframe=${_cryptoScTimeframe}`);
-        const data = await res.json();
-        if (!data || !data.ok) return;
-
-        // Divergence Badge
-        const divB = document.getElementById('cryptoScDivergenceBadge');
-        if (divB) {
-          divB.innerText = `واگرایی: ${data.divergence || 'نرمال'}`;
-          divB.style.color = data.divergence?.includes('صعودی') ? '#00e676' : '#ffd700';
-        }
-
-        // Active TF Span
-        const atfs = document.getElementById('cryptoScActiveTfSpan');
-        if (atfs) atfs.innerText = `کندل‌های ${_cryptoScTimeframe}`;
-
-        // Institutional Value Migration Banner
-        if (data.value_migration) {
-          const vmB = document.getElementById('cryptoScValueMigrationBanner');
-          if (vmB) {
-            vmB.style.display = 'flex';
-            const bEl = document.getElementById('cryptoScVmBadge');
-            if (bEl) bEl.innerText = data.value_migration.badge || '';
-            const vEl = document.getElementById('cryptoScVmVerdict');
-            if (vEl) vEl.innerText = data.value_migration.verdict_fa || '';
-            const dEl = document.getElementById('cryptoScVmDir');
-            if (dEl) dEl.innerText = `مهاجرت: ${data.value_migration.migration_direction || 'صعودی ↗'}`;
-          }
-        }
-
-        // Numbered Bars
-        const nbCont = document.getElementById('cryptoScNumberedBarsContainer');
-        if (nbCont && data.numbered_bars) {
-          nbCont.innerHTML = data.numbered_bars.map((b, idx) => {
-            const isBull = b.close >= b.open;
-            const deltaCol = b.delta >= 0 ? '#00e676' : '#ff3366';
-            const candleNum = idx + 1;
-            const tagBadge = b.tag ? `<div style="font-size:0.66rem; color:#ffd700; background:rgba(255,215,0,0.15); border-radius:3px; padding:1px 4px; text-align:center; margin-top:3px;">${b.tag}</div>` : '';
-            return `
-              <div style="min-width:145px; background:rgba(0,0,0,0.5); border:1.5px solid ${isBull ? 'rgba(0,230,118,0.6)' : 'rgba(255,51,102,0.6)'}; border-radius:8px; padding:8px 10px; font-family:var(--font-mono); font-size:0.74rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-weight:800; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:3px;">
-                  <span style="color:#94a3b8; font-size:0.7rem;">#${candleNum} [${b.time}]</span>
-                  <span style="color:${deltaCol}; font-weight:900;">${b.delta >= 0 ? '+' : ''}${b.delta} Δ</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; color:#94a3b8; font-size:0.71rem;">
-                  <span>O:</span><span>$${Number(b.open).toLocaleString()}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; color:#00e676; font-size:0.71rem;">
-                  <span>H:</span><span>$${Number(b.high).toLocaleString()}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; color:#ff3366; font-size:0.71rem;">
-                  <span>L:</span><span>$${Number(b.low).toLocaleString()}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; color:#ffd700; font-weight:800; font-size:0.73rem;">
-                  <span>C:</span><span>$${Number(b.close).toLocaleString()}</span>
-                </div>
-                <div style="margin-top:4px; border-top:1px solid rgba(255,255,255,0.06); padding-top:4px; display:flex; justify-content:space-between; font-size:0.7rem;">
-                  <span style="color:#00e676;" title="حجم خرید">${b.bid_vol} B</span>
-                  <span style="color:#ff3366;" title="حجم فروش">${b.ask_vol} A</span>
-                </div>
-                ${tagBadge}
-              </div>
-            `;
-          }).join('');
-        }
-
-        // VBP Profile Rows
-        const vbpCont = document.getElementById('cryptoScVbpContainer');
-        if (vbpCont && data.vbp_rows) {
-          vbpCont.innerHTML = data.vbp_rows.map(row => {
-            return `
-              <div style="display:grid; grid-template-columns:85px 1fr 60px; align-items:center; gap:8px; font-family:monospace; font-size:0.74rem; background:rgba(0,0,0,0.3); padding:3px 6px; border-radius:4px;">
-                <span style="color:${row.is_poc ? '#ffd700' : '#e2e8f0'}; font-weight:${row.is_poc ? '900' : 'normal'};">
-                  ${row.is_poc ? '👑 ' : ''}$${Number(row.price).toLocaleString()}
-                </span>
-                <div style="background:rgba(255,255,255,0.04); height:12px; border-radius:2px; display:flex; overflow:hidden;">
-                  <div style="width:${row.bid_pct}%; background:#00e676;"></div>
-                  <div style="width:${row.ask_pct}%; background:#ff3366;"></div>
-                </div>
-                <span style="color:#94a3b8; text-align:left;">${row.total_vol} BTC</span>
-              </div>
-            `;
-          }).join('');
-        }
-
-        // Verdict
-        const vText = document.getElementById('cryptoScVerdictText');
-        if (vText && data.verdict) {
-          vText.innerHTML = `
-            <strong style="color:#eab308;">تحلیل اردر فلو سیرا چارت:</strong> ${data.verdict.absorption_bias}<br>
-            • ${data.verdict.key_observation} &bull; <span style="color:#00e676;">${data.verdict.action_guide}</span>
-          `;
-        }
-
-        // TradingView
-        embedGenericCryptoChart('cryptoScTvChart', _cryptoScSym, _cryptoScTimeframe);
-
-      } catch (err) {
-        console.error('Error fetching Sierra Chart:', err);
-      }
-    }
-
-    /* --------------------------------------------------------------------
-       6. GEOPOLITICAL & FUNDAMENTALS RADAR
-       -------------------------------------------------------------------- */
-    async function fetchCryptoGeopolitics(force = false) {
-      try {
-        const res = await fetch('/api/crypto/geopolitics');
-        const data = await res.json();
-        if (!data || !data.ok) return;
-
-        // GPR Badge
-        const gprB = document.getElementById('cryptoGprBadge');
-        if (gprB) {
-          gprB.innerText = `شاخص GPR: ${data.gpr_index} (${data.gpr_status})`;
-          gprB.style.color = data.gpr_index > 140 ? '#ff3366' : '#00e676';
-        }
-
-        // Hotspots List
-        const hsList = document.getElementById('cryptoHotspotsList');
-        if (hsList && data.hotspots) {
-          hsList.innerHTML = data.hotspots.map(hs => `
-            <div style="background:rgba(0,0,0,0.3); border-right:3px solid ${hs.severity === 'HIGH' ? '#ff3366' : '#ffd700'}; padding:8px 10px; border-radius:6px; font-size:0.78rem;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-                <strong style="color:#fff;">${hs.region}</strong>
-                <span style="color:${hs.severity === 'HIGH' ? '#ff3366' : '#ffd700'}; font-weight:800;">${hs.severity}</span>
-              </div>
-              <div style="color:#cbd5e1; font-size:0.74rem;">${hs.impact_on_crypto}</div>
-            </div>
-          `).join('');
-        }
-
-        // Safe Haven Flows
-        const shList = document.getElementById('cryptoSafeHavenList');
-        if (shList && data.safe_haven_matrix) {
-          shList.innerHTML = data.safe_haven_matrix.map(sh => `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:6px; font-size:0.76rem;">
-              <strong style="color:#ffd700;">${sh.asset}</strong>
-              <span style="color:#cbd5e1;">جریان سرمایه: <strong style="color:#00e676;">${sh.capital_flow}</strong></span>
-              <span style="color:#94a3b8;">همبستگی: ${sh.correlation_with_btc}</span>
-            </div>
-          `).join('');
-        }
-
-        // Stablecoin Box
-        const scBox = document.getElementById('cryptoStablecoinBox');
-        if (scBox && data.stablecoin_minting) {
-          const sc = data.stablecoin_minting;
-          scBox.innerHTML = `
-            • ضرب اخیر تتر (Tether Treasury): <strong style="color:#00e676;">${sc.recent_tether_mints}</strong><br>
-            • جریان استیبل‌کوین Circle USDC: <strong style="color:#00d2ff;">${sc.circle_usdc_flow}</strong><br>
-            • تزریق نقدینگی خالص ۷ روزه: <strong style="color:#ffd700;">${sc.net_7d_liquidity_inflow}</strong><br>
-            • پیش‌بینی جهت مارکت: <strong>${sc.market_signal}</strong>
-          `;
-        }
-
-        // Verdict
-        const vText = document.getElementById('cryptoGeoVerdictText');
-        if (vText && data.verdict) {
-          vText.innerHTML = `
-            <strong style="color:#ef4444;">ارزیابی ریسک ژئوپلیتیک:</strong> ${data.verdict.macro_bias}<br>
-            • ${data.verdict.bitcoin_hedge_status} &bull; <span style="color:#00e676;">${data.verdict.forward_guidance}</span>
-          `;
-        }
-
-        // TradingView
-        embedGenericCryptoChart('cryptoGeoTvChart', 'BTC', '1h');
-
-      } catch (err) {
-        console.error('Error fetching Geopolitics:', err);
-      }
-    }
-
-    /* --------------------------------------------------------------------
-       7. WALL STREET INVESTMENT BANKS & INSTITUTIONAL CRYPTO REPORTS
-       -------------------------------------------------------------------- */
-    async function fetchCryptoBankReports(force = false) {
-      try {
-        const res = await fetch('/api/crypto/bank-reports');
-        const data = await res.json();
-        if (!data || !data.ok) return;
-
-        // ETF Net Flow Badge
-        const etfB = document.getElementById('cryptoEtfFlowBadge');
-        if (etfB) {
-          const net = data.etf_institutional_flows?.total_daily_net_inflow_usd || '+$428.5M';
-          etfB.innerText = `ورودی خالص ETFها: ${net}`;
-          etfB.style.color = '#00e676';
-        }
-
-        // Institutional ETF & Tether Summary Banner
-        if (data.spot_etf_summary) {
-          const eb = document.getElementById('cryptoBankEtfSummaryBanner');
-          if (eb) {
-            eb.style.display = 'flex';
-            const bEl = document.getElementById('cryptoBankEtfBadge');
-            if (bEl) bEl.innerText = data.spot_etf_summary.badge || '';
-            const tEl = document.getElementById('cryptoBankTetherBadge');
-            if (tEl && data.tether_treasury_minting) tEl.innerText = data.tether_treasury_minting.badge || '';
-            const impEl = document.getElementById('cryptoBankImpact');
-            if (impEl) impEl.innerText = `جذب خالص: ${data.spot_etf_summary.net_btc_absorbed || '+4,750 BTC'}`;
-          }
-        }
-
-        // ETF Table Body
-        const etfBody = document.getElementById('cryptoEtfTableBody');
-        if (etfBody && data.etf_institutional_flows?.funds) {
-          etfBody.innerHTML = data.etf_institutional_flows.funds.map(f => `
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-              <td style="padding:6px; text-align:right; font-weight:800; color:#ffd700;">${f.name} (${f.ticker})</td>
-              <td style="padding:6px; color:#00e676; font-weight:800;">${f.daily_flow}</td>
-              <td style="padding:6px; color:#cbd5e1;">${f.aum}</td>
-              <td style="padding:6px; color:#00d2ff; font-size:0.72rem;">${f.status}</td>
-            </tr>
-          `).join('');
-        }
-
-        // Bank Targets List
-        const btList = document.getElementById('cryptoBankTargetsList');
-        const bankList = data.bank_models || data.bank_desks || [];
-        if (btList && bankList.length > 0) {
-          btList.innerHTML = bankList.map(bm => `
-            <div style="background:rgba(0,0,0,0.3); border-right:3px solid #38bdf8; padding:8px 10px; border-radius:6px; font-size:0.78rem;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
-                <strong style="color:#ffd700;">${bm.bank}</strong>
-                <span style="color:#00e676; font-weight:900;">تارگت: ${bm.target_btc || bm.target} (${bm.horizon})</span>
-              </div>
-              <div style="color:#cbd5e1; font-size:0.74rem;">${bm.thesis || bm.rationale}</div>
-            </div>
-          `).join('');
-        }
-
-        // Scenarios
-        const scText = document.getElementById('cryptoBankScenariosText');
-        if (scText && data.macro_consensus_targets) {
-          const mc = data.macro_consensus_targets;
-          scText.innerHTML = `
-            • سناریوی صعودی (Bull Target): <strong style="color:#00e676;">${mc.bull_target}</strong> (${mc.bull_probability})<br>
-            • سناریوی پایه (Base Target): <strong style="color:#ffd700;">${mc.base_target}</strong> (${mc.base_probability})<br>
-            • سناریوی نزولی (Bear Target): <strong style="color:#ff3366;">${mc.bear_target}</strong> (${mc.bear_probability})
-          `;
-        }
-
-        // CME & Institutional Whales
-        const whText = document.getElementById('cryptoInstitutionalWhalesText');
-        if (whText) {
-          const cme = data.cme_cot_crypto || {};
-          const wh = data.institutional_whales || {};
-          whText.innerHTML = `
-            • دارایی خزانه مایکرو استراتژی (MSTR): <strong style="color:#ffd700;">${wh.microstrategy_holding || '499,000+ BTC'}</strong><br>
-            • موضع مدیران دارایی در فیوچرز CME: <strong style="color:#00e676;">${cme.asset_managers_position || '82% Long'}</strong><br>
-            • وضعیت هج‌فاندها در CME: <strong style="color:#38bdf8;">${cme.leveraged_funds_position || 'آربیتراژ Basis Trade'}</strong>
-          `;
-        }
-
-        // TradingView
-        embedGenericCryptoChart('cryptoBankTvChart', 'BTC', '1h');
-
-      } catch (err) {
-        console.error('Error fetching Bank Reports:', err);
-      }
-    }
-
-  
-
-
 // ========================================================
 // UNIFIED MASTER SIGNAL & ON-DEMAND AUDITOR LOGIC
 // ========================================================
@@ -14655,7 +12441,6 @@ async function fetchMasterSignal() {
   }
 }
 
-function __old_render(data) {}
 function renderMasterSignalCard(data) {
   const container = document.getElementById('masterSignalLiveCard');
   if (!container) return;
@@ -14709,7 +12494,6 @@ function renderMasterSignalCard(data) {
       </div>
     `;
 
-    // Also sync the smartExecCard widgets below
     const winEl = document.getElementById('smartWinPct');
     if (winEl) winEl.innerText = (ms.conviction_score || 90) + '%';
     const actionEl = document.getElementById('smartActionBadge');
@@ -14732,79 +12516,6 @@ function renderMasterSignalCard(data) {
           </div>
         </div>
         <div style="font-size: 0.8rem; background: #0f172a; padding: 8px 16px; border-radius: 8px; border: 1px solid #1e293b; color: #cbd5e1;">
-          ${ms.market_regime || 'رصد پیوسته لیدر بازار BTC'}
-        </div>
-      </div>
-    `;
-  }
-}
-
-  const container = document.getElementById('masterSignalLiveCard');
-  if (!container) return;
-
-  const ms = data.master_signal || {};
-  if (ms.has_signal) {
-    const isLong = (ms.action || '').toUpperCase().includes('BUY') || (ms.action || '').toUpperCase().includes('LONG');
-    const badgeColor = isLong ? '#00e676' : '#ef5350';
-    const badgeBg = isLong ? 'rgba(0, 230, 118, 0.15)' : 'rgba(239, 83, 80, 0.15)';
-    const actionText = isLong ? 'خرید (LONG)' : 'فروش (SHORT)';
-    const beText = ms.is_breakeven ? '<span style="color:#00e676; font-size:0.75rem; margin-right:8px;">(🛡️ ریسک‌فری شده / BE)</span>' : '';
-
-    container.innerHTML = `
-      <div style="background: rgba(15, 23, 42, 0.85); border: 2px solid ${badgeColor}; border-radius: 12px; padding: 18px; box-shadow: 0 4px 20px ${badgeColor}33;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}; padding: 4px 12px; border-radius: 8px; font-weight: 900; font-size: 0.95rem;">
-              ${ms.symbol} • ${actionText}
-            </span>
-            <span style="font-size: 0.8rem; color: #94a3b8;">تایم‌فریم: ${ms.timeframe || '15M'}</span>
-            ${beText}
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 0.85rem; color: #ffd700; font-weight: 800;">⭐ امتیاز اعتبار: ${ms.conviction_score || 90}/100</span>
-            <span style="font-size: 0.75rem; background: #0369a1; color: #fff; padding: 2px 8px; border-radius: 4px;">Grade A+</span>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 10px;">
-          <div style="background: #0b111e; padding: 10px; border-radius: 8px; border: 1px solid #1e293b; text-align: center;">
-            <div style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 3px;">نقطه ورود (Entry)</div>
-            <div style="font-size: 1.05rem; font-weight: 900; color: #fff; font-family: monospace;">$${ms.entry}</div>
-          </div>
-          <div style="background: #0b111e; padding: 10px; border-radius: 8px; border: 1px solid rgba(239, 83, 80, 0.3); text-align: center;">
-            <div style="font-size: 0.72rem; color: #ef5350; margin-bottom: 3px;">حد ضرر (SL)</div>
-            <div style="font-size: 1.05rem; font-weight: 900; color: #ef5350; font-family: monospace;">$${ms.sl}</div>
-          </div>
-          <div style="background: #0b111e; padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.3); text-align: center;">
-            <div style="font-size: 0.72rem; color: #00e676; margin-bottom: 3px;">تارگت اول (TP1)</div>
-            <div style="font-size: 1.05rem; font-weight: 900; color: #00e676; font-family: monospace;">$${ms.tp1}</div>
-          </div>
-          <div style="background: #0b111e; padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.3); text-align: center;">
-            <div style="font-size: 0.72rem; color: #00e676; margin-bottom: 3px;">تارگت دوم (TP2)</div>
-            <div style="font-size: 1.05rem; font-weight: 900; color: #00e676; font-family: monospace;">$${ms.tp2}</div>
-          </div>
-          <div style="background: #0b111e; padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.3); text-align: center;">
-            <div style="font-size: 0.72rem; color: #00e676; margin-bottom: 3px;">تارگت سوم (TP3)</div>
-            <div style="font-size: 1.05rem; font-weight: 900; color: #00e676; font-family: monospace;">$${ms.tp3}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  } else {
-    container.innerHTML = `
-      <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 12px; padding: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 28px; animation: pulse 2s infinite;">🛡️</span>
-          <div>
-            <div style="font-size: 0.98rem; font-weight: 800; color: #38bdf8; margin-bottom: 3px;">
-              وضعیت بازار: حالت انتظار و حفظ سرمایه (Cash Is A Position)
-            </div>
-            <div style="font-size: 0.8rem; color: #94a3b8;">
-              ${ms.message || 'ستاپ بدون ریسک با تاییدیه ۸ لایه در حال حاضر وجود ندارد. سیستم صبورانه منتظر شکار نقدینگی است.'}
-            </div>
-          </div>
-        </div>
-        <div style="font-size: 0.78rem; background: #0f172a; padding: 6px 12px; border-radius: 6px; border: 1px solid #1e293b; color: #cbd5e1;">
           ${ms.market_regime || 'رصد پیوسته لیدر بازار BTC'}
         </div>
       </div>
@@ -14879,11 +12590,12 @@ async function triggerCustomAudit() {
   }
 }
 
-// Auto-poll Master Signal every 15 seconds
 setInterval(fetchMasterSignal, 15000);
-document.addEventListener('DOMContentLoaded', fetchMasterSignal);
-
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(fetchMasterSignal, 500);
+});
 </script>
+
 
   <!-- Comprehensive Educational Modal & Beginner Glossary -->
   <div class="edu-modal-backdrop" id="educationModal" onclick="if(event.target === this) closeEducationModal();">
@@ -15255,6 +12967,14 @@ document.addEventListener('DOMContentLoaded', fetchMasterSignal);
       </div>
     </div>
   </div>
+
+
+<div style="display:none;" id="legacyDummies">
+  <span id="btnTgToggleSentinel"></span>
+  <span id="liqMagnetDir"></span>
+  <span id="liqTotalRisk"></span>
+  <span id="connectionNoticeBanner"></span>
+</div>
 
 </body>
 </html>
