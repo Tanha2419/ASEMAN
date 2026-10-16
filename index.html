@@ -7371,6 +7371,20 @@
         }
       } else if (tabId === 'exchangeTab') {
         fetchExchangeData(currentSymbol);
+      } else if (tabId === 'cryptoBookmapTab') {
+        fetchCryptoBookmap(true);
+      } else if (tabId === 'cryptoNinjaTab') {
+        fetchCryptoNinja(true);
+      } else if (tabId === 'cryptoAtasTab') {
+        fetchCryptoAtas(true);
+      } else if (tabId === 'cryptoQuantowerTab') {
+        fetchCryptoQuantower(true);
+      } else if (tabId === 'cryptoSierraTab') {
+        fetchCryptoSierra(true);
+      } else if (tabId === 'cryptoGeopoliticsTab') {
+        fetchCryptoGeopolitics(true);
+      } else if (tabId === 'cryptoBankReportsTab') {
+        fetchCryptoBankReports(true);
       }
     }
 
@@ -11490,84 +11504,80 @@ ${s3d.action_advice || ''}
     }
 
     function updatePositionCalc() {
-      if (!currentAnalysis) return;
-      const balance = parseFloat(document.getElementById('calcBalance').value) || 1000;
-      const riskPct = parseFloat(document.getElementById('calcRiskPct').value) || 1.5;
-      const leverageInput = document.getElementById('calcLeverage');
-      const leverage = Math.min(200, Math.max(1, parseFloat(leverageInput ? leverageInput.value : 10) || 1));
-      
-      const levLabel = document.getElementById('calcLeverageLabel');
-      if (levLabel) levLabel.innerText = `${leverage}x`;
+      try {
+        if (!currentAnalysis) return;
+        const balEl = document.getElementById('calcBalanceInput') || document.getElementById('calcBalance');
+        const balance = parseFloat(balEl ? balEl.value : 1000) || 1000;
+        const riskEl = document.getElementById('calcRiskPctInput') || document.getElementById('calcRiskPct');
+        const riskPct = parseFloat(riskEl ? riskEl.value : 1.5) || 1.5;
+        const leverageInput = document.getElementById('calcLeverage');
+        const leverage = Math.min(200, Math.max(1, parseFloat(leverageInput ? leverageInput.value : 10) || 1));
+        
+        const levLabel = document.getElementById('calcLeverageLabel');
+        if (levLabel) levLabel.innerText = `${leverage}x`;
 
-      const price = currentAnalysis.price || 1;
-      const scalp = currentAnalysis.scalp_setup || {};
-      const isBuy = !scalp.action_code || scalp.action_code === 'BUY';
-      const sl = scalp.stop_loss || (isBuy ? price * 0.985 : price * 1.015);
-      const tp1 = scalp.tp1 || (isBuy ? price * 1.015 : price * 0.985);
-      const tp2 = scalp.tp2 || (isBuy ? price * 1.025 : price * 0.975);
+        const price = currentAnalysis.price || 1;
+        const scalp = currentAnalysis.scalp_setup || {};
+        const isBuy = !scalp.action_code || scalp.action_code === 'BUY';
+        const sl = scalp.stop_loss || (isBuy ? price * 0.985 : price * 1.015);
+        const tp1 = scalp.tp1 || (isBuy ? price * 1.015 : price * 0.985);
+        const tp2 = scalp.tp2 || (isBuy ? price * 1.025 : price * 0.975);
 
-      const maxLossDollars = balance * (riskPct / 100.0);
-      const slDistPct = Math.abs(price - sl) / price;
+        const maxLossDollars = balance * (riskPct / 100.0);
+        const slDistPct = Math.abs(price - sl) / price;
 
-      if (slDistPct <= 0.0001) return;
+        if (slDistPct <= 0.0001) return;
 
-      const positionValueUsd = maxLossDollars / slDistPct;
-      const requiredMargin = positionValueUsd / leverage;
-      const marginUsagePct = (requiredMargin / balance) * 100.0;
-      const coinQty = positionValueUsd / price;
-      const tp1Profit = positionValueUsd * (Math.abs(tp1 - price) / price);
-      const tp2Profit = positionValueUsd * (Math.abs(tp2 - price) / price);
+        const positionValueUsd = maxLossDollars / slDistPct;
+        const requiredMargin = positionValueUsd / leverage;
+        const marginUsagePct = (requiredMargin / balance) * 100.0;
+        const coinQty = positionValueUsd / price;
+        const tp1Profit = positionValueUsd * (Math.abs(tp1 - price) / price);
+        const tp2Profit = positionValueUsd * (Math.abs(tp2 - price) / price);
 
-      // Estimated Liquidation Price
-      let estLiq = 0;
-      if (isBuy) {
-        estLiq = price * (1.0 - (1.0 / leverage) + 0.005);
-        if (estLiq < 0) estLiq = 0;
-      } else {
-        estLiq = price * (1.0 + (1.0 / leverage) - 0.005);
-      }
-
-      document.getElementById('calcMaxLoss').innerText = `$${maxLossDollars.toFixed(2)}`;
-      document.getElementById('calcPosValue').innerText = `$${Math.round(positionValueUsd).toLocaleString()} USD`;
-      document.getElementById('calcReqMargin').innerText = `$${requiredMargin.toFixed(2)} USD`;
-      
-      const usageEl = document.getElementById('calcMarginUsage');
-      if (usageEl) {
-        usageEl.innerText = `${marginUsagePct.toFixed(1)}%`;
-        usageEl.style.color = marginUsagePct > 100 ? '#ff3366' : (marginUsagePct > 70 ? '#ffc107' : '#00d2ff');
-      }
-
-      const liqEl = document.getElementById('calcEstLiqPrice');
-      if (liqEl) liqEl.innerText = formatPrice(estLiq);
-
-      document.getElementById('calcCoinQty').innerText = coinQty >= 1 ? coinQty.toFixed(4) : coinQty.toFixed(6);
-      document.getElementById('calcTp1Profit').innerText = `+$${tp1Profit.toFixed(2)} USD`;
-      
-      const tp2El = document.getElementById('calcTp2Profit');
-      if (tp2El) tp2El.innerText = `+$${tp2Profit.toFixed(2)} USD`;
-
-      const warnEl = document.getElementById('calcMarginWarning');
-      if (warnEl) {
-        if (requiredMargin > balance) {
-          warnEl.style.display = 'block';
-          warnEl.innerHTML = `⚠️ <b>کمبود موجودی:</b> مارجین مورد نیاز ($${requiredMargin.toFixed(0)}) از کل بالانس شما ($${balance}) بیشتر است! یا اهرم را بالاتر ببرید یا درصد ریسک را کاهش دهید.`;
-        } else if (isBuy && sl < estLiq) {
-          warnEl.style.display = 'block';
-          warnEl.innerHTML = `⚠️ <b>هشدار لیکوئید شدن:</b> با اهرم ${leverage}x قیمت لیکویید (${formatPrice(estLiq)}) بالاتر از استاپ شما (${formatPrice(sl)}) است! لوریج را به زیر ${Math.floor(1 / slDistPct)}x کاهش دهید تا قبل از استاپ لیکویید نشوید.`;
-        } else if (!isBuy && sl > estLiq) {
-          warnEl.style.display = 'block';
-          warnEl.innerHTML = `⚠️ <b>هشدار لیکوئید شدن:</b> با اهرم ${leverage}x قیمت لیکویید (${formatPrice(estLiq)}) پایین‌تر از استاپ شما (${formatPrice(sl)}) است! لوریج را کاهش دهید.`;
+        let estLiq = 0;
+        if (isBuy) {
+          estLiq = price * (1.0 - (1.0 / leverage) + 0.005);
+          if (estLiq < 0) estLiq = 0;
         } else {
-          warnEl.style.display = 'none';
+          estLiq = price * (1.0 + (1.0 / leverage) - 0.005);
         }
+
+        const safeSet = (id, text) => {
+          const el = document.getElementById(id);
+          if (el) el.innerText = text;
+        };
+
+        safeSet('calcMaxLoss', `$${maxLossDollars.toFixed(2)}`);
+        safeSet('calcPosValue', `$${Math.round(positionValueUsd).toLocaleString()} USD`);
+        safeSet('calcReqMargin', `$${requiredMargin.toFixed(2)} USD`);
+        safeSet('calcCoinQty', coinQty >= 1 ? coinQty.toFixed(4) : coinQty.toFixed(6));
+        safeSet('calcTp1Profit', `+$${tp1Profit.toFixed(2)} USD`);
+        safeSet('calcTp2Profit', `+$${tp2Profit.toFixed(2)} USD`);
+        safeSet('calcEstLiqPrice', formatPrice(estLiq));
+
+        const usageEl = document.getElementById('calcMarginUsage');
+        if (usageEl) {
+          usageEl.innerText = `${marginUsagePct.toFixed(1)}%`;
+          usageEl.style.color = marginUsagePct > 100 ? '#ff3366' : (marginUsagePct > 70 ? '#ffc107' : '#00d2ff');
+        }
+
+        const warnEl = document.getElementById('calcMarginWarning');
+        if (warnEl) {
+          if (requiredMargin > balance) {
+            warnEl.style.display = 'block';
+            warnEl.innerHTML = `⚠️ <b>کمبود موجودی:</b> مارجین مورد نیاز ($${requiredMargin.toFixed(0)}) از کل بالانس شما ($${balance}) بیشتر است! یا اهرم را بالاتر ببرید یا درصد ریسک را کاهش دهید.`;
+          } else if (isBuy && sl < estLiq) {
+            warnEl.style.display = 'block';
+            warnEl.innerHTML = `⚠️ <b>خطر لیکویید قبل از حد ضرر:</b> قیمت لیکوییدی تخمینی ($${formatPrice(estLiq)}) بالاتر از حد ضرر ($${formatPrice(sl)}) است! برای امنیت اهرم را کاهش دهید.`;
+          } else {
+            warnEl.style.display = 'none';
+          }
+        }
+      } catch (e) {
+        console.warn("Position calc silent error:", e);
       }
     }
-
-
-    // ==========================================
-    // GOLDEN 6 VITAL INSTITUTIONAL FILTERS
-    // ==========================================
-    let currentGoldenDirection = 'LONG';
 
     function setGoldenDirection(dir) {
       currentGoldenDirection = dir;
