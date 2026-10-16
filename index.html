@@ -2262,65 +2262,77 @@
 
     <!-- Dual Strategy Command Grid (Scalp vs Swing) -->
     <div class="content-tabs-section">
-      <!-- Categorized Glass Quick Switcher Bar -->
-      <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 800; display: flex; align-items: center; gap: 4px;">
-            <span>🧭</span> تفکیک دسته‌های تخصصی:
-          </span>
-          <button type="button" class="tab-cat-pill active" id="catBtnAll" onclick="filterTabCategory('ALL')">🌐 همه تب‌ها (۲۹)</button>
-          <button type="button" class="tab-cat-pill" id="catBtnOrderflow" onclick="filterTabCategory('ORDERFLOW')" style="border-color: rgba(255, 140, 0, 0.5); color: #ff8c00;">🔥 اردر فلو وال‌استریت و بانک‌ها (۷)</button>
-          <button type="button" class="tab-cat-pill" id="catBtnInst" onclick="filterTabCategory('INST')">🏛️ ترمینال نهادی و کلان (۵)</button>
-          <button type="button" class="tab-cat-pill" id="catBtnTechnical" onclick="filterTabCategory('TECH')">🧠 پرایس‌اکشن و چارت (۶)</button>
-          <button type="button" class="tab-cat-pill" id="catBtnExchanges" onclick="filterTabCategory('EXCH')">⚡ رادار صرافی‌ها و آن‌چین (۶)</button>
-          <button type="button" class="tab-cat-pill" id="catBtnRisk" onclick="filterTabCategory('RISK')">🛡️ ریسک، تلگرام و ژورنال (۵)</button>
-        </div>
-        <div style="font-size: 0.74rem; color: #64748b;" id="activeCategoryHint">
-          نمایش تمامی ۲۹ ماژول تحلیلی
+      <!-- 5 Main Clean Categories -->
+      <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 14px; padding: 12px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="main-hub-btn active" id="hubBtn_CMD" onclick="switchHubSection('CMD')" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: 1px solid #38bdf8; border-radius: 10px; padding: 10px 18px; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <span>🎯</span> ۱. اتاق فرمان و ژورنال
+          </button>
+          <button type="button" class="main-hub-btn" id="hubBtn_OF" onclick="switchHubSection('OF')" style="background: rgba(15, 23, 42, 0.7); color: #ff8c00; border: 1px solid rgba(255, 140, 0, 0.4); border-radius: 10px; padding: 10px 18px; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <span>🌊</span> ۲. اردر فلو و بوک‌مپ
+          </button>
+          <button type="button" class="main-hub-btn" id="hubBtn_TECH" onclick="switchHubSection('TECH')" style="background: rgba(15, 23, 42, 0.7); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 10px; padding: 10px 18px; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <span>🧠</span> ۳. تکنیکال و اسمارت‌مانی
+          </button>
+          <button type="button" class="main-hub-btn" id="hubBtn_MACRO" onclick="switchHubSection('MACRO')" style="background: rgba(15, 23, 42, 0.7); color: #ff3d71; border: 1px solid rgba(255, 61, 113, 0.4); border-radius: 10px; padding: 10px 18px; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <span>🏛️</span> ۴. فاندامنتال و اخبار کلان
+          </button>
+          <button type="button" class="main-hub-btn" id="hubBtn_SCAN" onclick="switchHubSection('SCAN')" style="background: rgba(15, 23, 42, 0.7); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); border-radius: 10px; padding: 10px 18px; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <span>🦅</span> ۵. اسکنرها و رادار بازار
+          </button>
         </div>
       </div>
 
-      <div class="tabs-header" id="mainTabsHeader">
-        <!-- Group 5: Institutional Order Flow & Wall Street Terminals (Bookmap, NinjaTrader, ATAS, Quantower, Sierra Chart, Geopolitics, Bank Reports) -->
-        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoBookmap" onclick="switchTab('cryptoBookmapTab', this)" style="border-color: rgba(255, 140, 0, 0.5); color: #ff8c00; font-weight: 800;">🔥 بوک‌مپ نقدینگی (Bookmap L2/L3)</button>
-        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoNinja" onclick="switchTab('cryptoNinjaTab', this)" style="border-color: rgba(0, 230, 118, 0.5); color: #00e676; font-weight: 800;">📊 نینجاتریدر (Footprint & SuperDOM)</button>
-        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoAtas" onclick="switchTab('cryptoAtasTab', this)" style="border-color: rgba(0, 210, 255, 0.5); color: #00d2ff; font-weight: 800;">⚡ اتاس (Time & Sales / Big Trades)</button>
-        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoQuantower" onclick="switchTab('cryptoQuantowerTab', this)" style="border-color: rgba(168, 85, 247, 0.5); color: #a855f7; font-weight: 800;">📐 کوانت‌تاور (TPO Market Profile)</button>
-        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoSierra" onclick="switchTab('cryptoSierraTab', this)" style="border-color: rgba(234, 179, 8, 0.5); color: #eab308; font-weight: 800;">📈 سیرا چارت (Sierra Chart Orderflow)</button>
-        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoGeopolitics" onclick="switchTab('cryptoGeopoliticsTab', this)" style="border-color: rgba(239, 68, 68, 0.5); color: #ef4444; font-weight: 800;">🌐 ژئوپلیتیک & استیبل‌کوین (GPR Index)</button>
-        <button class="tab-btn" data-cat="ORDERFLOW" id="tabBtnCryptoBankReports" onclick="switchTab('cryptoBankReportsTab', this)" style="border-color: rgba(255, 215, 0, 0.6); color: #ffd700; font-weight: 900;">🏦 گزارشات بانک‌ها & جریان ETFها (Wall Street)</button>
-
-        <!-- Group 1: Institutional & Macro -->
-        <button class="tab-btn active" data-cat="INST" id="tabBtnInst" onclick="switchTab('instTab', this)" style="border-color: #38bdf8; color: #38bdf8; font-weight: 900; background: rgba(56, 189, 248, 0.1);">🎯 سیگنال جامع و اتاق فرمان (Master Signal)</button>
-        <button class="tab-btn" data-cat="INST" id="tabBtnMacroDeep" onclick="switchTab('macroDeepTab', this)" style="border-color: rgba(255, 61, 113, 0.4); color: #ff3d71;">🏛️ اخبار کلان (CPI/FOMC)</button>
-        <button class="tab-btn" data-cat="INST" id="tabBtnLiquidityTerminal" onclick="switchTab('liquidityTerminalTab', this)" style="border-color: rgba(255, 145, 0, 0.4); color: #ff9100;">🔥 هیت‌مپ نقدینگی و نهنگ‌ها</button>
-        <button class="tab-btn" data-cat="INST" id="tabBtnPrecision" onclick="switchTab('precisionTab', this)" style="border-color: rgba(0, 210, 255, 0.4); color: #00d2ff;">💎 بسته ۵ گانه دقت نهادی</button>
-        <button class="tab-btn" data-cat="INST" id="tabBtnAlpha" onclick="switchTab('alphaTab', this)" style="border-color: rgba(255, 193, 7, 0.4); color: #ffc107;">🗺️ ماتریس لیدرهای بازار (Alpha)</button>
-
-        <!-- Group 2: ICT & Technical -->
-        <button class="tab-btn" data-cat="TECH" id="tabBtnSmc" onclick="switchTab('smcTab', this)">🧠 شواهد اسمارت‌مانی و FVG</button>
-        <button class="tab-btn" data-cat="TECH" id="tabBtnChart" onclick="switchTab('chartTab', this)">📊 چارت زنده (TradingView)</button>
-        <button class="tab-btn" data-cat="TECH" id="tabBtnTa15m" onclick="switchTab('ta15mTab', this)">⏱️ تکنیکال ۱۵ دقیقه (اسکالپ)</button>
-        <button class="tab-btn" data-cat="TECH" id="tabBtnTa4h" onclick="switchTab('ta4hTab', this)">📈 تکنیکال ۴ ساعته (سوئینگ)</button>
-        <button class="tab-btn" data-cat="TECH" id="tabBtnFib" onclick="switchTab('fibTab', this)">🎯 سطوح فیبوناچی</button>
-        <button class="tab-btn" data-cat="TECH" id="tabBtnVerdict" onclick="switchTab('verdictTab', this)">📝 بیانیه تحلیلی ایجنت</button>
-
-        <!-- Group 3: Radars & Exchanges -->
-        <button class="tab-btn" data-cat="EXCH" id="tabBtnExchange" onclick="switchTab('exchangeTab', this)" style="border-color: rgba(0, 210, 255, 0.5); color: #00d2ff; font-weight: 800;">🏛️ رادار زنده صرافی‌ها (LBank / Toobit / KuCoin)</button>
-        <button class="tab-btn" data-cat="EXCH" id="tabBtnC360" onclick="switchTab('c360Tab', this)">🟩 نقشه بازار (Coin360)</button>
-        <button class="tab-btn" data-cat="EXCH" id="tabBtnCoinlegs" onclick="switchTab('coinlegsTab', this)">🦵 رادار دیتکشن‌ها (Coinlegs)</button>
-        <button class="tab-btn" data-cat="EXCH" id="tabBtnDex" onclick="switchTab('dexTab', this)">🦅 استخرهای دکس (DexScreener)</button>
-        <button class="tab-btn" data-cat="EXCH" id="tabBtnMacro" onclick="switchTab('macroTab', this)">🌐 رادار آن‌چین</button>
-        <button class="tab-btn" data-cat="EXCH" id="tabBtnNews" onclick="switchTab('newsTab', this)">📰 اخبار CryptoPanic</button>
-
-        <!-- Group 4: Risk, Telegram & Journal -->
-        <button class="tab-btn" data-cat="RISK" id="tabBtnKelly" onclick="switchTab('kellyTab', this)" style="border-color: rgba(0, 230, 118, 0.4); color: #00e676;">🧮 ماشین‌حساب کِلی (Kelly)</button>
-        <button class="tab-btn" data-cat="RISK" id="tabBtnGolden" onclick="switchTab('goldenTab', this)" style="border-color: rgba(255, 215, 0, 0.4); color: #ffd700;">⭐ ۶ فیلتر طلایی (Golden 6)</button>
-        <button class="tab-btn" data-cat="RISK" id="tabBtnBacktest" onclick="switchTab('backtestTab', this)">🧪 بک‌تست تاریخی</button>
-                <button class="tab-btn" data-cat="RISK" id="tabBtnArbiter" onclick="switchTab('arbiterTab', this)" style="border-color: rgba(0, 210, 255, 0.6); color: #00d2ff; font-weight: 800; background: rgba(0, 210, 255, 0.08);">🛡️ دروازه‌بان هوشمند (Arbiter Gatekeeper)</button>
-        <button class="tab-btn" data-cat="RISK" id="tabBtnTelegram" onclick="switchTab('telegramTab', this)">📲 ارسال به تلگرام</button>
-        <button class="tab-btn" data-cat="RISK" id="tabBtnJournal" onclick="switchTab('journalTab', this)" style="border-color: rgba(0, 230, 118, 0.5); color: #00e676; font-weight: 800;">📋 ثبت وقایع و تاریخچه (Journal)</button>
+      <!-- Sub-tabs for Category 1: CMD -->
+      <div class="subhub-bar" id="subhub_CMD" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.2);">
+        <button class="tab-btn active" id="tabBtnInst" onclick="switchTab('instTab', this)">🎯 سیگنال جامع (Master Signal)</button>
+        <button class="tab-btn" id="tabBtnJournal" onclick="switchTab('journalTab', this)">📋 ثبت وقایع و تاریخچه (Journal)</button>
+        <button class="tab-btn" id="tabBtnTelegram" onclick="switchTab('telegramTab', this)">📲 ارسال به تلگرام (Telegram)</button>
+        <button class="tab-btn" id="tabBtnArbiter" onclick="switchTab('arbiterTab', this)">🛡️ دروازه‌بان هوشمند (Arbiter)</button>
       </div>
+
+      <!-- Sub-tabs for Category 2: OF -->
+      <div class="subhub-bar" id="subhub_OF" style="display: none; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 140, 0, 0.2);">
+        <button class="tab-btn" id="tabBtnCryptoBookmap" onclick="switchTab('cryptoBookmapTab', this)">🔥 بوک‌مپ نقدینگی (Bookmap)</button>
+        <button class="tab-btn" id="tabBtnCryptoNinja" onclick="switchTab('cryptoNinjaTab', this)">📊 نینجاتریدر (Footprint)</button>
+        <button class="tab-btn" id="tabBtnCryptoAtas" onclick="switchTab('cryptoAtasTab', this)">⚡ اتاس (Big Trades)</button>
+        <button class="tab-btn" id="tabBtnCryptoQuantower" onclick="switchTab('cryptoQuantowerTab', this)">📐 کوانت‌تاور (TPO Profile)</button>
+        <button class="tab-btn" id="tabBtnCryptoSierra" onclick="switchTab('cryptoSierraTab', this)">📈 سیرا چارت (Sierra Chart)</button>
+        <button class="tab-btn" id="tabBtnLiquidityTerminal" onclick="switchTab('liquidityTerminalTab', this)">🌊 هیت‌مپ نقدینگی و نهنگ‌ها</button>
+      </div>
+
+      <!-- Sub-tabs for Category 3: TECH -->
+      <div class="subhub-bar" id="subhub_TECH" style="display: none; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(168, 85, 247, 0.2);">
+        <button class="tab-btn" id="tabBtnChart" onclick="switchTab('chartTab', this)">📊 چارت زنده (TradingView)</button>
+        <button class="tab-btn" id="tabBtnSmc" onclick="switchTab('smcTab', this)">🧠 شواهد اسمارت‌مانی و FVG</button>
+        <button class="tab-btn" id="tabBtnTa15m" onclick="switchTab('ta15mTab', this)">⏱️ تحلیل تایم‌فریم ۱۵ دقیقه</button>
+        <button class="tab-btn" id="tabBtnTa4h" onclick="switchTab('ta4hTab', this)">📈 تحلیل تایم‌فریم ۴ ساعته</button>
+        <button class="tab-btn" id="tabBtnFib" onclick="switchTab('fibTab', this)">🎯 سطوح فیبوناچی</button>
+        <button class="tab-btn" id="tabBtnVerdict" onclick="switchTab('verdictTab', this)">📝 بیانیه تحلیلی ایجنت</button>
+      </div>
+
+      <!-- Sub-tabs for Category 4: MACRO -->
+      <div class="subhub-bar" id="subhub_MACRO" style="display: none; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 61, 113, 0.2);">
+        <button class="tab-btn" id="tabBtnMacroDeep" onclick="switchTab('macroDeepTab', this)">🏛️ اخبار کلان (CPI/FOMC)</button>
+        <button class="tab-btn" id="tabBtnCryptoBankReports" onclick="switchTab('cryptoBankReportsTab', this)">🏦 گزارشات بانک‌ها و ETFها</button>
+        <button class="tab-btn" id="tabBtnCryptoGeopolitics" onclick="switchTab('cryptoGeopoliticsTab', this)">🌐 ژئوپلیتیک و استیبل‌کوین</button>
+        <button class="tab-btn" id="tabBtnNews" onclick="switchTab('newsTab', this)">📰 اخبار CryptoPanic</button>
+        <button class="tab-btn" id="tabBtnMacro" onclick="switchTab('macroTab', this)">🌐 رادار داده‌های آن‌چین</button>
+      </div>
+
+      <!-- Sub-tabs for Category 5: SCAN -->
+      <div class="subhub-bar" id="subhub_SCAN" style="display: none; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(0, 230, 118, 0.2);">
+        <button class="tab-btn" id="tabBtnC360" onclick="switchTab('c360Tab', this)">🟩 نقشه بازار (Coin360)</button>
+        <button class="tab-btn" id="tabBtnCoinlegs" onclick="switchTab('coinlegsTab', this)">🦵 رادار دیتکشن‌ها (Coinlegs)</button>
+        <button class="tab-btn" id="tabBtnDex" onclick="switchTab('dexTab', this)">🦅 استخرهای دکس (DexScreener)</button>
+        <button class="tab-btn" id="tabBtnExchange" onclick="switchTab('exchangeTab', this)">🏛️ رادار صرافی‌ها (LBank/Toobit)</button>
+        <button class="tab-btn" id="tabBtnAlpha" onclick="switchTab('alphaTab', this)">🗺️ ماتریس لیدرهای بازار (Alpha)</button>
+        <button class="tab-btn" id="tabBtnPrecision" onclick="switchTab('precisionTab', this)">💎 بسته ۵ گانه دقت نهادی</button>
+        <button class="tab-btn" id="tabBtnGolden" onclick="switchTab('goldenTab', this)">⭐ ۶ فیلتر طلایی</button>
+        <button class="tab-btn" id="tabBtnKelly" onclick="switchTab('kellyTab', this)">🧮 ماشین‌حساب کِلی (Kelly)</button>
+        <button class="tab-btn" id="tabBtnBacktest" onclick="switchTab('backtestTab', this)">🧪 بک‌تست تاریخی</button>
+      </div>
+    </div>
 
       <!-- Tab Institutional Signal Matrix -->
       <div class="tab-content active" id="instTab">
@@ -12225,6 +12237,49 @@ setInterval(fetchMasterSignal, 15000);
 window.addEventListener('DOMContentLoaded', () => {
   setTimeout(fetchMasterSignal, 500);
 });
+
+
+// ========================================================
+// 5 MAIN HUBS & ACCORDION NAVIGATION CONTROLLER
+// ========================================================
+function switchHubSection(hubKey) {
+  const hubKeys = ['CMD', 'OF', 'TECH', 'MACRO', 'SCAN'];
+  const hubColors = {
+    'CMD': { bg: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', border: '#38bdf8' },
+    'OF': { bg: 'linear-gradient(135deg, #ea580c, #c2410c)', color: '#fff', border: '#ff8c00' },
+    'TECH': { bg: 'linear-gradient(135deg, #9333ea, #7e22ce)', color: '#fff', border: '#a855f7' },
+    'MACRO': { bg: 'linear-gradient(135deg, #e11d48, #be123c)', color: '#fff', border: '#ff3d71' },
+    'SCAN': { bg: 'linear-gradient(135deg, #16a34a, #15803d)', color: '#fff', border: '#00e676' }
+  };
+
+  hubKeys.forEach(k => {
+    const btn = document.getElementById('hubBtn_' + k);
+    const bar = document.getElementById('subhub_' + k);
+    if (k === hubKey) {
+      if (btn) {
+        btn.classList.add('active');
+        btn.style.background = hubColors[k].bg;
+        btn.style.color = hubColors[k].color;
+        btn.style.borderColor = hubColors[k].border;
+      }
+      if (bar) bar.style.display = 'flex';
+      // Automatically switch to the first tab of this hub
+      const firstTabBtn = bar ? bar.querySelector('.tab-btn') : null;
+      if (firstTabBtn) {
+        firstTabBtn.click();
+      }
+    } else {
+      if (btn) {
+        btn.classList.remove('active');
+        btn.style.background = 'rgba(15, 23, 42, 0.7)';
+        btn.style.color = '#94a3b8';
+        btn.style.borderColor = '#334155';
+      }
+      if (bar) bar.style.display = 'none';
+    }
+  });
+}
+
 </script>
 
 
