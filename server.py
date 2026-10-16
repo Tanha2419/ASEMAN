@@ -1,3 +1,4 @@
+from supabase_journal_engine import supabase_journal
 import os
 import sys
 import time
@@ -325,15 +326,25 @@ TOP_50_ELITE_SET = set(TOP_50_ELITE_SYMBOLS)
 
 
 def load_signal_journal():
+    records = []
     if os.path.exists(JOURNAL_FILE):
         try:
             with open(JOURNAL_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if isinstance(data, list):
-                    return data
+                if isinstance(data, list) and len(data) > 0:
+                    records = data
         except Exception:
             pass
-    return []
+    # If local storage is empty, hydrate from Supabase cloud database
+    if not records and supabase_journal.is_connected:
+        try:
+            db_records = supabase_journal.get_all_records()
+            if db_records:
+                records = db_records
+                save_signal_journal(records)
+        except Exception:
+            pass
+    return records
 
 def save_signal_journal(records):
     try:
@@ -341,6 +352,13 @@ def save_signal_journal(records):
             records = []
         with open(JOURNAL_FILE, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=2, ensure_ascii=False)
+        # Mirror to Supabase if connected
+        try:
+            if supabase_journal.is_connected and records:
+                latest = records[0]
+                supabase_journal.insert_signal(latest)
+        except Exception:
+            pass
     except Exception as e:
         print(f"[JOURNAL SAVE ERR] {e}")
 
@@ -1269,6 +1287,14 @@ def reset_signal_journal(admin_key: Optional[str] = Query(None)):
 
 @app.post("/api/journal/reset-all")
 def reset_all_signal_journals(admin_key: Optional[str] = Query(None)):
+    if ADMIN_SECRET and admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ریست کامل ژورنال به کلید ادمین نیاز است.")
+    try:
+        if supabase_journal.is_connected:
+            supabase_journal.clear_all_records()
+    except Exception:
+        pass
+
     if ADMIN_SECRET and admin_key != ADMIN_SECRET:
         raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ریست کامل ژورنال به کلید ادمین نیاز است.")
     global _active_signal_trackers, _sent_cooldown
