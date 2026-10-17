@@ -151,6 +151,8 @@ def get_status():
 
 _fast_ticker_cache = {}
 _fast_ticker_time = {}
+_ticker_cache = {}
+_ticker_cache_time = {}
 
 @app.get("/api/ticker")
 def get_ticker(symbol: str = Query("BTC")):
@@ -189,6 +191,7 @@ def get_ticker(symbol: str = Query("BTC")):
 
     return JSONResponse(status_code=503, content={"ok": False, "error": "قیمت زنده صرافی در دسترس نیست."})
 
+@app.get("/api/analyze")
 def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. BTC, ETH, SOL, PEPE, SUI")):
     sym_clean = clean_symbol(symbol).upper()
     now = time.time()
