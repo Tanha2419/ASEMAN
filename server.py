@@ -351,9 +351,18 @@ def run_backtest_endpoint(
     res = BacktestEngine.run_backtest(candles, sym, timeframe, lookback)
     return res
 
-JOURNAL_FILE = os.path.join(os.path.dirname(__file__), "signal_journal.json")
-JOURNAL_4H_FILE = os.path.join(os.path.dirname(__file__), "journal_4h.json")
-MACRO_JOURNAL_FILE = os.path.join(os.path.dirname(__file__), "macro_journal.json")
+# Render Persistent Disk Mount (/data) with automatic local fallback
+PERSISTENT_DATA_DIR = "/data" if os.path.exists("/data") and os.access("/data", os.W_OK) else os.path.dirname(__file__)
+try:
+    os.makedirs(PERSISTENT_DATA_DIR, exist_ok=True)
+except Exception:
+    pass
+
+JOURNAL_FILE = os.path.join(PERSISTENT_DATA_DIR, "signal_journal.json")
+JOURNAL_4H_FILE = os.path.join(PERSISTENT_DATA_DIR, "journal_4h.json")
+MACRO_JOURNAL_FILE = os.path.join(PERSISTENT_DATA_DIR, "macro_journal.json")
+COOLDOWN_FILE = os.path.join(PERSISTENT_DATA_DIR, "sent_cooldown.json")
+TELEGRAM_CONFIG_FILE = os.path.join(PERSISTENT_DATA_DIR, "telegram_config.json")
 
 # Top 50 Elite Market Cap & High-Liquidity Cryptocurrencies (Zero Slippage & Institutional Depth)
 TOP_50_ELITE_SYMBOLS = [
@@ -367,40 +376,21 @@ TOP_50_ELITE_SET = set(TOP_50_ELITE_SYMBOLS)
 
 
 def load_signal_journal():
-    records = []
+    # 1. Supabase Cloud Database is the PRIMARY Source of Truth!
+    if supabase_journal.is_connected:
+        try:
+            db_records = supabase_journal.fetch_recent_signals(limit=200)
+            if isinstance(db_records, list) and len(db_records) > 0:
+                # Mirror to persistent disk as fast-read cache
+                save_signal_journal(db_records)
+                return db_records
+        except Exception as e:
+            logger.warning(f"[JOURNAL] Supabase fetch fallback to disk: {e}")
+
+    # 2. Fallback to persistent disk cache only if Supabase is offline/unreachable
     if os.path.exists(JOURNAL_FILE):
         try:
             with open(JOURNAL_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, list) and len(data) > 0:
-                    records = data
-        except Exception:
-            pass
-    # If local storage is empty, hydrate from Supabase cloud database
-    if not records and supabase_journal.is_connected:
-        try:
-            db_records = supabase_journal.get_all_records()
-            if db_records:
-                records = db_records
-                save_signal_journal(records)
-        except Exception:
-            pass
-    return records
-
-def save_signal_journal(records):
-    try:
-        if records is None:
-            records = []
-        with open(JOURNAL_FILE, "w", encoding="utf-8") as f:
-            json.dump(records, f, indent=2, ensure_ascii=False)
-        # Local file updated. Explicit signals are upserted atomically on creation.
-    except Exception as e:
-        print(f"[JOURNAL SAVE ERR] {e}")
-
-def load_4h_journal():
-    if os.path.exists(JOURNAL_4H_FILE):
-        try:
-            with open(JOURNAL_4H_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, list):
                     return data
