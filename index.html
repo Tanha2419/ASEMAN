@@ -2121,7 +2121,7 @@
         <div class="price-box">
           <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
             <span id="liveDot" title="نرخ لحظه‌ای زنده (Live Tick)" style="display: inline-block; width: 8px; height: 8px; background: #00e676; border-radius: 50%; box-shadow: 0 0 8px #00e676; animation: pulseLiveDot 2s infinite;"></span>
-            <div class="current-price" id="currentPrice">$82,178.00</div>
+            <div class="current-price" id="currentPrice">در حال بارگذاری...</div>
           </div>
           <div class="price-change-pill pill-green" id="priceChangePill">+0.00% (24h)</div>
         </div>
@@ -2167,7 +2167,7 @@
         <div class="smc-pill">
           <div class="smc-pill-title">🧲 گره متراکم نقدینگی (POC):</div>
           <div class="smc-pill-value" style="font-family: var(--font-mono); color: var(--purple);" id="pocPill">
-            $0.00
+            --
           </div>
           <div style="font-size: 0.72rem; color: var(--text-dim);">
             بیشترین حجم معامله‌شده (مغناطیس قیمت)
@@ -2670,14 +2670,14 @@
               <!-- Circular-style Probability Indicator -->
               <div style="position: relative; width: 95px; height: 95px; border-radius: 50%; background: conic-gradient(#00e676 var(--win-deg, 280deg), rgba(255,255,255,0.08) 0deg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 20px rgba(0, 230, 118, 0.25);" id="smartWinCircle">
                 <div style="width: 78px; height: 78px; border-radius: 50%; background: #0b0e14; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                  <span id="smartWinPct" style="font-size: 1.35rem; font-weight: 900; color: #00e676; font-family: var(--font-mono); line-height: 1;">88%</span>
+                  <span id="smartWinPct" style="font-size: 1.35rem; font-weight: 900; color: #ffd700; font-family: var(--font-mono); line-height: 1;">--%</span>
                   <span style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">تخمین تکنیکال</span>
                 </div>
               </div>
               <div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                  <span id="smartGradeBadge" style="background: linear-gradient(135deg, #ffd700, #ff9100); color: #000; font-weight: 900; font-size: 0.85rem; padding: 3px 10px; border-radius: 6px;">Grade A+</span>
-                  <span id="smartActionBadge" style="background: rgba(0, 230, 118, 0.2); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); font-weight: 800; font-size: 0.82rem; padding: 3px 10px; border-radius: 6px;">LONG / BUY</span>
+                  <span id="smartGradeBadge" style="background: rgba(255, 215, 0, 0.15); color: #ffd700; border: 1px solid #ffd700; font-weight: 900; font-size: 0.85rem; padding: 3px 10px; border-radius: 6px;">ارزیابی نهادی</span>
+                  <span id="smartActionBadge" style="background: rgba(255, 215, 0, 0.15); color: #ffd700; border: 1px solid #ffd700; font-weight: 800; font-size: 0.82rem; padding: 3px 10px; border-radius: 6px;">WAIT / نظارت</span>
                 </div>
                 <div id="smartVerdictTitle" style="font-size: 0.88rem; font-weight: 700; color: #f8fafc; line-height: 1.4; margin-bottom: 4px;">
                   وضعیت اجرای اتمیک سیگنال مستر (تاییدیه ۸ لایه نهادی)
@@ -7613,6 +7613,8 @@
       } catch (e) {
         console.warn('Fast ticker fetch error:', e);
       }
+      // Trigger full analysis immediately to hydrate POC, OI, Volume and Orderflow
+      fetchAnalysis(symClean);
     }
 
     async function loadSymbol(sym) {

@@ -26,10 +26,15 @@ class SupabaseJournalManager:
         self.is_connected = bool(self.supabase_url and self.supabase_key)
 
     def insert_signal(self, record: Dict[str, Any]) -> bool:
-        """Inserts or updates a trade setup into Supabase cloud."""
+        """Upserts a unique trade setup into Supabase cloud using signal_id conflict resolution."""
         try:
             signal_id = record.get("id") or record.get("signal_id")
+            if not signal_id:
+                import time
+                signal_id = f"SIG-{int(time.time())}-{record.get('symbol', 'CRYPTO')}"
+
             payload = {
+                "signal_id": str(signal_id),
                 "symbol": record.get("symbol", "").upper(),
                 "action": record.get("action", "BUY").upper(),
                 "entry": float(record.get("entry", 0.0)),
@@ -39,16 +44,20 @@ class SupabaseJournalManager:
                 "tp3": float(record.get("tp3", 0.0)),
                 "pnl": float(record.get("pnl", 0.0)),
                 "status": record.get("status", "TRACKING"),
-                "source": record.get("source", "MASTER_SIGNAL")
+                "source": record.get("source", "MASTER_SIGNAL"),
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }
-            if signal_id:
-                payload["signal_id"] = str(signal_id)
             
-            r = requests.post(self.rest_endpoint, headers=self.headers, json=payload, timeout=5)
-            if r.status_code in [200, 201]:
+            # PostgREST true UPSERT header
+            upsert_headers = dict(self.headers)
+            upsert_headers["Prefer"] = "resolution=merge-duplicates,return=representation"
+            
+            url = f"{self.rest_endpoint}?on_conflict=signal_id"
+            r = requests.post(url, headers=upsert_headers, json=payload, timeout=5)
+            if r.status_code in [200, 201, 204]:
                 return True
             else:
-                logger.error(f"Failed to insert signal into Supabase: {r.text}")
+                logger.error(f"Failed to upsert signal into Supabase: {r.text}")
                 return False
         except Exception as e:
             logger.error(f"Error inserting to Supabase: {e}")
@@ -115,13 +124,14 @@ class SupabaseJournalManager:
             status = str(r.get("status", "")).upper()
             pnl = float(r.get("pnl", 0.0))
 
-            if status in ["OPEN", "TRACKING"]:
+            # An open position or a trade that just touched TP1 and is still tracking to TP2/TP3 is OPEN!
+            if status in ["OPEN", "TRACKING", "TP1_HIT"]:
                 open_trades += 1
                 continue
 
             # For closed trades only:
             total_pnl += pnl
-            if "TP" in status or pnl > 0:
+            if status in ["TP2_HIT", "TP3_HIT", "PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"] or pnl > 0:
                 wins += 1
             elif "SL" in status or pnl < 0:
                 losses += 1

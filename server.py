@@ -293,9 +293,10 @@ def get_cryptopanic_config():
 
 @app.post("/api/cryptopanic/config")
 def set_cryptopanic_config(req: CryptoPanicConfigRequest, x_admin_key: Optional[str] = Header(None)):
-    admin_secret = os.environ.get("ADMIN_SECRET_KEY", "ASEMAN_SECURE_ADMIN_2026")
-    if x_admin_key and x_admin_key != admin_secret:
-        return JSONResponse(status_code=403, content={"success": False, "message": "دسترسی غیرمجاز (کلید مدیریت نامعتبر است)"})
+    admin_secret = os.environ.get("ADMIN_SECRET_KEY")
+    # Strict validation: admin key is strictly required and must match env var
+    if not admin_secret or not x_admin_key or x_admin_key.strip() != admin_secret.strip():
+        return JSONResponse(status_code=403, content={"success": False, "message": "دسترسی غیرمجاز: برای تنظیم کلید به هدر معتبر x-admin-key نیاز است."})
     success = CryptoPanicEngine.save_api_key(req.api_key)
     return {"success": success, "message": "توکن API با موفقیت ذخیره شد." if success else "خطا در ذخیره توکن"}
 
@@ -355,14 +356,7 @@ def save_signal_journal(records):
             records = []
         with open(JOURNAL_FILE, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=2, ensure_ascii=False)
-        # Mirror to Supabase if connected
-        try:
-            if supabase_journal.is_connected and records:
-                # Upsert recent active records to guarantee persistence across Render reboots
-                for rec in records[:10]:
-                    supabase_journal.insert_signal(rec)
-        except Exception as e:
-            print(f"[SUPABASE MIRROR ERR] {e}")
+        # Local file updated. Explicit signals are upserted atomically on creation.
     except Exception as e:
         print(f"[JOURNAL SAVE ERR] {e}")
 
