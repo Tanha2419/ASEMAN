@@ -50,12 +50,18 @@ app = FastAPI(
 )
 
 # Enable CORS for preview environment
+# Hardened CORS: allow exact origins with safe fallback
+allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "")
+allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+if not allowed_origins:
+    allowed_origins = ["https://aseman-crypto.onrender.com", "https://us30-aseman-1.onrender.com", "http://localhost:8000", "http://127.0.0.1:8000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "x-admin-key", "Authorization"],
 )
 # Enable instant GZip Compression for ultrafast response payload transfer
 app.add_middleware(GZipMiddleware, minimum_size=500)
@@ -75,16 +81,16 @@ async def add_security_headers(request: Request, call_next):
     # Permissive Permissions Policy
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
 
-    # Content Security Policy (CSP) - Permits preview iframes, Google Fonts, TradingView, and websockets
+    # Hardened Content Security Policy (CSP)
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: http: data: blob:; "
-        "img-src 'self' https: http: data: blob:; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http: https://s3.tradingview.com; "
-        "style-src 'self' 'unsafe-inline' https: http: https://fonts.googleapis.com; "
-        "font-src 'self' https: http: data: https://fonts.gstatic.com; "
-        "connect-src 'self' https: http: wss: ws:; "
-        "frame-src 'self' https: http: https://s.tradingview.com https://www.tradingview.com; "
-        "frame-ancestors *;"
+        "default-src 'self' https://s3.tradingview.com https://s.tradingview.com https://fonts.googleapis.com; "
+        "img-src 'self' data: https: blob:; "
+        "script-src 'self' 'unsafe-inline' https://s3.tradingview.com https://s.tradingview.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "connect-src 'self' https://api.binance.com https://fapi.binance.com https://api.bybit.com wss: ws: https:; "
+        "frame-src 'self' https://s.tradingview.com https://www.tradingview.com; "
+        "frame-ancestors 'self' https://*.onrender.com https://*.e2b.app;"
     )
 
     return response
@@ -193,7 +199,9 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
     # Enrich with Hedge-Fund 5 Precision Suites
     try:
         sym = clean_symbol(symbol)
-        price = float(res.get("price", 80500))
+        price = float(res.get("price", 0.0))
+        if price <= 0:
+            return JSONResponse(status_code=503, content={"success": False, "error": "داده زنده قیمت در دسترس نیست. محاسبه دقت موقتاً متوقف شد."})
         tk = res.get("ticker", {})
         h24 = float(tk.get("highPrice", price * 1.02)) if tk else price * 1.02
         l24 = float(tk.get("lowPrice", price * 0.98)) if tk else price * 0.98
@@ -237,15 +245,18 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
         tp_s = float(scalp.get("tp2") or scalp.get("tp1") or (price * 1.025 if "BUY" in scalp.get("direction", "BUY") else price * 0.975))
         win_r = float(res.get("backtest", {}).get("win_rate_pct", 55.0))
         direction_val = "LONG" if "BUY" in scalp.get("action", "BUY") or "LONG" in scalp.get("direction", "LONG") else "SHORT"
-        res["kelly_risk"] = KellyRiskEngine.calculate_risk_and_kelly(
-            balance=5000.0,
-            risk_pct=1.0,
-            entry_price=entry_s,
-            stop_loss=sl_s,
-            take_profit=tp_s,
-            win_rate_pct=win_r,
-            direction=direction_val
-        )
+        if entry_s > 0 and sl_s > 0 and tp_s > 0:
+            res["kelly_risk"] = KellyRiskEngine.calculate_risk_and_kelly(
+                balance=float(res.get("account_balance", 1000.0)),
+                risk_pct=1.0,
+                entry_price=entry_s,
+                stop_loss=sl_s,
+                take_profit=tp_s,
+                win_rate_pct=win_r,
+                direction=direction_val
+            )
+        else:
+            res["kelly_risk"] = {"error": "داده‌های ستاپ برای محاسبه ریسک کافی نیست"}
 
         # 6 Golden Institutional Noise-Free Filters
         res["golden_six"] = GoldenSixCoreEngine.evaluate(
@@ -700,9 +711,24 @@ def hydrate_active_trackers_from_persistence():
             for r in active_candidates:
                 s_id = r.get("signal_id") or r.get("id")
                 sym = r.get("symbol", "").upper().replace("USDT", "")
+                
+                # Parse and preserve original created_at timestamp from Supabase/storage
+                orig_ts = time.time()
+                raw_created = r.get("created_at")
+                if raw_created:
+                    try:
+                        if isinstance(raw_created, (int, float)):
+                            orig_ts = float(raw_created)
+                        elif isinstance(raw_created, str):
+                            # Try parsing ISO or timestamp
+                            from datetime import datetime
+                            orig_ts = datetime.fromisoformat(raw_created.replace("Z", "+00:00")).timestamp()
+                    except Exception:
+                        pass
+                
                 if not any(t.get("id") == s_id or (t.get("symbol") == sym and not t.get("closed")) for t in _active_signal_trackers):
                     _active_signal_trackers.append({
-                        "id": s_id or f"SIG-{int(time.time())}-{sym}",
+                        "id": s_id or f"SIG-{int(orig_ts)}-{sym}",
                         "symbol": sym,
                         "action": r.get("action", "BUY"),
                         "entry": float(r.get("entry", 0.0)),
@@ -710,7 +736,7 @@ def hydrate_active_trackers_from_persistence():
                         "tp1": float(r.get("tp1", 0.0)),
                         "tp2": float(r.get("tp2", 0.0)),
                         "tp3": float(r.get("tp3", 0.0)),
-                        "created_at": time.time(),
+                        "created_at": orig_ts, # Exact original timestamp preserved!
                         "tp1_hit": r.get("status") == "TP1_HIT",
                         "bot_token": get_current_telegram_creds()[0],
                         "chat_id": get_current_telegram_creds()[1]
@@ -2007,7 +2033,9 @@ def get_heatmap(timeframe: str = Query("24h")):
 def get_liquidations(symbol: str = Query("BTC")):
     sym = clean_symbol(symbol)
     tk = agent.fetcher.fetch_ticker(sym)
-    price = float(tk.get("last_price") or tk.get("lastPrice") or 80500.0) if tk else 80500.0
+    if not tk or not (tk.get("last_price") or tk.get("lastPrice")):
+        raise HTTPException(status_code=503, detail="داده‌های نقدینگی صرافی در دسترس نیست.")
+    price = float(tk.get("last_price") or tk.get("lastPrice"))
     h24 = float(tk.get("high_24h") or tk.get("highPrice") or price * 1.02) if tk else price * 1.02
     l24 = float(tk.get("low_24h") or tk.get("lowPrice") or price * 0.98) if tk else price * 0.98
     return LiquidationHeatmapEngine.calculate_clusters(sym, price, h24, l24)
@@ -2117,12 +2145,12 @@ def get_alpha_matrix():
 
 @app.get("/api/calculator/kelly")
 def calculate_kelly(
-    balance: float = Query(5000.0),
+    balance: float = Query(1000.0),
     risk_pct: float = Query(1.0),
-    entry_price: float = Query(80500.0),
-    stop_loss: float = Query(79500.0),
-    take_profit: float = Query(82500.0),
-    win_rate: float = Query(55.0),
+    entry_price: float = Query(..., description="قیمت ورود معتبر الزامی است"),
+    stop_loss: float = Query(..., description="حد ضرر معتبر الزامی است"),
+    take_profit: float = Query(..., description="حد سود معتبر الزامی است"),
+    win_rate: float = Query(..., description="وین‌ریت استراتژی الزامی است"),
     direction: str = Query("LONG")
 ):
     return KellyRiskEngine.calculate_risk_and_kelly(

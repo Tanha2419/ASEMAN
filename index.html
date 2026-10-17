@@ -3691,7 +3691,7 @@
 
           <!-- Important Rules Box -->
           <div style="background: rgba(0,0,0,0.35); border-radius: 8px; padding: 14px; font-size: 0.82rem; color: #94a3b8; line-height: 1.8;">
-            <div style="font-weight: 800; color: #fff; margin-bottom: 6px;">⚠️ ۳ قانون طلایی برای حفظ ۱۰۰٪ سرمایه:</div>
+            <div style="font-weight: 800; color: #fff; margin-bottom: 6px;">⚠️ ۳ اصل بنیادین کنترل و مهار حداکثری ریسک مارکت:</div>
             <div>۱. <strong>سقف اهرم ۳x الی ۵x:</strong> به دلیل نوسان سنگین (۱۸۰ پیپ طلا و ۴.۵٪ کریپتو)، استفاده از لوریج بالای ۵x یعنی خودکشی مالی.</div>
             <div>۲. <strong>اسپرد کارگزاری‌ها:</strong> در ثانیه‌های اول انتشار خبر، کارمزد و اسپرد بروکرها و صرافی‌ها چند برابر می‌شود؛ صبر کردن تا ۱۶:۱۵ مانع هدررفت پول شماست.</div>
             <div>۳. <strong>فیوز اضطراری سایت:</strong> اگر وضعیت فیوز در بالای این تب به رنگ قرمز (FREEZE) درآمد، ربات سنتینل ارسال سیگنال را قفل می‌کند تا بازار آرام شود.</div>
@@ -10017,6 +10017,13 @@
     }
 
     function renderDashboard(data) {
+
+      // Incomplete Data Guard
+      if (!data || !data.ticker || !data.ticker.last_price) {
+        showConnectionNotice("داده‌های زنده قیمت در دسترس نیست. جهت حفظ سرمایه، تحلیل و سیگنال اجرایی موقتاً متوقف شد.");
+        return;
+      }
+
       const scSetup = (data && data.scalp_setup) ? data.scalp_setup : {};
       // Dynamic Ambient Mood Glow (Bullish Emerald vs Bearish Rose)
       const isBullish = (scSetup.action_code === 'BUY' || (scSetup.action && scSetup.action.includes('LONG')));
