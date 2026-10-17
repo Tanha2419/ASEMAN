@@ -96,7 +96,7 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 agent = CryptoTradingAgent()
-CONFIG_FILE = os.path.join(os.path.dirname(__file__), "telegram_config.json")
+CONFIG_FILE = os.path.join(PERSISTENT_DATA_DIR, "telegram_config.json")
 
 def get_current_telegram_creds() -> tuple:
     cfg = {}
@@ -484,15 +484,9 @@ def record_4h_swing_setup(symbol: str, action: str, structure: str, grade: str, 
         except Exception:
             pass
 
-    if entry_f > 0:
-        if tp1_f <= 0:
-            tp1_f = entry_f * 1.035 if is_long else entry_f * 0.965
-        if tp2_f <= 0:
-            tp2_f = entry_f * 1.075 if is_long else entry_f * 0.925
-        if tp3_f <= 0:
-            tp3_f = entry_f + (tp2_f - entry_f) * 1.55 if is_long else entry_f - (entry_f - tp2_f) * 1.55
-        if sl_f <= 0:
-            sl_f = entry_f * 0.982 if is_long else entry_f * 1.018
+    # Strict Data Integrity: Stop loss and targets for 4H Swing must come from real structural liquidity.
+    if sl_f <= 0 or tp1_f <= 0 or not grade or not score:
+        return {"id": None, "error": "حد ضرر یا تارگت ساختاری معتبر از سوی تحلیل ۴ ساعته ارائه نشد. ثبت متوقف شد."}
 
     new_entry = {
         "id": f"SWING-4H-{int(time.time())}-{clean_sym}",
@@ -655,7 +649,7 @@ def update_signal_in_journal(symbol, status, pnl_pct, signal_id: Optional[str] =
                     "time_iran": time_iran_str,
                     "status": status,
                     "pnl_pct": round(float(pnl_pct), 2),
-                    "closed": status in ["TP2_HIT", "TP3_HIT", "SL_HIT", "EXPIRED", "PROFIT_TIMEOUT", "BREAKEVEN_CLOSED", "SL_TIMEOUT"],
+                    "closed": status in ["TP2_HIT", "TP3_HIT", "SL_HIT", "EXPIRED", "PROFIT_TIMEOUT", "BREAKEVEN_CLOSED", "SL_TIMEOUT", "TP1_CLOSED_TIMEOUT"],
                     "updated_at": time_iran_str
                 }
                 records.insert(0, entry)
@@ -822,7 +816,7 @@ def signal_outcome_tracker_loop():
                     cur_pnl = round(cur_pnl, 2)
                     
                     if tr.get("tp1_hit"):
-                        update_signal_in_journal(sym, "TP1_CLOSED_TIMEOUT", max(1.1, cur_pnl), signal_id=tr.get("id"))
+                        update_signal_in_journal(sym, "TP1_CLOSED_TIMEOUT", cur_pnl, signal_id=tr.get("id"))
                     elif cur_pnl >= 0.5:
                         _sentinel_stats["tp_hits_count"] += 1
                         update_signal_in_journal(sym, "PROFIT_TIMEOUT", cur_pnl, signal_id=tr.get("id"))

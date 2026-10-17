@@ -7592,6 +7592,15 @@
     
     async function initFastDashboard(sym) {
       const symClean = (sym || currentSymbol || 'BTC').toUpperCase().trim();
+      
+      // Instantly update Hero Title & Badge to the selected coin
+      const coinBadgeEl = document.getElementById('coinBadge');
+      if (coinBadgeEl) coinBadgeEl.innerText = symClean.slice(0, 4);
+      const coinSymbolEl = document.getElementById('coinSymbol');
+      if (coinSymbolEl) coinSymbolEl.innerText = `${symClean}/USDT`;
+      const coinTitleEl = document.getElementById('coinTitle');
+      if (coinTitleEl) coinTitleEl.innerHTML = `${symClean} <span style="color: var(--text-muted); font-size: 1rem;" id="coinSymbol">${symClean}/USDT</span>`;
+      
       try {
         const res = await fetch(`/api/ticker?symbol=${encodeURIComponent(symClean)}`);
         const data = await res.json();
@@ -7620,6 +7629,14 @@
     async function loadSymbol(sym) {
       if (!sym) return;
       currentSymbol = sym.toUpperCase().trim();
+      
+      // Update UI Header and Badge immediately
+      const cb = document.getElementById('coinBadge');
+      if (cb) cb.innerText = currentSymbol.slice(0, 4);
+      const cs = document.getElementById('coinSymbol');
+      if (cs) cs.innerText = `${currentSymbol}/USDT`;
+      const ct = document.getElementById('coinTitle');
+      if (ct) ct.innerHTML = `${currentSymbol} <span style="color: var(--text-muted); font-size: 1rem;" id="coinSymbol">${currentSymbol}/USDT</span>`;
       
       const symInp = document.getElementById('symbolInput');
       const heroInp = document.getElementById('heroSearchInput');
