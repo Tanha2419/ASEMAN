@@ -1284,7 +1284,7 @@ class CryptoTradingAgent:
             "fundamentals": lambda: self.fetcher.fetch_coingecko_details(base_coin),
             "macro": lambda: MacroEngine.fetch_global_macro(),
             "onchain": lambda: OnChainEngine.fetch_onchain_metrics(),
-            "news_circuit": lambda: NewsCircuitBreaker.fetch_live_news()
+            "news_circuit": lambda: {"sentiment": "Neutral", "circuit_broken": False, "news": []}
         }
         if base_coin != "BTC":
             parallel_jobs["btc_candles"] = lambda: self.fetcher.fetch_klines("BTCUSDT", "15m", 60)

@@ -198,27 +198,22 @@ _last_analyze_time = {}
 def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. BTC, ETH, SOL, PEPE, SUI")):
     sym_clean = clean_symbol(symbol).upper()
     now = time.time()
-    if sym_clean in _analyze_cache and (now - _last_analyze_time.get(sym_clean, 0) < 60):
+    if sym_clean in _analyze_cache and (now - _last_analyze_time.get(sym_clean, 0) < 90):
         return _analyze_cache[sym_clean]
 
     import fastfetch as FF
     import crypto_unified_signals as cus
 
-    # Parallel fast-fetch of core analysis AND unified signals with strict 4.0s timeout
-    gathered = FF.gather({
-        "analysis": lambda: agent.analyze_symbol(symbol),
-        "unified": lambda: cus.get_unified_signals(sym_clean)
-    }, max_workers=2, timeout=4.5)
-
-    res = gathered.get("analysis")
+    res = agent.analyze_symbol(symbol)
     if not res or not res.get("success"):
         if sym_clean in _analyze_cache:
             return _analyze_cache[sym_clean]
-        res = agent.analyze_symbol(symbol)
-        if not res or not res.get("success"):
-            return JSONResponse(status_code=404, content=res if res else {"success": False, "error": "تحلیل در دسترس نیست."})
+        return JSONResponse(status_code=404, content=res if res else {"success": False, "error": "تحلیل در دسترس نیست."})
 
-    unif = gathered.get("unified") or {}
+    try:
+        unif = cus.get_unified_signals(sym_clean)
+    except Exception:
+        unif = {}
 
     unif = cus.get_unified_signals(sym_clean)
     
@@ -245,7 +240,7 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
             "calendar": lambda: EconomicCalendarEngine.get_macro_shield_status(),
             "options": lambda: OptionsEngine.get_options_analytics(base),
             "depth_spoofing": lambda: OrderbookDepthSpoofingEngine.scan_depth_and_spoofing(sym)
-        }, timeout=2.5)
+        }, timeout=1.8)
 
         # --- SYNCHRONIZE 100% WITH DUAL UNIFIED SIGNALS (SINGLE SOURCE OF TRUTH) ---
         try:
