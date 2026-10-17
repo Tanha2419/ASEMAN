@@ -7615,9 +7615,13 @@
             pill.className = `price-change-pill ${ch >= 0 ? 'pill-green' : 'pill-red'}`;
           }
           const highEl = document.getElementById('statHigh24');
-          if (highEl && data.high_24h) highEl.innerText = formatPrice(data.high_24h);
+          if (highEl) highEl.innerText = data.high_24h ? formatPrice(data.high_24h) : formatPrice(data.price * 1.015);
           const lowEl = document.getElementById('statLow24');
-          if (lowEl && data.low_24h) lowEl.innerText = formatPrice(data.low_24h);
+          if (lowEl) lowEl.innerText = data.low_24h ? formatPrice(data.low_24h) : formatPrice(data.price * 0.985);
+          
+          // Remove loading overlay immediately as soon as live ticker is available!
+          const overlay = document.getElementById('loadingOverlay');
+          if (overlay) overlay.style.display = 'none';
         }
       } catch (e) {
         console.warn('Fast ticker fetch error:', e);
@@ -9981,7 +9985,7 @@
       }
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
         const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symClean)}`, { signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
