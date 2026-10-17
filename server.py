@@ -198,18 +198,27 @@ _last_analyze_time = {}
 def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. BTC, ETH, SOL, PEPE, SUI")):
     sym_clean = clean_symbol(symbol).upper()
     now = time.time()
-    if sym_clean in _analyze_cache and (now - _last_analyze_time.get(sym_clean, 0) < 45):
+    if sym_clean in _analyze_cache and (now - _last_analyze_time.get(sym_clean, 0) < 60):
         return _analyze_cache[sym_clean]
 
     import fastfetch as FF
     import crypto_unified_signals as cus
 
-    # Fast direct core analysis without nested timeout race condition
-    res = agent.analyze_symbol(symbol)
-    if not res or not res.get("success"):
-        return JSONResponse(status_code=404, content=res if res else {"success": False, "error": "تحلیل در دسترس نیست."})
+    # Parallel fast-fetch of core analysis AND unified signals with strict 4.0s timeout
+    gathered = FF.gather({
+        "analysis": lambda: agent.analyze_symbol(symbol),
+        "unified": lambda: cus.get_unified_signals(sym_clean)
+    }, max_workers=2, timeout=4.5)
 
-    unif = cus.get_unified_signals(sym_clean)
+    res = gathered.get("analysis")
+    if not res or not res.get("success"):
+        if sym_clean in _analyze_cache:
+            return _analyze_cache[sym_clean]
+        res = agent.analyze_symbol(symbol)
+        if not res or not res.get("success"):
+            return JSONResponse(status_code=404, content=res if res else {"success": False, "error": "تحلیل در دسترس نیست."})
+
+    unif = gathered.get("unified") or {}
 
     unif = cus.get_unified_signals(sym_clean)
     
