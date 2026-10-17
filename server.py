@@ -567,6 +567,9 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, 
         logger.warning(f"[REJECT DISPATCH] Signal {clean_sym} rejected: Missing genuine structural SL or TP1.")
         return {"id": None, "error": "حد ضرر یا تارگت ساختاری معتبر از طرف اردر فلو ارائه نشد. ثبت متوقف شد."}
 
+    if not grade or not score or float(score) <= 0:
+        return {"id": None, "error": "امتیاز یا گرید اعتبارسنجی معتبر ارائه نشد. ثبت متوقف شد."}
+
     new_entry = {
         "id": f"SIG-{int(time.time())}-{clean_sym}",
         "symbol": clean_sym,
@@ -574,8 +577,8 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, 
         "signal_type": kwargs.get("signal_type", "SCALP"),
         "timeframe": kwargs.get("timeframe", "15m"),
         "holding_duration": kwargs.get("holding_duration", "۳۰ دقیقه الی ۲ ساعت"),
-        "grade": grade or "A+",
-        "score": score or 90,
+        "grade": str(grade),
+        "score": float(score),
         "entry": _round_signal_val(entry_f),
         "sl": _round_signal_val(sl_f),
         "tp1": _round_signal_val(tp1_f),
@@ -2153,8 +2156,8 @@ def get_alpha_matrix():
 
 @app.get("/api/calculator/kelly")
 def calculate_kelly(
-    balance: float = Query(1000.0),
-    risk_pct: float = Query(1.0),
+    balance: float = Query(..., description="موجودی حساب واقعی الزامی است"),
+    risk_pct: float = Query(..., description="درصد ریسک مجاز الزامی است"),
     entry_price: float = Query(..., description="قیمت ورود معتبر الزامی است"),
     stop_loss: float = Query(..., description="حد ضرر معتبر الزامی است"),
     take_profit: float = Query(..., description="حد سود معتبر الزامی است"),
