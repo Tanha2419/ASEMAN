@@ -214,12 +214,13 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
         sym = clean_symbol(symbol)
         price = float(res.get("price", 0.0))
         if price <= 0:
-            res["trade_quality"] = {"grade": "NO_DATA", "grade_title": "فاقد داده", "action_advice": "داده صرافی در دسترس نیست. تحلیل متوقف شد.", "passed_count": 0}
-            res["scalp_setup"] = {"action": "WAIT / بدون معامله", "action_code": "WAIT", "entry_zone": "داده در دسترس نیست", "stop_loss": 0, "tp1": 0, "tp2": 0, "tp3": 0}
-            res["swing_setup"] = {"action": "WAIT / بدون معامله", "action_code": "WAIT", "entry_zone": "داده در دسترس نیست", "stop_loss": 0, "tp1": 0, "tp2": 0, "tp3": 0}
-            return res
-        if price <= 0:
-            return JSONResponse(status_code=503, content={"success": False, "error": "داده زنده قیمت در دسترس نیست. محاسبه دقت موقتاً متوقف شد."})
+            return JSONResponse(status_code=503, content={
+                "success": False,
+                "error": "داده زنده قیمت در دسترس نیست. جهت حفظ سرمایه، تحلیل متوقف شد.",
+                "trade_quality": {"grade": "NO_DATA", "grade_title": "فاقد داده", "action_advice": "داده صرافی در دسترس نیست. تحلیل متوقف شد.", "passed_count": 0},
+                "scalp_setup": {"action": "WAIT / بدون معامله", "action_code": "WAIT", "entry_zone": "داده در دسترس نیست", "stop_loss": 0, "tp1": 0, "tp2": 0, "tp3": 0},
+                "swing_setup": {"action": "WAIT / بدون معامله", "action_code": "WAIT", "entry_zone": "داده در دسترس نیست", "stop_loss": 0, "tp1": 0, "tp2": 0, "tp3": 0}
+            })
         tk = res.get("ticker", {})
         h24 = float(tk.get("highPrice", 0.0)) if tk else 0.0
         l24 = float(tk.get("lowPrice", 0.0)) if tk else 0.0
@@ -485,11 +486,7 @@ def record_4h_swing_setup(symbol: str, action: str, structure: str, grade: str, 
     clean_action = "LONG" if is_long else "SHORT"
 
     if entry_f <= 0:
-        try:
-            tk = agent.fetcher.fetch_ticker(f"{clean_sym}USDT")
-            entry_f = float(tk.get("last_price") or tk.get("price") or 0.0)
-        except Exception:
-            pass
+        return {"id": None, "error": "نقطه ورود ساختاری معتبر از سوی تحلیل ۴ ساعته ارائه نشد. ثبت متوقف شد."}
 
     # Strict Data Integrity: Stop loss and targets for 4H Swing must come from real structural liquidity.
     if sl_f <= 0 or tp1_f <= 0 or not grade or not score:
@@ -558,11 +555,7 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, 
     clean_action = "LONG" if is_long else "SHORT"
 
     if entry_f <= 0:
-        try:
-            tk = agent.fetcher.fetch_ticker(f"{clean_sym}USDT")
-            entry_f = float(tk.get("last_price") or tk.get("price") or 0.0)
-        except Exception:
-            pass
+        return {"id": None, "error": "نقطه ورود ساختاری معتبر از سوی تحلیل ۴ ساعته ارائه نشد. ثبت متوقف شد."}
 
     # Strict Data Integrity: Stop loss and targets must come directly from institutional calculation.
     # If SL or TP1 are not explicitly provided, halt signal recording rather than synthesizing fake numbers.
@@ -631,7 +624,7 @@ def update_signal_in_journal(symbol, status, pnl_pct, signal_id: Optional[str] =
             r["updated_at"] = time_iran_str
             if status == "TP1_HIT":
                 r["sl"] = r.get("entry", 0.0) # Arm Breakeven
-            if status in ["TP2_HIT", "TP3_HIT", "SL_HIT", "EXPIRED", "PROFIT_TIMEOUT", "BREAKEVEN_CLOSED", "SL_TIMEOUT"]:
+            if status in ["TP2_HIT", "TP3_HIT", "SL_HIT", "EXPIRED", "PROFIT_TIMEOUT", "BREAKEVEN_CLOSED", "SL_TIMEOUT", "TP1_CLOSED_TIMEOUT"]:
                 r["closed"] = True
             updated = True
             break
