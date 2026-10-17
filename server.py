@@ -204,19 +204,14 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
     import fastfetch as FF
     import crypto_unified_signals as cus
 
-    # Parallel gather of Core Multi-Timeframe Analysis AND Dual Unified Signals
-    gathered_core = FF.gather({
-        "analysis": lambda: agent.analyze_symbol(symbol),
-        "unified": lambda: cus.get_unified_signals(sym_clean)
-    }, timeout=6.0)
-
-    res = gathered_core.get("analysis", {})
+    # Fast direct core analysis without nested timeout race condition
+    res = agent.analyze_symbol(symbol)
     if not res or not res.get("success"):
-        res = agent.analyze_symbol(symbol)
-        if not res.get("success"):
-            return JSONResponse(status_code=404, content=res)
+        return JSONResponse(status_code=404, content=res if res else {"success": False, "error": "تحلیل در دسترس نیست."})
 
-    unif = gathered_core.get("unified", {})
+    unif = cus.get_unified_signals(sym_clean)
+
+    unif = cus.get_unified_signals(sym_clean)
     
     # Enrich with Hedge-Fund 5 Precision Suites
     try:
@@ -241,7 +236,7 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
             "calendar": lambda: EconomicCalendarEngine.get_macro_shield_status(),
             "options": lambda: OptionsEngine.get_options_analytics(base),
             "depth_spoofing": lambda: OrderbookDepthSpoofingEngine.scan_depth_and_spoofing(sym)
-        }, timeout=4.5)
+        }, timeout=2.5)
 
         # --- SYNCHRONIZE 100% WITH DUAL UNIFIED SIGNALS (SINGLE SOURCE OF TRUTH) ---
         try:
