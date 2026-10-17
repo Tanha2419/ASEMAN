@@ -253,7 +253,10 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
         entry_s = float(scalp.get("entry_price") or price)
         sl_s = float(scalp.get("stop_loss") or (price * 0.985 if "BUY" in scalp.get("direction", "BUY") else price * 1.015))
         tp_s = float(scalp.get("tp2") or scalp.get("tp1") or (price * 1.025 if "BUY" in scalp.get("direction", "BUY") else price * 0.975))
-        win_r = float(res.get("backtest", {}).get("win_rate_pct", 55.0))
+        win_r = float(res.get("backtest", {}).get("win_rate_pct", 0.0))
+        if win_r <= 0:
+            res["kelly_risk"] = {"error": "وین‌ریت بک‌تست تاریخی در دسترس نیست. محاسبه ریسک متوقف شد."}
+            return res
         direction_val = "LONG" if "BUY" in scalp.get("action", "BUY") or "LONG" in scalp.get("direction", "LONG") else "SHORT"
         if entry_s > 0 and sl_s > 0 and tp_s > 0:
             res["kelly_risk"] = KellyRiskEngine.calculate_risk_and_kelly(
@@ -558,16 +561,11 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, 
         except Exception:
             pass
 
-    # Guarantee TP & SL values
-    if entry_f > 0:
-        if tp1_f <= 0:
-            tp1_f = entry_f * 1.011 if is_long else entry_f * 0.989
-        if tp2_f <= 0:
-            tp2_f = entry_f * 1.025 if is_long else entry_f * 0.975
-        if tp3_f <= 0:
-            tp3_f = entry_f + (tp2_f - entry_f) * 1.55 if is_long else entry_f - (entry_f - tp2_f) * 1.55
-        if sl_f <= 0:
-            sl_f = entry_f * 0.996 if is_long else entry_f * 1.004
+    # Strict Data Integrity: Stop loss and targets must come directly from institutional calculation.
+    # If SL or TP1 are not explicitly provided, halt signal recording rather than synthesizing fake numbers.
+    if sl_f <= 0 or tp1_f <= 0:
+        logger.warning(f"[REJECT DISPATCH] Signal {clean_sym} rejected: Missing genuine structural SL or TP1.")
+        return {"id": None, "error": "حد ضرر یا تارگت ساختاری معتبر از طرف اردر فلو ارائه نشد. ثبت متوقف شد."}
 
     new_entry = {
         "id": f"SIG-{int(time.time())}-{clean_sym}",

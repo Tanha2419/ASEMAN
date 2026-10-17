@@ -33,6 +33,19 @@ class SupabaseJournalManager:
                 import time
                 signal_id = f"SIG-{int(time.time())}-{record.get('symbol', 'CRYPTO')}"
 
+            import time
+            created_ts = record.get("created_at")
+            if not created_ts:
+                created_ts = time.time()
+            elif isinstance(created_ts, (int, float)):
+                pass
+            else:
+                try:
+                    from datetime import datetime
+                    created_ts = datetime.fromisoformat(str(created_ts).replace("Z", "+00:00")).timestamp()
+                except Exception:
+                    created_ts = time.time()
+
             payload = {
                 "signal_id": str(signal_id),
                 "symbol": record.get("symbol", "").upper(),
@@ -45,6 +58,7 @@ class SupabaseJournalManager:
                 "pnl": float(record.get("pnl", 0.0)),
                 "status": record.get("status", "TRACKING"),
                 "source": record.get("source", "MASTER_SIGNAL"),
+                "created_at": created_ts, # Exact persistent creation timestamp!
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }
             
