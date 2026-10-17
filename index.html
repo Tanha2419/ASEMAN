@@ -2419,13 +2419,13 @@
             <div style="background: rgba(15, 23, 42, 0.65); border: 1.5px solid rgba(255, 215, 0, 0.35); border-radius: 10px; padding: 14px; position: relative; box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.05);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <span style="font-size: 0.75rem; font-weight: 800; color: #ffd700; background: rgba(255, 215, 0, 0.12); padding: 2px 8px; border-radius: 6px;">مرحله ۳ (قاضی نهایی)</span>
-                <span style="font-size: 0.68rem; color: #ffd700;" id="pipeStage3Status">فیلتر ۵ تله</span>
+                <span style="font-size: 0.68rem; color: #ffd700;" id="pipeStage3Status">فیلتر ۸ لایه دفاعی</span>
               </div>
               <div style="font-size: 0.92rem; font-weight: 800; color: #ffd700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
                 <span>🛡️</span> دروازه‌بان هوشمند
               </div>
               <div style="font-size: 0.74rem; color: #94a3b8; line-height: 1.5; min-height: 38px;">
-                بررسی تله‌های نقدینگی، دیوارهای اوردربوک و رد ۹۰٪ معاملات پرریسک
+                پایش ۸ لایه دفاعی وال‌استریت، تله‌های نقدینگی، فیبوناچی OTE و رد ۹۰٪ معاملات پرریسک
               </div>
               <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.72rem; color: #cbd5e1; display: flex; justify-content: space-between;">
                 <span>وضعیت تاییدیه:</span>
@@ -4259,7 +4259,7 @@
             <!-- On-Demand Custom Token Search -->
             <div style="display: flex; align-items: center; gap: 8px; background: #0f172a; padding: 6px 10px; border-radius: 10px; border: 1px solid #334155;">
               <span style="font-size: 0.82rem; color: #cbd5e1; font-weight: bold;">🔍 بررسی نماد دلخواه:</span>
-              <input type="text" id="customAuditSymbolInput" placeholder="BTC, ETH, SOL..." style="background: #1e293b; border: 1px solid #475569; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; width: 110px; text-transform: uppercase; font-family: monospace; font-weight: bold; text-align: center;" />
+              <input type="text" id="customAuditSymbolInput_secondary" placeholder="BTC, ETH, SOL..." style="background: #1e293b; border: 1px solid #475569; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; width: 110px; text-transform: uppercase; font-family: monospace; font-weight: bold; text-align: center;" />
               <button onclick="triggerCustomAudit()" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: 0.2s;">
                 بررسی صلاحیت
               </button>
@@ -4267,7 +4267,7 @@
           </div>
 
           <!-- Dynamic Master Card Display -->
-          <div id="masterSignalLiveCard">
+          <div id="masterSignalLiveCard_secondary">
             <!-- Will be dynamically populated via JS -->
             <div style="background: rgba(15, 23, 42, 0.7); border: 1px dashed #334155; border-radius: 10px; padding: 20px; text-align: center;">
               <div style="font-size: 24px; margin-bottom: 8px;">📡</div>
@@ -4276,12 +4276,12 @@
           </div>
 
           <!-- Modal / Box for Custom Audit Results -->
-          <div id="customAuditResultBox" style="display: none; margin-top: 16px; background: #0b111e; border: 1px solid #38bdf8; border-radius: 10px; padding: 16px;">
+          <div id="customAuditResultBox_secondary" style="display: none; margin-top: 16px; background: #0b111e; border: 1px solid #38bdf8; border-radius: 10px; padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-              <strong style="color: #38bdf8; font-size: 0.95rem;" id="customAuditTitle">نتیجه بررسی نماد</strong>
+              <strong style="color: #38bdf8; font-size: 0.95rem;" id="customAuditTitle_secondary">نتیجه بررسی نماد</strong>
               <button onclick="document.getElementById('customAuditResultBox').style.display='none'" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.1rem;">✕</button>
             </div>
-            <div id="customAuditContent" style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.6;"></div>
+            <div id="customAuditContent_secondary" style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.6;"></div>
           </div>
 
         </div>
@@ -12294,20 +12294,33 @@ function renderMasterSignalCard(data) {
     }
   } else {
     container.innerHTML = `
-      <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
-        <div style="display: flex; align-items: center; gap: 14px;">
-          <span style="font-size: 32px;">🛡️</span>
-          <div>
-            <div style="font-size: 1.05rem; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">
-              وضعیت بازار: حالت انتظار و حفظ سرمایه (Cash Is A Position)
-            </div>
-            <div style="font-size: 0.84rem; color: #94a3b8; line-height: 1.5;">
-              ${ms.message || 'ستاپ بدون ریسک با تاییدیه ۸ لایه در حال حاضر وجود ندارد. سیستم صبورانه منتظر شکار نقدینگی است.'}
+      <div style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <span style="font-size: 32px;">🛡️</span>
+            <div>
+              <div style="font-size: 1.05rem; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">
+                وضعیت بازار: حالت انتظار و حفظ سرمایه (Cash Is A Position)
+              </div>
+              <div style="font-size: 0.82rem; color: #94a3b8; line-height: 1.5;">
+                ${ms.message || 'ستاپ بدون ریسک با تاییدیه ۸ لایه دفاعی در حال حاضر وجود ندارد. سیستم صبورانه منتظر شکار نقدینگی و ورود در تراز OTE است.'}
+              </div>
             </div>
           </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 0.78rem; background: rgba(0, 230, 118, 0.12); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); padding: 4px 10px; border-radius: 6px; font-weight: 700;">
+              📐 موتور فیبوناچی OTE: آماده و فعال
+            </span>
+            <span style="font-size: 0.78rem; background: rgba(255, 215, 0, 0.12); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.3); padding: 4px 10px; border-radius: 6px; font-weight: 700;">
+              🛡️ ۸ لایه دفاعی: آنلاین
+            </span>
+          </div>
         </div>
-        <div style="font-size: 0.8rem; background: #0f172a; padding: 8px 16px; border-radius: 8px; border: 1px solid #1e293b; color: #cbd5e1;">
-          ${ms.market_regime || 'رصد پیوسته لیدر بازار BTC'}
+
+        <!-- Institutional Fibonacci OTE Confluence Pill (Always Visible) -->
+        <div style="background: rgba(0, 210, 255, 0.06); border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.78rem;">
+          <span style="color: #cbd5e1;">📐 <b>سیستم محاسبه فیبوناچی نهادی (ICT OTE Confluence):</b> ورود طلایی در تراز تخفیف ۷۰.۵٪ • استاپ محافظتی پشت ۷۸.۶٪ و اردر بلاک • تارگت‌های ریاضی اکستنشن ۲۷.۲-٪ و ۶۱.۸-٪ با بافر ضد فرانت‌رانینگ</span>
+          <span style="color: #38bdf8; font-weight: 800; font-family: monospace; background: rgba(56, 189, 248, 0.15); padding: 2px 8px; border-radius: 4px;">FIBONACCI OTE: ARMED & READY 🎯</span>
         </div>
       </div>
     `;
