@@ -2223,15 +2223,15 @@
       <div class="hero-stats-grid">
         <div class="stat-item">
           <div class="stat-label">بالاترین قیمت ۲۴ ساعت (High)</div>
-          <div class="stat-value" id="statHigh24">$0.00</div>
+          <div class="stat-value" id="statHigh24">در حال دریافت...</div>
         </div>
         <div class="stat-item">
           <div class="stat-label">پایین‌ترین قیمت ۲۴ ساعت (Low)</div>
-          <div class="stat-value" id="statLow24">$0.00</div>
+          <div class="stat-value" id="statLow24">در حال دریافت...</div>
         </div>
         <div class="stat-item">
           <div class="stat-label">حجم معاملات ۲۴ ساعته (USD)</div>
-          <div class="stat-value" id="statVol24">$0M</div>
+          <div class="stat-value" id="statVol24">در حال دریافت...</div>
         </div>
         <div class="stat-item">
           <div class="stat-label">فاصله از سقف تاریخی (ATH)</div>
@@ -10288,15 +10288,20 @@
 
       updatePreTradeGate();
 
-      // Stats
-      document.getElementById('statHigh24').innerText = formatPrice(ticker.high_24h);
-      document.getElementById('statLow24').innerText = formatPrice(ticker.low_24h);
-      const volM = (ticker.volume_quote / 1_000_000).toFixed(1);
-      document.getElementById('statVol24').innerText = `$${volM}M`;
+      // Stats with strict data availability guards
+      const highVal = ticker.high_24h || ticker.highPrice;
+      document.getElementById('statHigh24').innerText = highVal ? formatPrice(highVal) : "داده در دسترس نیست";
+      
+      const lowVal = ticker.low_24h || ticker.lowPrice;
+      document.getElementById('statLow24').innerText = lowVal ? formatPrice(lowVal) : "داده در دسترس نیست";
+      
+      const volM = ticker.volume_quote ? (ticker.volume_quote / 1_000_000).toFixed(1) : (ticker.volume_base ? (ticker.volume_base * price / 1_000_000).toFixed(1) : null);
+      document.getElementById('statVol24').innerText = volM ? `$${volM}M` : "داده در دسترس نیست";
+      
       const athDrop = fundamentals.ath_change_pct;
-      document.getElementById('statAthDist').innerText = athDrop ? `${athDrop}%` : 'N/A';
+      document.getElementById('statAthDist').innerText = athDrop ? `${athDrop}%` : 'محاسبه در جریان...';
       const atr15m = timeframes['15m'] ? timeframes['15m'].atr : 0;
-      document.getElementById('statAtr').innerText = formatPrice(atr15m);
+      document.getElementById('statAtr').innerText = atr15m ? formatPrice(atr15m) : "در حال پردازش...";
 
 
       // Orderbook Depth
@@ -10511,13 +10516,13 @@
       if (rrEl) rrEl.innerText = `R/R: ${scalp.risk_reward || "1:2.4"}`;
 
       const slEl = document.getElementById("smartSlVal");
-      if (slEl) slEl.innerText = scalp.stop_loss ? `SL: ${formatPrice(scalp.stop_loss)}` : "SL: -";
+      if (slEl) slEl.innerText = scalp.stop_loss ? `SL: ${formatPrice(scalp.stop_loss)}` : "تعریف نشده (Wait)";
       const entryEl = document.getElementById("smartEntryVal");
-      if (entryEl) entryEl.innerText = scalp.entry_zone ? `ورود: ${scalp.entry_zone.split("-")[0] || formatPrice(data.price)}` : `ورود: ${formatPrice(data.price)}`;
+      if (entryEl) entryEl.innerText = scalp.entry_zone ? `ورود: ${scalp.entry_zone.split("-")[0]}` : (scalp.action_code === "WAIT" ? "عدم ورود (صبر)" : `ورود مارکت: ${formatPrice(data.price)}`);
       const tp1El = document.getElementById("smartTp1Val");
-      if (tp1El) tp1El.innerText = scalp.tp1 ? `TP1: ${formatPrice(scalp.tp1)}` : "TP1: -";
+      if (tp1El) tp1El.innerText = scalp.tp1 ? `TP1: ${formatPrice(scalp.tp1)}` : "تعریف نشده";
       const tp2El = document.getElementById("smartTp2Val");
-      if (tp2El) tp2El.innerText = scalp.tp2 ? `TP2: ${formatPrice(scalp.tp2)}` : "TP2: -";
+      if (tp2El) tp2El.innerText = scalp.tp2 ? `TP2: ${formatPrice(scalp.tp2)}` : "تعریف نشده";
 
       // Update timeline bar gradient based on direction
       const timeBar = document.getElementById("smartTimelineBar");

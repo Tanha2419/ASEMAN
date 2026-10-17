@@ -92,6 +92,19 @@ async def add_security_headers(request: Request, call_next):
 agent = CryptoTradingAgent()
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "telegram_config.json")
 
+def get_current_telegram_creds() -> tuple:
+    cfg = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+        except Exception:
+            pass
+    b_tok = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip() or cfg.get("bot_token", "").strip()
+    c_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip() or cfg.get("chat_id", "").strip()
+    return b_tok, c_id
+
+
 class ChatRequest(BaseModel):
     question: str
     analysis: Optional[Dict[str, Any]] = None
@@ -560,21 +573,34 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, 
     if len(records) > 200:
         records = records[:200]
     save_signal_journal(records)
+    
+    # Explicitly UPSERT new trade setup directly to Supabase cloud database
+    try:
+        if supabase_journal.is_connected:
+            supabase_journal.insert_signal(new_entry)
+            print(f"[SUPABASE UPSERT] Dispatched signal {new_entry['id']} successfully mirrored to Supabase.")
+    except Exception as e:
+        print(f"[SUPABASE UPSERT ERR] {e}")
+
     return new_entry
 
 # Connect Supreme Arbiter Gatekeeper to live agent & atomic recorder
 global_arbiter.agent = agent
 global_arbiter.recorder_func = record_dispatched_signal
 
-def update_signal_in_journal(symbol, status, pnl_pct):
+def update_signal_in_journal(symbol, status, pnl_pct, signal_id: Optional[str] = None):
     records = load_signal_journal()
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
     time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
     clean_target = str(symbol).upper().replace("USDT", "").replace("USD", "").strip()
     updated = False
+    matched_id = signal_id
     for r in records:
         clean_r = str(r.get("symbol", "")).upper().replace("USDT", "").replace("USD", "").strip()
-        if clean_r == clean_target and not r.get("closed"):
+        # Prefer exact signal_id match, fallback to open tracking symbol
+        is_match = (r.get("id") == signal_id) if signal_id else (clean_r == clean_target and not r.get("closed"))
+        if is_match:
+            matched_id = r.get("id") or matched_id
             r["status"] = status
             r["pnl_pct"] = round(float(pnl_pct), 2)
             r["updated_at"] = time_iran_str
@@ -615,7 +641,7 @@ def update_signal_in_journal(symbol, status, pnl_pct):
         save_signal_journal(records)
         try:
             if supabase_journal.is_connected:
-                supabase_journal.update_signal_status(clean_target, status, pnl_pct)
+                supabase_journal.update_signal_status(clean_target, status, pnl_pct, signal_id=matched_id)
         except Exception as e:
             print(f"[SUPABASE UPDATE ERR] {e}")
 
@@ -649,9 +675,52 @@ def save_sent_cooldown(cooldown_dict: Dict[str, float]):
 _sent_cooldown = load_sent_cooldown()
 _shield_notified_events = set() # Track events already broadcast to Telegram
 _active_signal_trackers = [] # List of live dispatched signals
+
 global_arbiter.active_trackers_ref = _active_signal_trackers
 _trackers_lock = threading.Lock()
 _sentinel_paused = False # Global pause flag for Telegram signals and Journal recording
+
+# Rehydrate _active_signal_trackers from Supabase / Local storage on startup
+def hydrate_active_trackers_from_persistence():
+    global _active_signal_trackers
+    try:
+        active_candidates = []
+        if supabase_journal.is_connected:
+            try:
+                db_recs = supabase_journal.get_all_records(limit=100)
+                active_candidates = [r for r in db_recs if r.get("status") in ["OPEN", "TRACKING", "TP1_HIT"]]
+            except Exception as e:
+                print(f"Failed to fetch active trackers from Supabase: {e}")
+        
+        if not active_candidates:
+            local_recs = load_signal_journal()
+            active_candidates = [r for r in local_recs if not r.get("closed") and r.get("status") in ["OPEN", "TRACKING", "TP1_HIT"]]
+        
+        with _trackers_lock:
+            for r in active_candidates:
+                s_id = r.get("signal_id") or r.get("id")
+                sym = r.get("symbol", "").upper().replace("USDT", "")
+                if not any(t.get("id") == s_id or (t.get("symbol") == sym and not t.get("closed")) for t in _active_signal_trackers):
+                    _active_signal_trackers.append({
+                        "id": s_id or f"SIG-{int(time.time())}-{sym}",
+                        "symbol": sym,
+                        "action": r.get("action", "BUY"),
+                        "entry": float(r.get("entry", 0.0)),
+                        "sl": float(r.get("sl", 0.0)),
+                        "tp1": float(r.get("tp1", 0.0)),
+                        "tp2": float(r.get("tp2", 0.0)),
+                        "tp3": float(r.get("tp3", 0.0)),
+                        "created_at": time.time(),
+                        "tp1_hit": r.get("status") == "TP1_HIT",
+                        "bot_token": get_current_telegram_creds()[0],
+                        "chat_id": get_current_telegram_creds()[1]
+                    })
+        print(f"[BOOT RECOVERY] Hydrated {len(_active_signal_trackers)} active trackers from persistence.")
+    except Exception as e:
+        print(f"[BOOT RECOVERY ERR] {e}")
+
+hydrate_active_trackers_from_persistence()
+
 
 _sentinel_stats = {
     "last_run": "آماده به کار",
@@ -714,10 +783,10 @@ def signal_outcome_tracker_loop():
                     cur_pnl = round(cur_pnl, 2)
                     
                     if tr.get("tp1_hit"):
-                        update_signal_in_journal(sym, "TP1_CLOSED_TIMEOUT", max(1.1, cur_pnl))
+                        update_signal_in_journal(sym, "TP1_CLOSED_TIMEOUT", max(1.1, cur_pnl), signal_id=tr.get("id"))
                     elif cur_pnl >= 0.5:
                         _sentinel_stats["tp_hits_count"] += 1
-                        update_signal_in_journal(sym, "PROFIT_TIMEOUT", cur_pnl)
+                        update_signal_in_journal(sym, "PROFIT_TIMEOUT", cur_pnl, signal_id=tr.get("id"))
                         msg_p = f"""
 ✨ <b>پایان افق زمانی معامله در سود (+{cur_pnl}%) 📈</b>
 ━━━━━━━━━━━━━━━━━━━━
@@ -735,9 +804,9 @@ def signal_outcome_tracker_loop():
                         except Exception:
                             pass
                     elif cur_pnl <= -1.4:
-                        update_signal_in_journal(sym, "SL_TIMEOUT", cur_pnl)
+                        update_signal_in_journal(sym, "SL_TIMEOUT", cur_pnl, signal_id=tr.get("id"))
                     else:
-                        update_signal_in_journal(sym, "BREAKEVEN_CLOSED", cur_pnl)
+                        update_signal_in_journal(sym, "BREAKEVEN_CLOSED", cur_pnl, signal_id=tr.get("id"))
                     continue
 
                 # Check TP1
@@ -747,7 +816,7 @@ def signal_outcome_tracker_loop():
                         tr["tp1_hit"] = True
                         _sentinel_stats["tp_hits_count"] += 1
                         pct = abs((tp1 - entry) / entry) * 100 if entry else 1.2
-                        update_signal_in_journal(sym, "TP1_HIT", pct)
+                        update_signal_in_journal(sym, "TP1_HIT", pct, signal_id=tr.get("id"))
                         try:
                             global_arbiter.arm_breakeven_on_tp1_hit(tr, bot_tok, chat_id)
                         except Exception as be_err:
@@ -781,7 +850,7 @@ def signal_outcome_tracker_loop():
                             tr["closed"] = True
                         _sentinel_stats["tp_hits_count"] += 1
                         pct2 = abs((tp2 - entry) / entry) * 100 if entry else 2.8
-                        update_signal_in_journal(sym, "TP2_HIT", pct2)
+                        update_signal_in_journal(sym, "TP2_HIT", pct2, signal_id=tr.get("id"))
                         msg = f"""
 👑 <b>تارگت دوم (TP2) با موفقیت درو شد! 🏆</b>
 ━━━━━━━━━━━━━━━━━━━━
@@ -807,7 +876,7 @@ def signal_outcome_tracker_loop():
                         tr["tp3_hit"] = True
                         tr["closed"] = True
                         pct3 = abs((tp3 - entry) / entry) * 100 if entry else 5.5
-                        update_signal_in_journal(sym, "TP3_HIT", pct3)
+                        update_signal_in_journal(sym, "TP3_HIT", pct3, signal_id=tr.get("id"))
                         msg3 = f"""
 🚀 <b>تارگت سوم (TP3) و استخر نقدینگی نهایی با موفقیت فتح شد! 👑</b>
 ━━━━━━━━━━━━━━━━━━━━
@@ -830,7 +899,7 @@ def signal_outcome_tracker_loop():
                     hit_be = (current_price <= entry) if is_long else (current_price >= entry)
                     if hit_be:
                         tr["closed"] = True
-                        update_signal_in_journal(sym, "BREAKEVEN_CLOSED", 0.0)
+                        update_signal_in_journal(sym, "BREAKEVEN_CLOSED", 0.0, signal_id=tr.get("id"))
                         msg_be = f"""
 🛡️ <b>بسته‌شدن بدون ریسک باقی‌مانده پوزیشن (Risk-Free Breakeven)</b>
 ━━━━━━━━━━━━━━━━━━━━
@@ -853,7 +922,7 @@ def signal_outcome_tracker_loop():
                     if hit_sl:
                         tr["closed"] = True
                         pct_loss = abs((sl - entry) / entry) * 100 if entry else 2.1
-                        update_signal_in_journal(sym, "SL_HIT", -pct_loss)
+                        update_signal_in_journal(sym, "SL_HIT", -pct_loss, signal_id=tr.get("id"))
                         msg = f"""
 🛑 <b>اطلاعیه حد ضرر معامله (Stop Loss)</b>
 ━━━━━━━━━━━━━━━━━━━━
@@ -1209,6 +1278,7 @@ def auto_sentinel_loop():
                                         with _trackers_lock:
                                             setup_info = verdict["setup"]
                                             _active_signal_trackers.append({
+                                                "id": verdict.get("setup", {}).get("id") or f"SIG-{int(now)}-{sym}",
                                                 "symbol": sym,
                                                 "action": setup_info["action"],
                                                 "entry": setup_info["entry"],
