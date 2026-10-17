@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Archives & Temporary files
+*.zip
+*.tar.gz
+*.rar
+*.log
+
+# Runtime Journals and Local Cache (persisted on /data mount instead)
+signal_journal.json
+journal_4h.json
+macro_journal.json
+sent_cooldown.json
+telegram_config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+venv/
