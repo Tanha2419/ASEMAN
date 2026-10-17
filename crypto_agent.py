@@ -242,8 +242,8 @@ def run_cli():
             LiquidationHeatmapEngine, WhaleFlowEngine, EconomicCalendarEngine,
             OptionsEngine, OrderbookDepthSpoofingEngine
         )
-        h24 = float(ticker.get("high_24h") or price * 1.02)
-        l24 = float(ticker.get("low_24h") or price * 0.98)
+        h24 = float(ticker.get("high_24h") or 0.0)
+        l24 = float(ticker.get("low_24h") or 0.0)
         base_coin = data.get("base_coin", "BTC")
 
         liq = LiquidationHeatmapEngine.calculate_clusters(sym, price, h24, l24)
@@ -329,7 +329,7 @@ def run_cli():
         scalp = data.get("scalp_setup", {})
         e_price = float(scalp.get("entry_price") or price)
         sl_price = float(scalp.get("stop_loss") or (price * 0.985 if "BUY" in scalp.get("direction", "BUY") else price * 1.015))
-        tp_price = float(scalp.get("tp2") or scalp.get("tp1") or (price * 1.025 if "BUY" in scalp.get("direction", "BUY") else price * 0.975))
+        tp_price = float(scalp.get("tp2") or scalp.get("tp1") or 0.0)
         win_r = float(data.get("backtest", {}).get("win_rate_pct", 55.0))
         
         kelly_data = KellyRiskEngine.calculate_risk_and_kelly(

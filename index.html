@@ -3575,7 +3575,7 @@
               </div>
             </div>
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;" onclick="event.stopPropagation();">
-              <span style="height: 38px; display: inline-flex; align-items: center; background: rgba(0,230,118,0.15); color: #00e676; font-size: 0.78rem; font-weight: 800; padding: 0 14px; border-radius: 8px; border: 1px solid rgba(0,230,118,0.35);">نرخ دقت: ۹۵.۲٪</span>
+              <span style="height: 38px; display: inline-flex; align-items: center; background: rgba(0,230,118,0.15); color: #00e676; font-size: 0.78rem; font-weight: 800; padding: 0 14px; border-radius: 8px; border: 1px solid rgba(0,230,118,0.35);">نرخ دقت: در حال پردازش</span>
               <button type="button" onclick="recordCurrentMacroForecast()" class="journal-action-btn" style="background: linear-gradient(135deg, #00e676, #00b4d8); color: #000; border: none;">
                 <span>📥</span> ثبت و فریز پیش‌بینی
               </button>
@@ -3592,7 +3592,7 @@
               <!-- KPI 1: Win Rate / Accuracy Score -->
               <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 10px; padding: 14px; text-align: center;">
                 <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 4px;">🎯 نرخ دقت هوش کلان</div>
-                <div id="macroKpiAccuracyRate" style="font-size: 1.6rem; font-weight: 900; color: #00e676; font-family: var(--font-mono);">۹۵.۲٪</div>
+                <div id="macroKpiAccuracyRate" style="font-size: 1.6rem; font-weight: 900; color: #00e676; font-family: var(--font-mono);">در حال پردازش</div>
                 <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">تطبیق جهت و تارگت قیمت</div>
               </div>
 
@@ -8929,7 +8929,7 @@
           if (cmdEntryEl) cmdEntryEl.innerText = scalp.entry_zone ? scalp.entry_zone : `${curPriceFmt} (ورود در پولبک)`;
           if (cmdEntryNoteEl) cmdEntryNoteEl.innerText = "ورود لیمیت در پولبک به مقاومت یا FVG نزولی";
 
-          if (cmdSlEl) cmdSlEl.innerText = slVal ? `$${slVal.toLocaleString(undefined, {maximumFractionDigits: pDecimals})}` : `$${(cPrice * 1.02).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
+          if (cmdSlEl) cmdSlEl.innerText = slVal ? `$${slVal.toLocaleString(undefined, {maximumFractionDigits: pDecimals})}` : `$${(0.0).toLocaleString(undefined, {maximumFractionDigits: pDecimals})}`;
           if (cmdSlNoteEl) cmdSlNoteEl.innerText = `بالای سقف اردر بلاک و مصون از فیک‌پامپ‌های مقطعی (+${slPct}%)`;
 
           if (cmdTpEl) {
@@ -9803,7 +9803,7 @@
         const p = currentAnalysis.price || 80500;
         const entry = scalp.entry_price || p;
         const sl = scalp.stop_loss || (p * 0.985);
-        const tp = scalp.tp2 || scalp.tp1 || (p * 1.025);
+        const tp = scalp.tp2 || scalp.tp1 || (0.0);
         const winR = (currentAnalysis.backtest && currentAnalysis.backtest.win_rate_pct) ? currentAnalysis.backtest.win_rate_pct : 55;
 
         document.getElementById('calcEntryInput').value = entry;
@@ -11667,7 +11667,7 @@ ${s3d.action_advice || ''}
         const isBuy = !scalp.action_code || scalp.action_code === 'BUY';
         const sl = scalp.stop_loss || (isBuy ? price * 0.985 : price * 1.015);
         const tp1 = scalp.tp1 || (isBuy ? price * 1.015 : price * 0.985);
-        const tp2 = scalp.tp2 || (isBuy ? price * 1.025 : price * 0.975);
+        const tp2 = scalp.tp2 || (isBuy ? 0.0 : price * 0.975);
 
         const maxLossDollars = balance * (riskPct / 100.0);
         const slDistPct = Math.abs(price - sl) / price;
