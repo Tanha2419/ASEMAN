@@ -2487,8 +2487,8 @@
             <!-- On-Demand Coin Audit Search Box -->
             <div style="display: flex; align-items: center; gap: 8px; background: #0b111e; padding: 6px 12px; border-radius: 10px; border: 1px solid #334155;">
               <span style="font-size: 0.82rem; color: #cbd5e1; font-weight: bold;">🔍 بررسی نماد دلخواه:</span>
-              <input type="text" id="customAuditSymbolInput" placeholder="BTC, ETH, SOL..." style="background: #1e293b; border: 1px solid #475569; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; width: 110px; text-transform: uppercase; font-family: monospace; font-weight: bold; text-align: center;" />
-              <button onclick="triggerCustomAudit()" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: 0.2s;">
+              <input type="text" id="customAuditSymbolInput" placeholder="BTC, ETH, SOL..." onkeydown="if(event.key==='Enter') triggerCustomAudit(this)" style="background: #1e293b; border: 1px solid #475569; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; width: 110px; text-transform: uppercase; font-family: monospace; font-weight: bold; text-align: center;" />
+              <button onclick="triggerCustomAudit(this)" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: 0.2s;">
                 بررسی صلاحیت
               </button>
             </div>
@@ -4259,8 +4259,8 @@
             <!-- On-Demand Custom Token Search -->
             <div style="display: flex; align-items: center; gap: 8px; background: #0f172a; padding: 6px 10px; border-radius: 10px; border: 1px solid #334155;">
               <span style="font-size: 0.82rem; color: #cbd5e1; font-weight: bold;">🔍 بررسی نماد دلخواه:</span>
-              <input type="text" id="customAuditSymbolInput_secondary" placeholder="BTC, ETH, SOL..." style="background: #1e293b; border: 1px solid #475569; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; width: 110px; text-transform: uppercase; font-family: monospace; font-weight: bold; text-align: center;" />
-              <button onclick="triggerCustomAudit()" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: 0.2s;">
+              <input type="text" id="customAuditSymbolInput_secondary" placeholder="BTC, ETH, SOL..." onkeydown="if(event.key==='Enter') triggerCustomAudit(this)" style="background: #1e293b; border: 1px solid #475569; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; width: 110px; text-transform: uppercase; font-family: monospace; font-weight: bold; text-align: center;" />
+              <button onclick="triggerCustomAudit(this)" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: 0.2s;">
                 بررسی صلاحیت
               </button>
             </div>
@@ -12327,14 +12327,66 @@ function renderMasterSignalCard(data) {
   }
 }
 
-async function triggerCustomAudit() {
-  const input = document.getElementById('customAuditSymbolInput');
-  const resBox = document.getElementById('customAuditResultBox');
-  const title = document.getElementById('customAuditTitle');
-  const content = document.getElementById('customAuditContent');
+
+async function runArbiterAuditOnDemand() {
+  const input = document.getElementById('arbiterAuditInput');
+  const resBox = document.getElementById('arbiterAuditResultBox');
+  if (!input || !resBox) return;
+  const sym = (input.value || '').trim().toUpperCase().replace('USDT', '').replace('/', '');
+  if (!sym) {
+    resBox.innerHTML = '<span style="color:#ef5350;">لطفاً نماد ارز را وارد کنید (مثال: RLC یا SOL)</span>';
+    return;
+  }
+  resBox.innerHTML = `<span style="color:#38bdf8;">در حال ارزیابی ۸ لایه دفاعی و تله‌های نقدینگی ${sym}...</span>`;
+  try {
+    const res = await fetch(`/api/master-signal/audit-custom?symbol=${encodeURIComponent(sym)}`, { method: 'POST' });
+    const data = await res.json();
+    if (!data.success) {
+      resBox.innerHTML = `<span style="color:#ef5350;">${data.error || 'خطا در ارزیابی'}</span>`;
+      return;
+    }
+    const v = data.verdict || {};
+    const d = data.details || {};
+    if (v.approved) {
+      const st = v.setup || {};
+      resBox.innerHTML = `
+        <div style="color:#00e676; font-weight:800; margin-bottom:4px;">✅ ستاپ طلایی ${sym} تایید شد!</div>
+        <div style="color:#cbd5e1;">ورود OTE: $${st.entry} | استاپ: $${st.sl} | تارگت ۱: $${st.tp1}</div>
+      `;
+    } else {
+      resBox.innerHTML = `
+        <div style="color:#ef5350; font-weight:800; margin-bottom:4px;">🛑 عدم تایید برای ${sym}:</div>
+        <div style="color:#fca5a5;">${v.reason || 'رد توسط دروازه‌بان'}</div>
+      `;
+    }
+  } catch (err) {
+    resBox.innerHTML = `<span style="color:#ef5350;">خطای شبکه: ${err.message}</span>`;
+  }
+}
+
+async function triggerCustomAudit(btnElement) {
+  let input = null;
+  let resBox = null;
+  let title = null;
+  let content = null;
+
+  if (btnElement && btnElement.closest) {
+    const parent = btnElement.closest('#masterCockpitContainer') || btnElement.parentElement;
+    if (parent) {
+      input = parent.querySelector('input[type="text"]');
+      resBox = parent.querySelector('[id*="customAuditResultBox"]');
+      title = parent.querySelector('[id*="customAuditTitle"]');
+      content = parent.querySelector('[id*="customAuditContent"]');
+    }
+  }
+
+  if (!input) input = document.getElementById('customAuditSymbolInput') || document.getElementById('customAuditSymbolInput_secondary');
+  if (!resBox) resBox = document.getElementById('customAuditResultBox') || document.getElementById('customAuditResultBox_secondary');
+  if (!title) title = document.getElementById('customAuditTitle') || document.getElementById('customAuditTitle_secondary');
+  if (!content) content = document.getElementById('customAuditContent') || document.getElementById('customAuditContent_secondary');
 
   if (!input || !resBox || !content) return;
-  const sym = (input.value || '').trim().toUpperCase();
+  const sym = (input.value || '').trim().toUpperCase().replace('USDT', '').replace('/', '');
   if (!sym) {
     alert('لطفاً نام ارز مورد نظر را وارد کنید (مثال: SOL)');
     return;
