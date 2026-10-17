@@ -43,6 +43,14 @@ from institutional_addons import (
 )
 from crypto_arbiter_gatekeeper import CryptoArbiterGatekeeper, global_arbiter
 
+# Render Persistent Disk Mount (/data)
+PERSISTENT_DATA_DIR = "/data" if os.path.exists("/data") else os.path.dirname(os.path.abspath(__file__))
+try:
+    if not os.path.exists(PERSISTENT_DATA_DIR):
+        os.makedirs(PERSISTENT_DATA_DIR, exist_ok=True)
+except Exception:
+    pass
+
 app = FastAPI(
     title="Crypto Trading AI Agent",
     description="Institutional-grade agent for cryptocurrency analysis, scalping, swing trading, order flow, on-chain, and risk management.",
@@ -351,8 +359,7 @@ def run_backtest_endpoint(
     res = BacktestEngine.run_backtest(candles, sym, timeframe, lookback)
     return res
 
-# Render Persistent Disk Mount (/data)
-PERSISTENT_DATA_DIR = "/data" if os.path.exists("/data") else os.path.dirname(os.path.abspath(__file__))
+# PERSISTENT_DATA_DIR defined at top
 JOURNAL_FILE = os.path.join(PERSISTENT_DATA_DIR, "signal_journal.json")
 JOURNAL_4H_FILE = os.path.join(PERSISTENT_DATA_DIR, "journal_4h.json")
 MACRO_JOURNAL_FILE = os.path.join(PERSISTENT_DATA_DIR, "macro_journal.json")
