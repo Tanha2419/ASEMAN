@@ -6,6 +6,7 @@ services:
     startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1
     plan: starter # Upgraded to persistent plan for production stability
     autoDeploy: true
+    healthCheckPath: /healthz
     envVars:
       - key: PORT
         value: 10000

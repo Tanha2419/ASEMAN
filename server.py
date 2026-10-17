@@ -132,6 +132,11 @@ class TelegramConfigRequest(BaseModel):
 class CryptoPanicConfigRequest(BaseModel):
     api_key: str
 
+@app.get("/healthz")
+def health_check():
+    """Kubernetes and Render official health check probe"""
+    return {"status": "ok", "service": "crypto-aseman", "time": time.time()}
+
 @app.get("/api/status")
 def get_status():
     return {"status": "online", "message": "Crypto Trading AI Agent is running with Institutional 7-Layer Engine."}
@@ -200,6 +205,11 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
     try:
         sym = clean_symbol(symbol)
         price = float(res.get("price", 0.0))
+        if price <= 0:
+            res["trade_quality"] = {"grade": "NO_DATA", "grade_title": "فاقد داده", "action_advice": "داده صرافی در دسترس نیست. تحلیل متوقف شد.", "passed_count": 0}
+            res["scalp_setup"] = {"action": "WAIT / بدون معامله", "action_code": "WAIT", "entry_zone": "داده در دسترس نیست", "stop_loss": 0, "tp1": 0, "tp2": 0, "tp3": 0}
+            res["swing_setup"] = {"action": "WAIT / بدون معامله", "action_code": "WAIT", "entry_zone": "داده در دسترس نیست", "stop_loss": 0, "tp1": 0, "tp2": 0, "tp3": 0}
+            return res
         if price <= 0:
             return JSONResponse(status_code=503, content={"success": False, "error": "داده زنده قیمت در دسترس نیست. محاسبه دقت موقتاً متوقف شد."})
         tk = res.get("ticker", {})
