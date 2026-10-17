@@ -156,36 +156,39 @@ _fast_ticker_time = {}
 def get_ticker(symbol: str = Query("BTC")):
     sym = clean_symbol(symbol).upper()
     now = time.time()
-    if sym in _fast_ticker_cache and (now - _fast_ticker_time.get(sym, 0) < 2.5):
-        return _fast_ticker_cache[sym]
-    try:
-        tk = agent.fetcher.fetch_ticker(sym)
-        if tk and tk.get("last_price"):
-            price = float(tk["last_price"])
-            change = float(tk.get("price_change_pct", 0.0))
-            data = {
-                "ok": True,
-                "symbol": sym,
-                "price": price,
-                "price_change_pct": change,
-                "high_24h": float(tk.get("high_24h", price)),
-                "low_24h": float(tk.get("low_24h", price)),
-                "source": tk.get("source", "Binance"),
-                "time": now
-            }
-            _fast_ticker_cache[sym] = data
-            _fast_ticker_time[sym] = now
-            return data
-    except Exception as e:
-        pass
-    if sym in _fast_ticker_cache:
-        return _fast_ticker_cache[sym]
-    return {"ok": False, "symbol": sym, "price": 0.0}
+    
+    # 1-second in-memory throttle to prevent rate-limit bans
+    if sym in _ticker_cache and (now - _ticker_cache_time.get(sym, 0) < 1.2):
+        return _ticker_cache[sym]
 
-_analyze_cache = {}
-_last_analyze_time = {}
+    tk = agent.fetcher.fetch_ticker(f"{sym}USDT")
+    if tk and float(tk.get("last_price") or tk.get("price") or 0.0) > 0:
+        p = float(tk.get("last_price") or tk.get("price"))
+        ch = float(tk.get("change_pct_24h") or tk.get("priceChangePercent") or 0.0)
+        h24 = float(tk.get("high_24h") or tk.get("highPrice") or 0.0)
+        l24 = float(tk.get("low_24h") or tk.get("lowPrice") or 0.0)
+        res = {
+            "ok": True,
+            "symbol": sym,
+            "price": p,
+            "price_change_pct": ch,
+            "high_24h": h24 if h24 > 0 else None,
+            "low_24h": l24 if l24 > 0 else None,
+            "source": tk.get("source", "Binance"),
+            "stale": False,
+            "time": now
+        }
+        _ticker_cache[sym] = res
+        _ticker_cache_time[sym] = now
+        return res
 
-@app.get("/api/analyze")
+    if sym in _ticker_cache:
+        cached = dict(_ticker_cache[sym])
+        cached["stale"] = True
+        return cached
+
+    return JSONResponse(status_code=503, content={"ok": False, "error": "قیمت زنده صرافی در دسترس نیست."})
+
 def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. BTC, ETH, SOL, PEPE, SUI")):
     sym_clean = clean_symbol(symbol).upper()
     now = time.time()
@@ -486,7 +489,7 @@ def record_4h_swing_setup(symbol: str, action: str, structure: str, grade: str, 
     clean_action = "LONG" if is_long else "SHORT"
 
     if entry_f <= 0:
-        return {"id": None, "error": "نقطه ورود ساختاری معتبر از سوی تحلیل ۴ ساعته ارائه نشد. ثبت متوقف شد."}
+        return {"id": None, "error": "نقطه ورود ساختاری معتبر ارائه نشد. ثبت متوقف شد."}
 
     # Strict Data Integrity: Stop loss and targets for 4H Swing must come from real structural liquidity.
     if sl_f <= 0 or tp1_f <= 0 or not grade or not score:
@@ -555,7 +558,7 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, 
     clean_action = "LONG" if is_long else "SHORT"
 
     if entry_f <= 0:
-        return {"id": None, "error": "نقطه ورود ساختاری معتبر از سوی تحلیل ۴ ساعته ارائه نشد. ثبت متوقف شد."}
+        return {"id": None, "error": "نقطه ورود ساختاری معتبر ارائه نشد. ثبت متوقف شد."}
 
     # Strict Data Integrity: Stop loss and targets must come directly from institutional calculation.
     # If SL or TP1 are not explicitly provided, halt signal recording rather than synthesizing fake numbers.
@@ -1715,11 +1718,12 @@ def get_signal_journal():
 
     # Calculate comprehensive institutional statistics
     total_trades = len(records)
-    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT", "PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"]])
+    # Strictly define wins: Genuine TP touch OR positive PnL on timeout!
+    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT"] or (r.get("status") in ["PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"] and float(r.get("pnl_pct", 0.0)) > 0)])
     tp2_count = len([r for r in records if r.get("status") in ["TP2_HIT", "TP3_HIT"]])
     tp3_count = len([r for r in records if r.get("status") == "TP3_HIT"])
-    sl_count = len([r for r in records if r.get("status") in ["SL_HIT", "SL_TIMEOUT"]])
-    breakeven_count = len([r for r in records if r.get("status") in ["BREAKEVEN_CLOSED", "EXPIRED"]])
+    sl_count = len([r for r in records if r.get("status") in ["SL_HIT", "SL_TIMEOUT"] or (r.get("status") in ["TP1_CLOSED_TIMEOUT"] and float(r.get("pnl_pct", 0.0)) < 0)])
+    breakeven_count = len([r for r in records if r.get("status") in ["BREAKEVEN_CLOSED", "EXPIRED"] or (r.get("status") == "TP1_CLOSED_TIMEOUT" and float(r.get("pnl_pct", 0.0)) == 0.0)])
     active_count = len([r for r in records if not r.get("closed")])
     
     total_profit_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) > 0])
@@ -1830,11 +1834,12 @@ def get_4h_signal_journal():
         save_4h_journal(records)
 
     total_trades = len(records)
-    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT", "PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"]])
+    # Strictly define wins: Genuine TP touch OR positive PnL on timeout!
+    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT"] or (r.get("status") in ["PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"] and float(r.get("pnl_pct", 0.0)) > 0)])
     tp2_count = len([r for r in records if r.get("status") in ["TP2_HIT", "TP3_HIT"]])
     tp3_count = len([r for r in records if r.get("status") == "TP3_HIT"])
-    sl_count = len([r for r in records if r.get("status") in ["SL_HIT", "SL_TIMEOUT"]])
-    breakeven_count = len([r for r in records if r.get("status") in ["BREAKEVEN_CLOSED", "EXPIRED"]])
+    sl_count = len([r for r in records if r.get("status") in ["SL_HIT", "SL_TIMEOUT"] or (r.get("status") in ["TP1_CLOSED_TIMEOUT"] and float(r.get("pnl_pct", 0.0)) < 0)])
+    breakeven_count = len([r for r in records if r.get("status") in ["BREAKEVEN_CLOSED", "EXPIRED"] or (r.get("status") == "TP1_CLOSED_TIMEOUT" and float(r.get("pnl_pct", 0.0)) == 0.0)])
     active_count = len([r for r in records if not r.get("closed")])
 
     total_profit_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) > 0])
