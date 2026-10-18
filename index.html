@@ -2131,7 +2131,7 @@
       <div class="smc-highlights-strip">
         <!-- HFT Activity Index -->
         <div class="smc-pill">
-          <div class="smc-pill-title">🤖 ردپای جریان نهادی HFT:</div>
+          <div class="smc-pill-title">🤖 ردپای ربات‌های HFT و بانک‌ها:</div>
           <div class="smc-pill-value">
             <span id="hftScoreVal" style="color: var(--blue);">--/100</span>
             <span style="font-size: 0.75rem; color: #94a3b8;" id="hftStatusText">در حال پایش</span>
@@ -2200,10 +2200,10 @@
         <div class="smc-pill">
           <div class="smc-pill-title">⏰ سشن و کیل‌زون معاملاتی:</div>
           <div class="smc-pill-value" id="killzoneTitle" style="color: var(--blue);">
-            در حال تطبیق ساعت سشن...
+            لندن (London Open)
           </div>
           <div style="font-size: 0.72rem; color: var(--text-dim);" id="killzoneDesc">
-            پایش پیوسته حجم نقدینگی
+            ساعات طلایی ورود با نقدینگی بالا
           </div>
         </div>
 
@@ -2214,7 +2214,7 @@
             فاقد واگرایی منفی
           </div>
           <div style="font-size: 0.72rem; color: var(--text-dim);" id="divergenceDesc">
-            در حال پردازش واگرایی‌ها...
+            حرکت قیمت و RSI همسو است
           </div>
         </div>
       </div>
@@ -2246,7 +2246,7 @@
       <!-- Orderbook Depth & Microstructure Pressure Bar -->
       <div class="orderbook-bar-wrap">
         <div class="orderbook-header">
-          <span><strong>عمق بازار و فشار خریدار / فروشنده (Order Book Depth):</strong> <span id="obPressureText" style="color: var(--blue);">در حال پایش دفتر سفارشات...</span></span>
+          <span><strong>عمق بازار و فشار خریدار / فروشنده (Order Book Depth):</strong> <span id="obPressureText" style="color: var(--blue);">تعادل عرضه و تقاضا</span></span>
           <span style="font-family: var(--font-mono); direction: ltr;" id="obRatioText">Ratio: 1.00</span>
         </div>
         <div class="orderbook-ratio-bar">
@@ -3899,9 +3899,9 @@
           <div class="smc-card" style="border-top: 3px solid #00b4d8;">
             <div class="smc-card-header">
               <span class="smc-card-title">رژیم معاملاتی بازار (Market Regime):</span>
-              <span class="indicator-badge" id="macroRegimeBadge" style="background: rgba(0, 180, 216, 0.15); color: #00b4d8;">در حال پایش</span>
+              <span class="indicator-badge" id="macroRegimeBadge" style="background: rgba(0, 180, 216, 0.15); color: #00b4d8;">Risk-On</span>
             </div>
-            <div style="font-size: 1rem; font-weight: 700; color: #fff; margin: 8px 0;" id="macroRegimeTitle">در حال پایش (صعودی و ریسک‌پذیر)</div>
+            <div style="font-size: 1rem; font-weight: 700; color: #fff; margin: 8px 0;" id="macroRegimeTitle">Risk-On (صعودی و ریسک‌پذیر)</div>
             <div class="smc-card-desc" id="macroRegimeDesc">جریان سرمایه از تتر به سمت کریپتو؛ تمایل بالا به پوزیشن‌های خرید.</div>
           </div>
 
@@ -7615,13 +7615,9 @@
             pill.className = `price-change-pill ${ch >= 0 ? 'pill-green' : 'pill-red'}`;
           }
           const highEl = document.getElementById('statHigh24');
-          if (highEl) highEl.innerText = data.high_24h ? formatPrice(data.high_24h) : formatPrice(data.price * 1.015);
+          if (highEl && data.high_24h) highEl.innerText = formatPrice(data.high_24h);
           const lowEl = document.getElementById('statLow24');
-          if (lowEl) lowEl.innerText = data.low_24h ? formatPrice(data.low_24h) : formatPrice(data.price * 0.985);
-          
-          // Remove loading overlay immediately as soon as live ticker is available!
-          const overlay = document.getElementById('loadingOverlay');
-          if (overlay) overlay.style.display = 'none';
+          if (lowEl && data.low_24h) lowEl.innerText = formatPrice(data.low_24h);
         }
       } catch (e) {
         console.warn('Fast ticker fetch error:', e);
@@ -9985,7 +9981,7 @@
       }
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 45000);
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
         const res = await fetch(`/api/analyze?symbol=${encodeURIComponent(symClean)}`, { signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {

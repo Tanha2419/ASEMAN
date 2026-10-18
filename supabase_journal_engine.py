@@ -14,8 +14,9 @@ class SupabaseJournalManager:
     and accurate win-rate calculations based exclusively on closed trades.
     """
     def __init__(self):
-        self.supabase_url = os.environ.get("SUPABASE_URL", "https://qnhgfevhqewdzzjlyhda.supabase.co").rstrip('/')
-        self.supabase_key = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFuaGdmZXZocWV3ZHp6amx5aGRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNzIzNTMsImV4cCI6MjA1OTk0ODM1M30.4s8v_VIdqj10gC7oD_Xn72-8qR5PZ9fF8gV4jX0j-wE")
+        # [FIX S-1] Hardcoded Supabase URL/key removed — credentials must come from env only.
+        self.supabase_url = (os.environ.get("SUPABASE_URL") or "").rstrip('/')
+        self.supabase_key = os.environ.get("SUPABASE_KEY", "")
         self.headers = {
             "apikey": self.supabase_key,
             "Authorization": f"Bearer {self.supabase_key}",
@@ -168,12 +169,28 @@ class SupabaseJournalManager:
             "open_trades": open_trades
         }
 
-    def clear_all_records(self) -> bool:
-        """Clears all records in Supabase (Admin reset)."""
+    def clear_all_records(self, batch_size: int = 500, max_batches: int = 20) -> bool:
+        """Clears all records in Supabase (Admin reset).
+        [FIX S-2] Previously a single unbounded DELETE ?id=gt.0 wiped the whole table in one request.
+        Now deletion happens in bounded chunks (max 10,000 rows per call) with explicit logging.
+        """
         try:
-            url = f"{self.rest_endpoint}?id=gt.0"
-            r = requests.delete(url, headers=self.headers, timeout=5)
-            return r.status_code in [200, 204]
+            total_deleted = 0
+            for _ in range(max_batches):
+                url = f"{self.rest_endpoint}?id=gt.0&order=id.asc&limit={batch_size}"
+                r = requests.delete(url, headers=self.headers, timeout=10)
+                if r.status_code not in [200, 204]:
+                    logger.error(f"Error resetting Supabase table: HTTP {r.status_code} (deleted {total_deleted} so far)")
+                    return False
+                try:
+                    deleted = len(r.json())
+                except Exception:
+                    deleted = batch_size if r.status_code == 200 else 0
+                total_deleted += deleted
+                if deleted < batch_size:
+                    break
+            logger.info(f"Supabase journal cleared: {total_deleted} records deleted in bounded batches.")
+            return True
         except Exception as e:
             logger.error(f"Error resetting Supabase table: {e}")
             return False

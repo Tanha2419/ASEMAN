@@ -9,6 +9,7 @@ Usage:
 """
 
 import sys
+import json
 import argparse
 from analyzer_engine import CryptoTradingAgent
 

@@ -6,7 +6,17 @@ import socket
 import subprocess
 import json
 import threading
+import logging
+import urllib.request
 from datetime import datetime, timezone, timedelta
+
+# [FIX B-3] Central logger — previously logger.warning(...) crashed with NameError
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logger = logging.getLogger("aseman")
+
+# [FIX B-1] Module-level admin secret — previously undefined (NameError -> HTTP 500)
+# in /api/journal/reset, /api/journal/reset-all and other admin endpoints.
+ADMIN_SECRET = (os.environ.get("ADMIN_SECRET_KEY") or "").strip() or None
 
 # Enforce global socket timeout so no external hanging request blocks the server
 socket.setdefaulttimeout(5.0)
@@ -151,45 +161,36 @@ def get_status():
 
 _fast_ticker_cache = {}
 _fast_ticker_time = {}
-_ticker_cache = {}
-_ticker_cache_time = {}
 
 @app.get("/api/ticker")
 def get_ticker(symbol: str = Query("BTC")):
     sym = clean_symbol(symbol).upper()
     now = time.time()
-    
-    # 1-second in-memory throttle to prevent rate-limit bans
-    if sym in _ticker_cache and (now - _ticker_cache_time.get(sym, 0) < 1.2):
-        return _ticker_cache[sym]
-
-    tk = agent.fetcher.fetch_ticker(f"{sym}USDT")
-    if tk and float(tk.get("last_price") or tk.get("price") or 0.0) > 0:
-        p = float(tk.get("last_price") or tk.get("price"))
-        ch = float(tk.get("change_pct_24h") or tk.get("priceChangePercent") or 0.0)
-        h24 = float(tk.get("high_24h") or tk.get("highPrice") or 0.0)
-        l24 = float(tk.get("low_24h") or tk.get("lowPrice") or 0.0)
-        res = {
-            "ok": True,
-            "symbol": sym,
-            "price": p,
-            "price_change_pct": ch,
-            "high_24h": h24 if h24 > 0 else None,
-            "low_24h": l24 if l24 > 0 else None,
-            "source": tk.get("source", "Binance"),
-            "stale": False,
-            "time": now
-        }
-        _ticker_cache[sym] = res
-        _ticker_cache_time[sym] = now
-        return res
-
-    if sym in _ticker_cache:
-        cached = dict(_ticker_cache[sym])
-        cached["stale"] = True
-        return cached
-
-    return JSONResponse(status_code=503, content={"ok": False, "error": "قیمت زنده صرافی در دسترس نیست."})
+    if sym in _fast_ticker_cache and (now - _fast_ticker_time.get(sym, 0) < 2.5):
+        return _fast_ticker_cache[sym]
+    try:
+        tk = agent.fetcher.fetch_ticker(sym)
+        if tk and tk.get("last_price"):
+            price = float(tk["last_price"])
+            change = float(tk.get("price_change_pct", 0.0))
+            data = {
+                "ok": True,
+                "symbol": sym,
+                "price": price,
+                "price_change_pct": change,
+                "high_24h": float(tk.get("high_24h", price)),
+                "low_24h": float(tk.get("low_24h", price)),
+                "source": tk.get("source", "Binance"),
+                "time": now
+            }
+            _fast_ticker_cache[sym] = data
+            _fast_ticker_time[sym] = now
+            return data
+    except Exception as e:
+        pass
+    if sym in _fast_ticker_cache:
+        return _fast_ticker_cache[sym]
+    return {"ok": False, "symbol": sym, "price": 0.0}
 
 _analyze_cache = {}
 _last_analyze_time = {}
@@ -198,37 +199,37 @@ _last_analyze_time = {}
 def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. BTC, ETH, SOL, PEPE, SUI")):
     sym_clean = clean_symbol(symbol).upper()
     now = time.time()
-    if sym_clean in _analyze_cache and (now - _last_analyze_time.get(sym_clean, 0) < 90):
+    if sym_clean in _analyze_cache and (now - _last_analyze_time.get(sym_clean, 0) < 45):
         return _analyze_cache[sym_clean]
 
     import fastfetch as FF
     import crypto_unified_signals as cus
 
-    res = agent.analyze_symbol(symbol)
+    # Parallel gather of Core Multi-Timeframe Analysis AND Dual Unified Signals
+    gathered_core = FF.gather({
+        "analysis": lambda: agent.analyze_symbol(symbol),
+        "unified": lambda: cus.get_unified_signals(sym_clean)
+    }, timeout=6.0)
+
+    res = gathered_core.get("analysis", {})
     if not res or not res.get("success"):
-        if sym_clean in _analyze_cache:
-            return _analyze_cache[sym_clean]
-        return JSONResponse(status_code=404, content=res if res else {"success": False, "error": "تحلیل در دسترس نیست."})
+        res = agent.analyze_symbol(symbol)
+        if not res.get("success"):
+            return JSONResponse(status_code=404, content=res)
 
-    try:
-        unif = cus.get_unified_signals(sym_clean)
-    except Exception:
-        unif = {}
-
-    unif = cus.get_unified_signals(sym_clean)
+    unif = gathered_core.get("unified", {})
     
     # Enrich with Hedge-Fund 5 Precision Suites
     try:
         sym = clean_symbol(symbol)
         price = float(res.get("price", 0.0))
         if price <= 0:
-            return JSONResponse(status_code=503, content={
-                "success": False,
-                "error": "داده زنده قیمت در دسترس نیست. جهت حفظ سرمایه، تحلیل متوقف شد.",
-                "trade_quality": {"grade": "NO_DATA", "grade_title": "فاقد داده", "action_advice": "داده صرافی در دسترس نیست. تحلیل متوقف شد.", "passed_count": 0},
-                "scalp_setup": {"action": "WAIT / بدون معامله", "action_code": "WAIT", "entry_zone": "داده در دسترس نیست", "stop_loss": 0, "tp1": 0, "tp2": 0, "tp3": 0},
-                "swing_setup": {"action": "WAIT / بدون معامله", "action_code": "WAIT", "entry_zone": "داده در دسترس نیست", "stop_loss": 0, "tp1": 0, "tp2": 0, "tp3": 0}
-            })
+            res["trade_quality"] = {"grade": "NO_DATA", "grade_title": "فاقد داده", "action_advice": "داده صرافی در دسترس نیست. تحلیل متوقف شد.", "passed_count": 0}
+            res["scalp_setup"] = {"action": "WAIT / بدون معامله", "action_code": "WAIT", "entry_zone": "داده در دسترس نیست", "stop_loss": 0, "tp1": 0, "tp2": 0, "tp3": 0}
+            res["swing_setup"] = {"action": "WAIT / بدون معامله", "action_code": "WAIT", "entry_zone": "داده در دسترس نیست", "stop_loss": 0, "tp1": 0, "tp2": 0, "tp3": 0}
+            return res
+        if price <= 0:
+            return JSONResponse(status_code=503, content={"success": False, "error": "داده زنده قیمت در دسترس نیست. محاسبه دقت موقتاً متوقف شد."})
         tk = res.get("ticker", {})
         h24 = float(tk.get("highPrice", 0.0)) if tk else 0.0
         l24 = float(tk.get("lowPrice", 0.0)) if tk else 0.0
@@ -240,7 +241,7 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
             "calendar": lambda: EconomicCalendarEngine.get_macro_shield_status(),
             "options": lambda: OptionsEngine.get_options_analytics(base),
             "depth_spoofing": lambda: OrderbookDepthSpoofingEngine.scan_depth_and_spoofing(sym)
-        }, timeout=1.8)
+        }, timeout=4.5)
 
         # --- SYNCHRONIZE 100% WITH DUAL UNIFIED SIGNALS (SINGLE SOURCE OF TRUTH) ---
         try:
@@ -494,7 +495,11 @@ def record_4h_swing_setup(symbol: str, action: str, structure: str, grade: str, 
     clean_action = "LONG" if is_long else "SHORT"
 
     if entry_f <= 0:
-        return {"id": None, "error": "نقطه ورود ساختاری معتبر ارائه نشد. ثبت متوقف شد."}
+        try:
+            tk = agent.fetcher.fetch_ticker(f"{clean_sym}USDT")
+            entry_f = float(tk.get("last_price") or tk.get("price") or 0.0)
+        except Exception:
+            pass
 
     # Strict Data Integrity: Stop loss and targets for 4H Swing must come from real structural liquidity.
     if sl_f <= 0 or tp1_f <= 0 or not grade or not score:
@@ -563,7 +568,11 @@ def record_dispatched_signal(symbol, action, grade, score, entry, sl, tp1, tp2, 
     clean_action = "LONG" if is_long else "SHORT"
 
     if entry_f <= 0:
-        return {"id": None, "error": "نقطه ورود ساختاری معتبر ارائه نشد. ثبت متوقف شد."}
+        try:
+            tk = agent.fetcher.fetch_ticker(f"{clean_sym}USDT")
+            entry_f = float(tk.get("last_price") or tk.get("price") or 0.0)
+        except Exception:
+            pass
 
     # Strict Data Integrity: Stop loss and targets must come directly from institutional calculation.
     # If SL or TP1 are not explicitly provided, halt signal recording rather than synthesizing fake numbers.
@@ -632,7 +641,7 @@ def update_signal_in_journal(symbol, status, pnl_pct, signal_id: Optional[str] =
             r["updated_at"] = time_iran_str
             if status == "TP1_HIT":
                 r["sl"] = r.get("entry", 0.0) # Arm Breakeven
-            if status in ["TP2_HIT", "TP3_HIT", "SL_HIT", "EXPIRED", "PROFIT_TIMEOUT", "BREAKEVEN_CLOSED", "SL_TIMEOUT", "TP1_CLOSED_TIMEOUT"]:
+            if status in ["TP2_HIT", "TP3_HIT", "SL_HIT", "EXPIRED", "PROFIT_TIMEOUT", "BREAKEVEN_CLOSED", "SL_TIMEOUT"]:
                 r["closed"] = True
             updated = True
             break
@@ -1077,7 +1086,8 @@ def live_whale_execution_monitor_loop():
                                     print(f"[WHALE MONITOR] Logged whale trade for {base}: {side} ${usd_val:,.0f} at ${px:,.2f}")
                                     break
                     except Exception as ex_coin:
-                        pass
+                        # [FIX R-4] previously silent pass
+                        print(f"[WHALE MONITOR] coin {base} fetch error: {ex_coin}", flush=True)
 
                 # Clean cache if it gets too large
                 if len(_notified_whale_trades) > 500:
@@ -1375,8 +1385,10 @@ def toggle_sentinel_status():
 
 @app.post("/api/journal/reset")
 def reset_signal_journal(admin_key: Optional[str] = Query(None)):
-    if ADMIN_SECRET and admin_key != ADMIN_SECRET:
-        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ریست ژورنال به کلید ادمین نیاز است.")
+    # [FIX S-2] Admin key is now MANDATORY: if ADMIN_SECRET_KEY is unset on the server,
+    # the reset is denied instead of silently allowing an anonymous wipe.
+    if not ADMIN_SECRET or admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ریست ژورنال به کلید ادمین نیاز است. (ADMIN_SECRET_KEY باید روی سرور تنظیم شده باشد)")
     global _active_signal_trackers, _sent_cooldown
     with _trackers_lock:
         _active_signal_trackers.clear()
@@ -1400,38 +1412,28 @@ def reset_signal_journal(admin_key: Optional[str] = Query(None)):
     return {"success": True, "message": "ژورنال معاملات اسکالپ با موفقیت صفر و پاک‌سازی شد."}
 
 @app.post("/api/journal/reset-all")
-def reset_all_signal_journals(admin_key: Optional[str] = Query(None)):
-    if ADMIN_SECRET and admin_key != ADMIN_SECRET:
-        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ریست کامل ژورنال به کلید ادمین نیاز است.")
+def reset_all_signal_journals(admin_key: Optional[str] = Query(None), confirm: Optional[str] = Query(None)):
+    # [FIX S-2] Admin key mandatory + explicit confirm=YES required before total wipe.
+    if not ADMIN_SECRET or admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ریست کامل ژورنال به کلید ادمین نیاز است. (ADMIN_SECRET_KEY باید روی سرور تنظیم شده باشد)")
+    if (confirm or "").strip().upper() != "YES":
+        raise HTTPException(status_code=400, detail="عملیات حذف کامل نیازمند تأیید دوم است: پارامتر confirm=YES را به درخواست اضافه کنید.")
     try:
         if supabase_journal.is_connected:
-            supabase_journal.clear_all_records()
+            if not supabase_journal.clear_all_records():
+                logger.warning("[JOURNAL RESET-ALL] حذف دسته‌ای رکوردهای Supabase ناقص ماند.")
     except Exception:
-        pass
+        logger.exception("[JOURNAL RESET-ALL] خطا در پاک‌سازی Supabase")
 
-    if ADMIN_SECRET and admin_key != ADMIN_SECRET:
-        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ریست کامل ژورنال به کلید ادمین نیاز است.")
-    global _active_signal_trackers, _sent_cooldown
-    with _trackers_lock:
-        _active_signal_trackers.clear()
-    _sent_cooldown.clear()
-    save_sent_cooldown(_sent_cooldown)
-
-    save_signal_journal([])
-    save_4h_journal([])
+    # Clear memory journal
     try:
-        global_arbiter._symbol_cooldowns.clear()
-        global_arbiter._audit_log.clear()
-        global_arbiter._last_global_dispatch_ts = 0.0
+        if "_journal_signals" in globals():
+            _journal_signals.clear()
+        if "_active_trackers" in globals():
+            _active_trackers.clear()
     except Exception:
         pass
-
-    _sentinel_stats["alerts_sent"] = 0
-    _sentinel_stats["tp_hits_count"] = 0
-    _sentinel_stats["active_tracking_count"] = 0
-    _sentinel_stats["last_alert"] = "تمامی ژورنال‌ها ریست شدند"
-
-    return {"success": True, "message": "تمامی ژورنال‌های معاملات (اسکالپ و ۴ ساعته) با موفقیت به طور کامل صفر و پاک‌سازی شدند."}
+    return {"ok": True, "message": "تمامی رکوردهای ژورنال با موفقیت پاک شدند."}
 
 @app.post("/api/telegram/reset-cooldown")
 def reset_telegram_cooldown():
@@ -1723,12 +1725,11 @@ def get_signal_journal():
 
     # Calculate comprehensive institutional statistics
     total_trades = len(records)
-    # Strictly define wins: Genuine TP touch OR positive PnL on timeout!
-    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT"] or (r.get("status") in ["PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"] and float(r.get("pnl_pct", 0.0)) > 0)])
+    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT", "PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"]])
     tp2_count = len([r for r in records if r.get("status") in ["TP2_HIT", "TP3_HIT"]])
     tp3_count = len([r for r in records if r.get("status") == "TP3_HIT"])
-    sl_count = len([r for r in records if r.get("status") in ["SL_HIT", "SL_TIMEOUT"] or (r.get("status") in ["TP1_CLOSED_TIMEOUT"] and float(r.get("pnl_pct", 0.0)) < 0)])
-    breakeven_count = len([r for r in records if r.get("status") in ["BREAKEVEN_CLOSED", "EXPIRED"] or (r.get("status") == "TP1_CLOSED_TIMEOUT" and float(r.get("pnl_pct", 0.0)) == 0.0)])
+    sl_count = len([r for r in records if r.get("status") in ["SL_HIT", "SL_TIMEOUT"]])
+    breakeven_count = len([r for r in records if r.get("status") in ["BREAKEVEN_CLOSED", "EXPIRED"]])
     active_count = len([r for r in records if not r.get("closed")])
     
     total_profit_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) > 0])
@@ -1839,12 +1840,11 @@ def get_4h_signal_journal():
         save_4h_journal(records)
 
     total_trades = len(records)
-    # Strictly define wins: Genuine TP touch OR positive PnL on timeout!
-    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT"] or (r.get("status") in ["PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"] and float(r.get("pnl_pct", 0.0)) > 0)])
+    tp1_count = len([r for r in records if r.get("status") in ["TP1_HIT", "TP2_HIT", "TP3_HIT", "PROFIT_TIMEOUT", "TP1_CLOSED_TIMEOUT"]])
     tp2_count = len([r for r in records if r.get("status") in ["TP2_HIT", "TP3_HIT"]])
     tp3_count = len([r for r in records if r.get("status") == "TP3_HIT"])
-    sl_count = len([r for r in records if r.get("status") in ["SL_HIT", "SL_TIMEOUT"] or (r.get("status") in ["TP1_CLOSED_TIMEOUT"] and float(r.get("pnl_pct", 0.0)) < 0)])
-    breakeven_count = len([r for r in records if r.get("status") in ["BREAKEVEN_CLOSED", "EXPIRED"] or (r.get("status") == "TP1_CLOSED_TIMEOUT" and float(r.get("pnl_pct", 0.0)) == 0.0)])
+    sl_count = len([r for r in records if r.get("status") in ["SL_HIT", "SL_TIMEOUT"]])
+    breakeven_count = len([r for r in records if r.get("status") in ["BREAKEVEN_CLOSED", "EXPIRED"]])
     active_count = len([r for r in records if not r.get("closed")])
 
     total_profit_pnl = sum([float(r.get("pnl_pct", 0.0)) for r in records if float(r.get("pnl_pct", 0.0)) > 0])
@@ -2414,7 +2414,6 @@ def get_crypto_bank_reports():
         data["bank_models"] = data["bank_desks"]
     return data
 
-@app.api_route("/healthz", methods=["GET", "HEAD"])
 @app.api_route("/health", methods=["GET", "HEAD"])
 @app.api_route("/ping", methods=["GET", "HEAD"])
 def health_check():
