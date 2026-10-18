@@ -1425,12 +1425,10 @@ def reset_all_signal_journals(admin_key: Optional[str] = Query(None), confirm: O
     except Exception:
         logger.exception("[JOURNAL RESET-ALL] خطا در پاک‌سازی Supabase")
 
-    # Clear memory journal
+    # Clear memory journal (real in-memory state: _active_signal_trackers)
     try:
-        if "_journal_signals" in globals():
-            _journal_signals.clear()
-        if "_active_trackers" in globals():
-            _active_trackers.clear()
+        with _trackers_lock:
+            _active_signal_trackers.clear()
     except Exception:
         pass
     return {"ok": True, "message": "تمامی رکوردهای ژورنال با موفقیت پاک شدند."}
@@ -2416,7 +2414,7 @@ def get_crypto_bank_reports():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 @app.api_route("/ping", methods=["GET", "HEAD"])
-def health_check():
+def health_check_alt():
     return {"status": "ok", "message": "healthy"}
 
 
@@ -2494,7 +2492,6 @@ def clear_arbiter_cooldowns_endpoint():
     return {"success": True, "message": "قفل زمانی و کول‌داون نمادهای دروازه‌بان صفر شد."}
 
 if __name__ == "__main__":
-    import uvicorn
     # Bind to 0.0.0.0 and read dynamic PORT from Cloud platforms (Render, Railway, etc.)
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
