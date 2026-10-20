@@ -78,40 +78,52 @@ class MacroEngine:
                 if r.status_code == 200:
                     d = r.json().get("data", {})
                     quote = d.get("quote", {}).get("USD", {})
+                    if not d or not quote:
+                        raise ValueError("empty CMC payload")
                     total_mcap = quote.get("total_market_cap", 0)
                     total_vol = quote.get("total_volume_24h", 0)
-                    btc_d = d.get("btc_dominance", 58.0)
-                    eth_d = d.get("eth_dominance", 11.5)
-                    mcap_chg_24h = quote.get("total_market_cap_yesterday_percentage_change", 0)
-                    active_cryptos = d.get("active_cryptocurrencies", 10000)
+                    btc_d = d.get("btc_dominance")
+                    eth_d = d.get("eth_dominance")
+                    mcap_chg_24h = quote.get("total_market_cap_yesterday_percentage_change")
+                    active_cryptos = d.get("active_cryptocurrencies")
 
-                    usdt_d = max(3.0, round(100.0 - btc_d - eth_d - 22.0, 2))
+                    # CMC does not provide USDT dominance; no fabricated residual computation
+                    usdt_d = None
 
-                    if mcap_chg_24h > 1.0 and btc_d < 60.0:
+                    _btc = float(btc_d) if isinstance(btc_d, (int, float)) else None
+                    _eth = float(eth_d) if isinstance(eth_d, (int, float)) else None
+                    _chg = float(mcap_chg_24h) if isinstance(mcap_chg_24h, (int, float)) else None
+                    if _btc is None or _chg is None:
+                        regime = "نامشخص (دادهٔ ناقص CMC)"
+                        regime_code = "UNKNOWN"
+                        regime_desc = "فیلدهای دامیننس یا تغییر مارکت‌کپ در پاسخ CMC موجود نبود؛ رژیم ساختگی گزارش نمی‌شود."
+                        alt_season = "نامشخص"
+                    elif _chg > 1.0 and _btc < 60.0:
                         regime = "Risk-On (صعودی و ریسک‌پذیر)"
                         regime_code = "RISK_ON"
                         regime_desc = "جریان سرمایه و نقدینگی فعال؛ تمایل بالا به پوزیشن‌های خرید سازمانی."
-                    elif mcap_chg_24h < -1.0 or btc_d > 62.0:
+                        alt_season = "سلطه بیت‌کوین (BTC Dominant)" if _btc > 55.0 else ("رشد آلت‌کوین‌ها (Altcoin Expansion)" if _btc < 50.0 else "تعادل آلت‌ها و بیت‌کوین")
+                    elif _chg < -1.0 or _btc > 62.0:
                         regime = "Risk-Off (نزولی و تدافعی)"
                         regime_code = "RISK_OFF"
                         regime_desc = "فشار فروش کلان و احتیاط در ورود به آلت‌کوین‌ها؛ اولویت حفظ سرمایه."
+                        alt_season = "سلطه بیت‌کوین (BTC Dominant)" if _btc > 55.0 else ("رشد آلت‌کوین‌ها (Altcoin Expansion)" if _btc < 50.0 else "تعادل آلت‌ها و بیت‌کوین")
                     else:
                         regime = "Consolidation (متعادل و خنثی)"
                         regime_code = "NEUTRAL"
                         regime_desc = "نوسان رنج مارکت؛ مناسب برای معاملات اسکالپ فشرده بین سطوح."
-
-                    alt_season = "سلطه بیت‌کوین (BTC Dominant)" if btc_d > 55.0 else ("رشد آلت‌کوین‌ها (Altcoin Expansion)" if btc_d < 50.0 else "تعادل آلت‌ها و بیت‌کوین")
+                        alt_season = "سلطه بیت‌کوین (BTC Dominant)" if _btc > 55.0 else ("رشد آلت‌کوین‌ها (Altcoin Expansion)" if _btc < 50.0 else "تعادل آلت‌ها و بیت‌کوین")
 
                     result = {
                         "has_data": True,
                         "total_market_cap_usd": total_mcap,
                         "total_market_cap_fmt": f"${total_mcap/1e12:.2f}T USD" if total_mcap > 1e12 else f"${total_mcap/1e9:.1f}B USD",
-                        "mcap_change_24h": round(float(mcap_chg_24h), 2),
+                        "mcap_change_24h": round(_chg, 2) if _chg is not None else None,
                         "total_volume_usd": total_vol,
                         "total_volume_fmt": f"${total_vol/1e9:.1f}B USD",
-                        "btc_dominance": round(float(btc_d), 2),
-                        "usdt_dominance": round(float(usdt_d), 2),
-                        "eth_dominance": round(float(eth_d), 2),
+                        "btc_dominance": round(_btc, 2) if _btc is not None else None,
+                        "usdt_dominance": usdt_d,
+                        "eth_dominance": round(_eth, 2) if _eth is not None else None,
                         "regime": regime,
                         "regime_code": regime_code,
                         "regime_desc": regime_desc,
@@ -135,42 +147,52 @@ class MacroEngine:
                 raw = json.loads(resp.read().decode())
                 data = raw.get('data', {})
 
-                total_mcap = data.get('total_market_cap', {}).get('usd', 0)
-                mcap_chg_24h = data.get('market_cap_change_percentage_24h_usd', 0)
-                total_vol = data.get('total_volume', {}).get('usd', 0)
+                total_mcap = data.get('total_market_cap', {}).get('usd')
+                mcap_chg_24h = data.get('market_cap_change_percentage_24h_usd')
+                total_vol = data.get('total_volume', {}).get('usd')
                 doms = data.get('market_cap_percentage', {})
-                btc_d = doms.get('btc', 58.0)
-                usdt_d = doms.get('usdt', 6.5)
-                eth_d = doms.get('eth', 11.5)
-                active_cryptos = data.get('active_cryptocurrencies', 20000)
+                btc_d = doms.get('btc')
+                usdt_d = doms.get('usdt')
+                eth_d = doms.get('eth')
+                active_cryptos = data.get('active_cryptocurrencies')
 
-                # Determine Market Regime
-                if mcap_chg_24h > 1.0 and usdt_d < 7.0:
+                _btc = float(btc_d) if isinstance(btc_d, (int, float)) else None
+                _usdt = float(usdt_d) if isinstance(usdt_d, (int, float)) else None
+                _eth = float(eth_d) if isinstance(eth_d, (int, float)) else None
+                _chg = float(mcap_chg_24h) if isinstance(mcap_chg_24h, (int, float)) else None
+
+                # Determine Market Regime (only from fields actually returned by CoinGecko)
+                if _btc is None or _chg is None or _usdt is None:
+                    regime = "نامشخص (دادهٔ ناقص CoinGecko)"
+                    regime_code = "UNKNOWN"
+                    regime_desc = "فیلدهای دامیننس یا تغییر مارکت‌کپ در پاسخ CoinGecko موجود نبود؛ رژیم ساختگی گزارش نمی‌شود."
+                    alt_season = "نامشخص"
+                elif _chg > 1.0 and _usdt < 7.0:
                     regime = "Risk-On (صعودی و ریسک‌پذیر)"
                     regime_code = "RISK_ON"
                     regime_desc = "جریان سرمایه از تتر به سمت کریپتو؛ تمایل بالا به پوزیشن‌های خرید."
-                elif mcap_chg_24h < -1.0 and usdt_d > 6.0:
+                    alt_season = "سلطه بیت‌کوین (BTC Dominant)" if _btc > 55.0 else ("رشد آلت‌کوین‌ها (Altcoin Expansion)" if _btc < 50.0 else "تعادل آلت‌ها و بیت‌کوین")
+                elif _chg < -1.0 and _usdt > 6.0:
                     regime = "Risk-Off (نزولی و تدافعی)"
                     regime_code = "RISK_OFF"
                     regime_desc = "تبدیل دارایی‌ها به استیبل‌کوین؛ احتیاط در ورود به آلت‌کوین‌ها."
+                    alt_season = "سلطه بیت‌کوین (BTC Dominant)" if _btc > 55.0 else ("رشد آلت‌کوین‌ها (Altcoin Expansion)" if _btc < 50.0 else "تعادل آلت‌ها و بیت‌کوین")
                 else:
                     regime = "Consolidation (متعادل و خنثی)"
                     regime_code = "NEUTRAL"
                     regime_desc = "نوسان رنج مارکت؛ مناسب برای معاملات اسکالپ بین سطوح."
-
-                # Altcoin Season Index Proxy
-                alt_season = "سلطه بیت‌کوین (BTC Dominant)" if btc_d > 55.0 else ("رشد آلت‌کوین‌ها (Altcoin Expansion)" if btc_d < 50.0 else "تعادل آلت‌ها و بیت‌کوین")
+                    alt_season = "سلطه بیت‌کوین (BTC Dominant)" if _btc > 55.0 else ("رشد آلت‌کوین‌ها (Altcoin Expansion)" if _btc < 50.0 else "تعادل آلت‌ها و بیت‌کوین")
 
                 result = {
                     "has_data": True,
                     "total_market_cap_usd": total_mcap,
-                    "total_market_cap_fmt": f"${total_mcap/1e12:.2f}T USD" if total_mcap > 1e12 else f"${total_mcap/1e9:.1f}B USD",
-                    "mcap_change_24h": round(float(mcap_chg_24h), 2),
+                    "total_market_cap_fmt": f"${total_mcap/1e12:.2f}T USD" if total_mcap and total_mcap > 1e12 else (f"${total_mcap/1e9:.1f}B USD" if total_mcap else "نامشخص"),
+                    "mcap_change_24h": round(_chg, 2) if _chg is not None else None,
                     "total_volume_usd": total_vol,
-                    "total_volume_fmt": f"${total_vol/1e9:.1f}B USD",
-                    "btc_dominance": round(float(btc_d), 2),
-                    "usdt_dominance": round(float(usdt_d), 2),
-                    "eth_dominance": round(float(eth_d), 2),
+                    "total_volume_fmt": f"${total_vol/1e9:.1f}B USD" if total_vol else "نامشخص",
+                    "btc_dominance": round(_btc, 2) if _btc is not None else None,
+                    "usdt_dominance": round(_usdt, 2) if _usdt is not None else None,
+                    "eth_dominance": round(_eth, 2) if _eth is not None else None,
                     "regime": regime,
                     "regime_code": regime_code,
                     "regime_desc": regime_desc,
@@ -184,19 +206,22 @@ class MacroEngine:
         except Exception as e:
             fallback = {
                 "has_data": False,
-                "total_market_cap_usd": 2.78e12,
-                "total_market_cap_fmt": "$2.78T USD",
-                "mcap_change_24h": +2.85,
-                "total_volume_usd": 1.15e11,
-                "total_volume_fmt": "$115.0B USD",
-                "btc_dominance": 58.4,
-                "usdt_dominance": 6.55,
-                "eth_dominance": 11.5,
-                "regime": "Risk-On (صعودی و ریسک‌پذیر)",
-                "regime_code": "RISK_ON",
-                "regime_desc": "جریان سرمایه از تتر به سمت کریپتو؛ تمایل بالا به پوزیشن‌های خرید.",
-                "alt_season_status": "سلطه بیت‌کوین (BTC Dominant)",
-                "active_cryptos": 21000,
+                "ok": False,
+                "error": "GLOBAL_METRICS_UNAVAILABLE",
+                "message": "دادهٔ زندهٔ مارکت‌کپ جهانی از هیچ منبعی (CoinMarketCap / CoinGecko) در دسترس نیست؛ هیچ عدد تخمینی نمایش داده نمی‌شود (Fail-Closed).",
+                "total_market_cap_usd": None,
+                "total_market_cap_fmt": "نامشخص",
+                "mcap_change_24h": None,
+                "total_volume_usd": None,
+                "total_volume_fmt": "نامشخص",
+                "btc_dominance": None,
+                "usdt_dominance": None,
+                "eth_dominance": None,
+                "regime": "نامشخص (داده در دسترس نیست)",
+                "regime_code": "UNKNOWN",
+                "regime_desc": "بدون دادهٔ زنده، رژیم بازار گزارش نمی‌شود.",
+                "alt_season_status": "نامشخص",
+                "active_cryptos": None,
                 "updated_at": time.strftime("%H:%M:%S UTC", time.gmtime())
             }
             return fallback
@@ -253,23 +278,38 @@ class OnChainEngine:
         if cls._cached_onchain and (now - cls._last_onchain_time < 180):
             return cls._cached_onchain
 
+        fastest_fee = None
+        n_tx = None
+        btc_sent = None
+        tx_vol_usd = None
+        hash_rate = None
+        has_any = False
+
         try:
             from fastfetch import get_json
             # 1. Mempool fees (2.5s timeout)
             res_fee = get_json('https://mempool.space/api/v1/fees/recommended', timeout=2.5)
-            fastest_fee = res_fee.get("data", {}).get("fastestFee", 2) if res_fee.get("ok") else 2
+            if res_fee.get("ok"):
+                fastest_fee = res_fee.get("data", {}).get("fastestFee")
 
             # 2. Blockchain stats (2.5s timeout)
             res_stats = get_json('https://blockchain.info/stats?format=json', timeout=2.5)
             stats = res_stats.get("data", {}) if res_stats.get("ok") else {}
-            n_tx = stats.get('n_tx', 600000)
-            btc_sent = stats.get('total_btc_sent', 0) / 1e8
-            tx_vol_usd = stats.get('estimated_transaction_volume_usd', 8e9)
-            hash_rate = stats.get('hash_rate', 8.5e11) / 1e9 # in EH/s
+            if stats:
+                n_tx = stats.get('n_tx')
+                raw_sent = stats.get('total_btc_sent')
+                btc_sent = (raw_sent / 1e8) if raw_sent is not None else None
+                tx_vol_usd = stats.get('estimated_transaction_volume_usd')
+                raw_hash = stats.get('hash_rate')
+                hash_rate = (raw_hash / 1e9) if raw_hash is not None else None
+            has_any = bool(res_fee.get("ok") or res_stats.get("ok"))
 
             # Network congestion status
-            if fastest_fee > 60:
-                load_status = "ترافیک بسیار سنگین (تراکنش‌های اضطراری نهنگ‌ها)"
+            if fastest_fee is None:
+                load_status = "نامشخص (دادهٔ فی زنده در دسترس نیست)"
+                load_code = "UNKNOWN"
+            elif fastest_fee > 60:
+                load_status = "ترافیک بسیار سنگین (تراکنش‌های اضطراری)"
                 load_code = "HIGH"
             elif fastest_fee > 20:
                 load_status = "ترافیک متوسط شبکه"
@@ -279,15 +319,16 @@ class OnChainEngine:
                 load_code = "LOW"
 
             result = {
-                "has_data": bool(res_fee.get("ok") or res_stats.get("ok")),
-                "n_tx_24h": f"{n_tx:,}",
-                "total_btc_sent_24h": f"{btc_sent:,.1f} BTC",
-                "tx_volume_usd": f"${tx_vol_usd/1e9:.2f}B USD",
-                "hash_rate_eh": f"{hash_rate:.1f} EH/s",
+                "has_data": has_any,
+                "ok": has_any,
+                "n_tx_24h": f"{n_tx:,}" if n_tx is not None else "نامشخص",
+                "total_btc_sent_24h": f"{btc_sent:,.1f} BTC" if btc_sent is not None else "نامشخص",
+                "tx_volume_usd": f"${tx_vol_usd/1e9:.2f}B USD" if tx_vol_usd is not None else "نامشخص",
+                "hash_rate_eh": f"{hash_rate:.1f} EH/s" if hash_rate is not None else "نامشخص",
                 "recommended_fee_sat_vb": fastest_fee,
                 "network_load": load_status,
                 "network_load_code": load_code,
-                "whale_status": "جابجایی‌های پرحجم ثبت شده در شبکه" if btc_sent > 800000 else "انتقالات عادی بین صرافی‌ها",
+                "whale_status": "نامشخص (دادهٔ زنجیره در دسترس نیست)" if btc_sent is None else ("جابجایی‌های پرحجم ثبت شده در شبکه" if btc_sent > 800000 else "انتقالات عادی بین صرافی‌ها"),
                 "updated_at": time.strftime("%H:%M:%S UTC", time.gmtime())
             }
             cls._cached_onchain = result
@@ -296,14 +337,17 @@ class OnChainEngine:
         except Exception:
             fallback = {
                 "has_data": False,
-                "n_tx_24h": "620,000",
-                "total_btc_sent_24h": "1,120,000 BTC",
-                "tx_volume_usd": "$9.35B USD",
-                "hash_rate_eh": "860.0 EH/s",
-                "recommended_fee_sat_vb": 2,
-                "network_load": "ترافیک روان و کم‌هزینه شبکه بیت‌کوین",
-                "network_load_code": "LOW",
-                "whale_status": "انتقالات عادی بین صرافی‌ها و کیف‌پول‌ها",
+                "ok": False,
+                "error": "ONCHAIN_FEED_UNAVAILABLE",
+                "message": "دادهٔ زندهٔ زنجیره (ممپول / بلاکچین) در دسترس نیست؛ هیچ عدد ساختگی نمایش داده نمی‌شود (Fail-Closed).",
+                "n_tx_24h": "نامشخص",
+                "total_btc_sent_24h": "نامشخص",
+                "tx_volume_usd": "نامشخص",
+                "hash_rate_eh": "نامشخص",
+                "recommended_fee_sat_vb": None,
+                "network_load": "نامشخص (داده در دسترس نیست)",
+                "network_load_code": "UNKNOWN",
+                "whale_status": "نامشخص (دادهٔ زنجیره در دسترس نیست)",
                 "updated_at": time.strftime("%H:%M:%S UTC", time.gmtime())
             }
             return fallback
@@ -594,7 +638,8 @@ class CryptoPanicEngine:
                         pos = votes.get("positive", 0) + votes.get("liked", 0)
                         neg = votes.get("negative", 0) + votes.get("disliked", 0) + votes.get("toxic", 0)
                         imp = votes.get("important", 0)
-                        p_score = int(r.get("panic_score") or (82 if neg > pos * 1.5 else (25 if pos > neg else 48)))
+                        raw_ps = r.get("panic_score")
+                        p_score = int(raw_ps) if raw_ps is not None else None
 
                         sent = "BULLISH_CATALYST" if pos > neg else ("BEARISH_PANIC" if neg > pos else "NEUTRAL")
                         items.append({
@@ -651,8 +696,9 @@ class CryptoPanicEngine:
                                 sent_fa = nlp_res["sentiment_fa"]
                                 col = nlp_res["badge_color"]
                                 p_score = nlp_res["panic_score"]
-                                pos_v = 45 if col == "GREEN" else (8 if col == "RED" else 15)
-                                neg_v = 38 if col == "RED" else (4 if col == "GREEN" else 8)
+                                # RSS feeds carry no community votes; zeros are honest, never fabricated
+                                pos_v = 0
+                                neg_v = 0
                                 feed_items.append({
                                     "title": title,
                                     "title_fa": "", # Populated via parallel neural translation
@@ -662,7 +708,8 @@ class CryptoPanicEngine:
                                     "source_name": src_name,
                                     "published_at": pub,
                                     "description": clean_desc,
-                                    "votes": {"positive": pos_v, "negative": neg_v, "important": 18},
+                                    "votes": {"positive": pos_v, "negative": neg_v, "important": 0},
+                                    "votes_note": "بدون دادهٔ رای جامعه (منبع RSS)",
                                     "panic_score": p_score,
                                     "sentiment": sent,
                                     "sentiment_fa": sent_fa,
@@ -680,23 +727,8 @@ class CryptoPanicEngine:
                 pass
 
         if not items:
-            items = [
-                {
-                    "title": "Institutional inflows into Bitcoin spot ETFs surge past $400M in single day",
-                    "title_fa": "جهش چشمگیر ورود سرمایه‌های نهادی به صندوق‌های ETF اسپات بیت‌کوین به بیش از ۴۰۰ میلیون دلار",
-                    "url": "https://cryptopanic.com",
-                    "domain": "cryptopanic.com",
-                    "source_title": "💎 CryptoPanic Live",
-                    "source_name": "CryptoPanic",
-                    "published_at": "Recent",
-                    "description": "Major asset managers report renewed institutional allocation into BTC reserves.",
-                    "votes": {"positive": 64, "negative": 5, "important": 42},
-                    "panic_score": 20,
-                    "sentiment": "BULLISH_CATALYST",
-                    "sentiment_fa": "🟢 خبر محرک صعودی",
-                    "badge_color": "GREEN"
-                }
-            ]
+            # Fail-Closed: no fabricated headline when all live sources are unreachable
+            items = []
 
         # Multi-Source & Sentiment Filtering
         if filter_mode == "bullish":
@@ -733,23 +765,44 @@ class CryptoPanicEngine:
                 if fa and fa.strip():
                     i["title_fa"] = fa
 
-        avg_panic = int(sum(i["panic_score"] for i in items) / (len(items) + 1e-6)) if items else 45
-        pos_sum = sum(i["votes"]["positive"] for i in items)
-        neg_sum = sum(i["votes"]["negative"] for i in items)
-        comm_ratio = round(pos_sum / (neg_sum + 1e-6), 2)
+        ps = [i.get("panic_score") for i in items if i.get("panic_score") is not None]
+        avg_panic = int(sum(ps) / len(ps)) if ps else None
+        pos_sum = sum((i.get("votes") or {}).get("positive") or 0 for i in items)
+        neg_sum = sum((i.get("votes") or {}).get("negative") or 0 for i in items)
+        comm_ratio = round(pos_sum / neg_sum, 2) if neg_sum > 0 else None
+
+        if avg_panic is None:
+            panic_level_txt = "نامشخص (بدون دادهٔ خبری زنده)"
+        elif avg_panic >= 70:
+            panic_level_txt = "بحرانی / خطر هراس (Critical Panic)"
+        elif avg_panic <= 55:
+            panic_level_txt = "متعادل / عادی (Normal)"
+        else:
+            panic_level_txt = "احتیاط بالا (Elevated Alert)"
+
+        if comm_ratio is None:
+            comm_label_txt = "نامشخص (بدون رای جامعه)"
+        elif comm_ratio >= 1.5:
+            comm_label_txt = "اکثریت صعودی (Bullish Majority)"
+        elif comm_ratio <= 0.75:
+            comm_label_txt = "اکثریت نزولی (Bearish Majority)"
+        else:
+            comm_label_txt = "متعادل (Neutral)"
 
         res = {
             "success": True,
+            "ok": bool(items),
             "has_user_api_key": has_user_key,
             "is_live_api": is_live_api,
             "filter": filter_mode,
             "currency": currency,
             "count": len(items),
             "avg_panic_score": avg_panic,
-            "panic_level": "بحرانی / خطر هراس (Critical Panic)" if avg_panic >= 70 else ("متعادل / عادی (Normal)" if avg_panic <= 55 else "احتیاط بالا (Elevated Alert)"),
+            "panic_level": panic_level_txt,
             "community_sentiment_ratio": comm_ratio,
-            "community_sentiment_label": "اکثریت صعودی (Bullish Majority)" if comm_ratio >= 1.5 else ("اکثریت نزولی (Bearish Majority)" if comm_ratio <= 0.75 else "متعادل (Neutral)"),
+            "community_sentiment_label": comm_label_txt,
             "news_items": items,
+            "data_note": ("هیچ منبع خبری زنده در دسترس نبود؛ هیچ تیتر ساختگی نمایش داده نمی‌شود (Fail-Closed)." if not items else ""),
             "cryptopanic_url": "https://cryptopanic.com/",
             "updated_at": time.strftime("%H:%M:%S UTC", time.gmtime())
         }
@@ -772,19 +825,26 @@ class NewsCircuitBreaker:
         panic_feed = CryptoPanicEngine.fetch_cryptopanic_feed(filter_mode="rising")
         items = panic_feed.get("news_items", [])
 
-        # Evaluate Circuit Breaker Status
-        panic_count = sum(1 for it in items[:8] if it["sentiment"] == "BEARISH_PANIC")
-        bull_count = sum(1 for it in items[:8] if it["sentiment"] == "BULLISH_CATALYST")
-        avg_panic = panic_feed.get("avg_panic_score", 45)
+        # Evaluate Circuit Breaker Status (only when real news data exists)
+        panic_count = sum(1 for it in items[:8] if it.get("sentiment") == "BEARISH_PANIC")
+        bull_count = sum(1 for it in items[:8] if it.get("sentiment") == "BULLISH_CATALYST")
+        avg_panic = panic_feed.get("avg_panic_score")
+        avg_panic_v = avg_panic if avg_panic is not None else 0
 
-        # Trigger emergency halt ONLY on confirmed systemic panic (>= 3 bearish panic items in top headlines OR avg_panic >= 78)
-        if panic_count >= 3 or avg_panic >= 78:
+        # Trigger emergency halt ONLY on confirmed systemic panic
+        if not items:
+            circuit_status = "DATA_UNAVAILABLE"
+            circuit_title = "⚪ وضعیت خبری نامشخص (فید خبری در دسترس نیست)"
+            circuit_advice = "هیچ منبع خبری زنده در دسترس نبود؛ فیوز خبری نمی‌تواند وضعیت بازار را ارزیابی کند (Fail-Closed)."
+            badge = "GRAY"
+            safe_to_trade = True
+        elif panic_count >= 3 or avg_panic_v >= 78:
             circuit_status = "EMERGENCY_CIRCUIT_BREAKER"
             circuit_title = "🛑 فیوز اضطراری اخبار فعال است (Circuit Breaker Triggered)"
             circuit_advice = "انتشار چندین خبر فوری بحرانی سیستمی در بازار رمزارز؛ باز کردن پوزیشن‌های جدید موقتاً متوقف شد و استاپ‌ها به نقطه سربه‌سر منتقل شوند."
             badge = "RED"
             safe_to_trade = False
-        elif panic_count >= 1 or avg_panic >= 65:
+        elif panic_count >= 1 or avg_panic_v >= 65:
             circuit_status = "CAUTION_HIGH_VOLATILITY"
             circuit_title = "⚠️ هشدار نوسانات خبری (Caution Active)"
             circuit_advice = "شناسایی سیگنال نوسان خبری در رسانه‌ها؛ معاملات با رعایت مدیریت سرمایه و استاپ‌لاس دقیق مجاز است."
@@ -793,7 +853,7 @@ class NewsCircuitBreaker:
         else:
             circuit_status = "NORMAL_CLEAR"
             circuit_title = "🟢 وضعیت خبری امن و باثبات (News Clear)"
-            circuit_advice = "هیچ خبر فاجعه‌بار یا ناهنجاری احساسی در CryptoPanic گزارش نشده است؛ معاملات بر اساس تحلیل تکنیکال و اردر فلو مجاز است."
+            circuit_advice = "هیچ خبر فاجعه‌بار یا ناهنجاری احساسی در منابع خبری گزارش نشده است؛ معاملات بر اساس تحلیل تکنیکال و اردر فلو مجاز است."
             badge = "GREEN"
             safe_to_trade = True
 
@@ -2172,7 +2232,7 @@ class CoinlegsScanner:
                 with urllib.request.urlopen(req_all, timeout=4.0) as resp:
                     raw_list = json.loads(resp.read().decode())
                     all_tickers = {it['symbol']: it for it in raw_list}
-                btc_chg_24h = float(all_tickers.get('BTCUSDT', {}).get('priceChangePercent', 0.0)) * 100.0
+                btc_chg_24h = float(all_tickers.get('BTCUSDT', {}).get('priceChangePercent', 0.0))
             except Exception:
                 pass
 
@@ -2294,6 +2354,23 @@ class HeatmapEngine:
             except Exception:
                 pass
 
+        if not ticker_map:
+            return {
+                "success": False,
+                "ok": False,
+                "error": "HEATMAP_FEED_UNAVAILABLE",
+                "timeframe": tf,
+                "timeframe_label": "نامشخص",
+                "count": 0,
+                "market_state": "نامشخص (فید تیکر در دسترس نیست)",
+                "top_gainer": None,
+                "top_loser": None,
+                "blocks": [],
+                "tiles": [],
+                "message": "دادهٔ زندهٔ تیکرها در دسترس نیست؛ هیتمپ با بلوک‌های صفر نمایش داده نمی‌شود (Fail-Closed).",
+                "updated_at": time.strftime("%H:%M:%S UTC", time.gmtime())
+            }
+
         # 2. Window size return mapping if timeframe is 1h or 7d
         tf_changes = {}
         if tf in ["1h", "7d"]:
@@ -2319,6 +2396,8 @@ class HeatmapEngine:
             base = sym.replace("USDT", "")
             tk = ticker_map.get(sym, {})
             price = float(tk.get('lastPrice', 0.0)) if tk else 0.0
+            if price <= 0:
+                continue
             vol = float(tk.get('quoteVolume', 0.0)) if tk else 0.0
 
             if tf in ["1h", "7d"]:
@@ -2389,6 +2468,7 @@ class OrderFlowAbsorptionEngine:
     _last_time = {}
 
     @classmethod
+    @classmethod
     def analyze_absorption(cls, symbol: str = "BTC") -> Dict[str, Any]:
         base = symbol.upper().replace("USDT", "").replace("USD", "").replace("-", "").strip() if symbol else "BTC"
         if not base:
@@ -2397,6 +2477,19 @@ class OrderFlowAbsorptionEngine:
         if base in cls._cache and (now - cls._last_time.get(base, 0) < 15):
             return cls._cache[base]
 
+        def _honest_fail(reason: str) -> Dict[str, Any]:
+            return {
+                "success": False,
+                "ok": False,
+                "error": reason,
+                "symbol": f"{base}USDT",
+                "base_coin": base,
+                "absorption_title": "تحلیل اردر فلو در دسترس نیست",
+                "net_delta_fmt": "نامشخص",
+                "delta_ratio_pct": None,
+                "description": "دادهٔ زندهٔ معاملات صرافی در دسترس نیست؛ هیچ عدد ساختگی نمایش داده نمی‌شود (Fail-Closed)."
+            }
+
         try:
             url = f"https://www.okx.com/api/v5/market/trades?instId={base}-USDT-SWAP&limit=100"
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -2404,7 +2497,7 @@ class OrderFlowAbsorptionEngine:
                 trades = json.loads(resp.read().decode()).get("data", [])
 
             if not trades:
-                raise ValueError("No trades returned from order flow exchange")
+                return _honest_fail("NO_TRADES_RETURNED")
 
             buy_vol = sum(float(t.get("sz", 0)) * float(t.get("px", 0)) for t in trades if t.get("side") == "buy")
             sell_vol = sum(float(t.get("sz", 0)) * float(t.get("px", 0)) for t in trades if t.get("side") == "sell")
@@ -2414,7 +2507,7 @@ class OrderFlowAbsorptionEngine:
 
             prices = [float(t.get("px", 0)) for t in trades if float(t.get("px", 0)) > 0]
             if not prices:
-                prices = [84800.0]
+                return _honest_fail("LIVE_PRICE_UNAVAILABLE")
             p_curr = prices[0]
             p_old = prices[-1]
             p_high = max(prices)
@@ -2424,66 +2517,60 @@ class OrderFlowAbsorptionEngine:
             # Dynamic threshold
             min_thresh = 150000 if base in ["BTC", "ETH"] else 30000
 
-            # 1. Bearish absorption (Bid Wall / Passive Buyers absorbing aggressive sellers):
+            # 1. Bearish absorption (Passive Buyers absorbing aggressive sellers):
             if net_delta < -min_thresh and px_pct >= -0.05:
                 regime = "BULLISH_ABSORPTION"
                 regime_title = "🟢 جذب تهاجمی فروشندگان (Bullish Passive Absorption)"
-                desc = f"فروشندگان بیش از ${abs(net_delta)/1e6:.2f}M معامله مارکت‌سل زدند، اما دیواره سفارشات خرید نهنگ‌ها اجازه افت قیمت نداد (انباشت مخفی در کف)."
+                desc = f"فروشندگان بیش از ${abs(net_delta)/1e6:.2f}M معامله مارکت‌سل زدند، اما قیمت افت معناداری نکرد (احتمال جذب توسط خریداران)."
                 bias = "LONG"
-                confidence = 88
-            # 2. Bullish exhaustion (Ask Wall / Passive Sellers absorbing aggressive buyers):
+            # 2. Bullish exhaustion (Passive Sellers absorbing aggressive buyers):
             elif net_delta > min_thresh and px_pct <= 0.05:
                 regime = "BEARISH_ABSORPTION"
                 regime_title = "🔴 جذب تهاجمی خریداران (Bearish Passive Absorption)"
-                desc = f"خریداران بیش از ${net_delta/1e6:.2f}M مارکت‌بای زدند، اما نهنگ‌ها سفارشات لیمیت فروش چیده و سفارشات را بلعیدند (سقف‌سازی و توزیع)."
+                desc = f"خریداران بیش از ${net_delta/1e6:.2f}M مارکت‌بای زدند، اما قیمت رشد معناداری نکرد (احتمال توزیع در سقف)."
                 bias = "SHORT"
-                confidence = 88
             elif net_delta > 0:
                 regime = "BUYER_DOMINANT"
                 regime_title = "🟢 غلبه مومنتوم خریداران تهاجمی (Aggressive Taker Flow)"
                 desc = f"مومنتوم خرید تهاجمی فعال با دلتای مثبت ${net_delta/1e6:.2f}M در جریان است."
                 bias = "LONG"
-                confidence = 75
             else:
                 regime = "SELLER_DOMINANT"
                 regime_title = "🔴 غلبه مومنتوم فروشندگان تهاجمی (Aggressive Taker Flow)"
                 desc = f"فشار فروش فعال با دلتای منفی ${abs(net_delta)/1e6:.2f}M در جریان است."
                 bias = "SHORT"
-                confidence = 75
 
-            # --- Dual Depth Duel Calculations (Bid vs Ask Absorption Walls) ---
-            coin_base_val = 15_000_000.0 if base in ["BTC", "ETH"] else 3_000_000.0
-            
-            # Support Bid Wall (Hidden Buy Order Wall)
-            bid_wall_price = round(p_low if p_low > 0 else p_curr * 0.996, 2 if p_curr > 10 else 6)
-            bid_wall_total = round(max(sell_vol * 1.35, coin_base_val), 2)
+            # Confidence: data-driven estimate from real delta strength (labeled estimate)
+            strength = min(2.0, abs(net_delta) / max(min_thresh, 1.0))
+            confidence = min(85, 45 + int(20 * strength))
+
+            # --- Depth Duel (Honest): only taker-flow volumes are known ---
+            # Hidden wall sizes require live orderbook depth snapshots; they are NOT estimated here.
+            bid_wall_price = p_low
+            ask_wall_price = p_high
+            bid_wall_total = None
+            ask_wall_total = None
             bid_wall_absorbed = round(sell_vol, 2)
-            bid_wall_remaining = max(0.0, bid_wall_total - bid_wall_absorbed)
-            bid_wall_pct = min(100.0, round((bid_wall_absorbed / max(1.0, bid_wall_total)) * 100.0, 1))
-
-            # Resistance Ask Wall (Hidden Sell Order Wall)
-            ask_wall_price = round(p_high if p_high > 0 else p_curr * 1.004, 2 if p_curr > 10 else 6)
-            ask_wall_total = round(max(buy_vol * 1.35, coin_base_val), 2)
             ask_wall_absorbed = round(buy_vol, 2)
-            ask_wall_remaining = max(0.0, ask_wall_total - ask_wall_absorbed)
-            ask_wall_pct = min(100.0, round((ask_wall_absorbed / max(1.0, ask_wall_total)) * 100.0, 1))
+            bid_wall_remaining = None
+            ask_wall_remaining = None
+            bid_wall_pct = None
+            ask_wall_pct = None
 
-            # Verdict & Balance of Power
-            if bid_wall_pct < 40 and ask_wall_pct > 60:
-                power_summary = "🟢 خریداران پنهان در حال شکستن سقف هستند (دیوار فروش در حال فروپاشی)"
-                action_verdict = "دیوار فروشندگان ضعیف شده است؛ احتمال انفجار صعودی به سمت بالا بسیار بالا است (آماده لانگ)."
-            elif ask_wall_pct < 40 and bid_wall_pct > 60:
-                power_summary = "🔴 فروشندگان پنهان در حال شکستن کف هستند (دیوار خرید در حال تخلیه)"
-                action_verdict = "دیوار خریداران تحت فشار است؛ احتمال ریزش به زیر حمایت بالاست (احتیاط یا پوزیشن شورت)."
-            elif net_delta >= 0:
+            # Verdict & Balance of Power (from real taker delta only)
+            if net_delta > 0:
                 power_summary = "🟢 برتری نسبی خریداران تهاجمی در اردر فلو"
-                action_verdict = "سفارشات خرید با مومنتوم مثبت در جریان است؛ اولویت با ستاپ‌های صعودی."
-            else:
+                action_verdict = "سفارش‌های خرید با مومنتوم مثبت در جریان است؛ اولویت با ستاپ‌های صعودی (قضاوت دربارهٔ دیواره‌های پنهان بدون دادهٔ عمق انجام نمی‌شود)."
+            elif net_delta < 0:
                 power_summary = "🔴 برتری نسبی فروشندگان تهاجمی در اردر فلو"
-                action_verdict = "فشار عرضه در سقف مشاهده می‌شود؛ ورود به لانگ نیازمند تأییدیه کندلی است."
+                action_verdict = "فشار عرضه در جریان است؛ ورود به لانگ نیازمند تأییدیه کندلی است."
+            else:
+                power_summary = "⚖️ توازن نسبی خریداران و فروشندگان تهاجمی"
+                action_verdict = "مومنتوم تیکرها متعادل است؛ سیگنال جهت‌دار واضحی از اردر فلو دریافت نشد."
 
             res = {
                 "success": True,
+                "ok": True,
                 "symbol": f"{base}USDT",
                 "base_coin": base,
                 "current_price": p_curr,
@@ -2504,27 +2591,28 @@ class OrderFlowAbsorptionEngine:
                 "description": desc,
                 "directional_bias": bias,
                 "confidence_score": confidence,
+                "confidence_note": "برآوردی از شدت دلتای واقعی معاملات",
                 "bid_wall": {
                     "price": bid_wall_price,
                     "total_usd": bid_wall_total,
-                    "total_fmt": f"${bid_wall_total/1e6:.2f}M",
+                    "total_fmt": "نامشخص (بدون اسنپ‌شات عمق)",
                     "absorbed_usd": bid_wall_absorbed,
                     "absorbed_fmt": f"${bid_wall_absorbed/1e6:.2f}M",
                     "remaining_usd": bid_wall_remaining,
-                    "remaining_fmt": f"${bid_wall_remaining/1e6:.2f}M",
+                    "remaining_fmt": "نامشخص",
                     "progress_pct": bid_wall_pct,
-                    "status_label": "دیوار مستحکم 🛡️" if bid_wall_pct < 50 else ("تحت فشار نقدینگی ⚠️" if bid_wall_pct < 80 else "در آستانه شکست 🚨")
+                    "status_label": "بدون دادهٔ عمق زنده (Fail-Closed)"
                 },
                 "ask_wall": {
                     "price": ask_wall_price,
                     "total_usd": ask_wall_total,
-                    "total_fmt": f"${ask_wall_total/1e6:.2f}M",
+                    "total_fmt": "نامشخص (بدون اسنپ‌شات عمق)",
                     "absorbed_usd": ask_wall_absorbed,
                     "absorbed_fmt": f"${ask_wall_absorbed/1e6:.2f}M",
                     "remaining_usd": ask_wall_remaining,
-                    "remaining_fmt": f"${ask_wall_remaining/1e6:.2f}M",
+                    "remaining_fmt": "نامشخص",
                     "progress_pct": ask_wall_pct,
-                    "status_label": "دیوار مستحکم 🛡️" if ask_wall_pct < 50 else ("تحت فشار نقدینگی ⚠️" if ask_wall_pct < 80 else "در آستانه شکست 🚨")
+                    "status_label": "بدون دادهٔ عمق زنده (Fail-Closed)"
                 },
                 "power_summary": power_summary,
                 "action_verdict": action_verdict,
@@ -2534,106 +2622,27 @@ class OrderFlowAbsorptionEngine:
             cls._last_time[base] = now
             return res
         except Exception as e:
-            return {
-                "success": False,
-                "symbol": f"{base}USDT",
-                "base_coin": base,
-                "error": str(e),
-                "absorption_title": "تحلیل دلتای اردر فلو موقتاً با تخمین حجمی فعال است",
-                "net_delta_fmt": "+0.00M USD",
-                "delta_ratio_pct": 0,
-                "description": "داده‌های اردر فلو به زودی همگام‌سازی می‌شوند."
-            }
+            return _honest_fail(str(e))
 
 
 class LiquidationHeatmapEngine:
-    """Calculates liquidation clusters (Coinglass style) for long/short leverage positions (50x, 25x, 10x)"""
+    """Liquidation heatmap placeholder: real Coinglass-style clusters require a dedicated
+    per-leverage OI feed. Fail-Closed: no synthetic clusters are ever generated."""
     @classmethod
-    def calculate_clusters(cls, symbol: str, current_price: float, high_24h: float, low_24h: float, open_interest_usd: float = 120_000_000) -> Dict[str, Any]:
-        leverages = [
-            {"label": "50x (Ultra Aggressive)", "lev": 50, "ratio": 0.015, "weight": 0.28},
-            {"label": "25x (High Leverage)", "lev": 25, "ratio": 0.035, "weight": 0.32},
-            {"label": "10x (Medium Leverage)", "lev": 10, "ratio": 0.095, "weight": 0.25},
-            {"label": "5x (Low Leverage)", "lev": 5, "ratio": 0.190, "weight": 0.15},
-        ]
-        
-        long_clusters = []
-        short_clusters = []
-        
-        # Dynamically calculate Long vs Short exposure based on coin price momentum and live derivative bias
-        base = symbol.upper().replace("USDT", "").replace("USD", "").strip()
-        
-        # Calculate dynamic long vs short ratio (e.g. 58% Long vs 42% Short, varying per coin)
-        import hashlib
-        h_val = int(hashlib.md5(f"{base}_{int(current_price * 100) % 1000}".encode()).hexdigest(), 16)
-        
-        # Dynamic long share between 35% and 65% depending on coin and price action
-        dynamic_long_share = 0.35 + ((h_val % 31) / 100.0) # between 0.35 and 0.65
-        dynamic_short_share = 1.0 - dynamic_long_share
-
-        # Adjust Open Interest volume dynamically based on market cap / asset scale
-        oi_multiplier = 1.0
-        if base in ["BTC"]: oi_multiplier = 3.5
-        elif base in ["ETH"]: oi_multiplier = 2.0
-        elif base in ["SOL", "BNB", "XRP"]: oi_multiplier = 1.2
-        elif base in ["DOGE", "SUI", "PEPE"]: oi_multiplier = 0.7
-        else: oi_multiplier = 0.35
-
-        effective_oi = open_interest_usd * oi_multiplier
-
-        for lev in leverages:
-            p_long = round(current_price * (1.0 - lev["ratio"]), 2 if current_price > 10 else 6)
-            vol_long = round(effective_oi * lev["weight"] * dynamic_long_share, 1)
-            dist_long = round(((p_long - current_price) / current_price) * 100.0, 2)
-            long_clusters.append({
-                "leverage": lev["label"],
-                "price": float(p_long),
-                "distance_pct": float(dist_long),
-                "est_vol_usd": float(vol_long),
-                "vol_fmt": f"${vol_long/1e6:.1f}M",
-                "intensity_pct": min(100, int(lev["weight"] * 250))
-            })
-            
-            p_short = round(current_price * (1.0 + lev["ratio"]), 2 if current_price > 10 else 6)
-            vol_short = round(effective_oi * lev["weight"] * dynamic_short_share, 1)
-            dist_short = round(((p_short - current_price) / current_price) * 100.0, 2)
-            short_clusters.append({
-                "leverage": lev["label"],
-                "price": float(p_short),
-                "distance_pct": float(dist_short),
-                "est_vol_usd": float(vol_short),
-                "vol_fmt": f"${vol_short/1e6:.1f}M",
-                "intensity_pct": min(100, int(lev["weight"] * 250))
-            })
-            
-        total_long_risk = float(sum(c["est_vol_usd"] for c in long_clusters))
-        total_short_risk = float(sum(c["est_vol_usd"] for c in short_clusters))
-        
-        long_ratio_pct = round((total_long_risk / (total_long_risk + total_short_risk)) * 100, 1)
-        short_ratio_pct = round(100.0 - long_ratio_pct, 1)
-
-        all_clusters = long_clusters + short_clusters
-        # Magnet attracts towards the larger liquidation cluster
-        magnet_cluster = max(all_clusters, key=lambda c: c["est_vol_usd"])
-        cascade_warning = bool(abs(magnet_cluster["distance_pct"]) < 1.5)
-        
+    def calculate_clusters(cls, symbol: str, current_price: float, high_24h: float, low_24h: float, open_interest_usd: float = 0.0) -> Dict[str, Any]:
+        clean_sym = str(symbol or "BTC").upper().replace("USDT", "").replace("USD", "").strip()
         return {
-            "success": True,
-            "symbol": symbol,
-            "current_price": float(current_price),
-            "total_long_liq_usd": total_long_risk,
-            "total_long_liq_fmt": f"${total_long_risk/1e6:.1f}M",
-            "total_short_liq_usd": total_short_risk,
-            "total_short_liq_fmt": f"${total_short_risk/1e6:.1f}M",
-            "long_ratio_pct": long_ratio_pct,
-            "short_ratio_pct": short_ratio_pct,
-            "long_clusters": long_clusters,
-            "short_clusters": short_clusters,
-            "magnet_price": float(magnet_cluster["price"]),
-            "magnet_distance_pct": float(magnet_cluster["distance_pct"]),
-            "magnet_direction": "BEARISH_MAGNET" if magnet_cluster["distance_pct"] < 0 else "BULLISH_MAGNET",
-            "cascade_warning": cascade_warning,
-            "cascade_status": "هشدار شکست آبشاری لیکوئیدیشن (Liquidation Cascade Risk)" if cascade_warning else "محدوده باثبات و خارج از خوشه لیکوئیدیتی"
+            "success": False,
+            "ok": False,
+            "error": "LIQUIDATION_MAP_UNAVAILABLE",
+            "symbol": clean_sym,
+            "current_price": float(current_price or 0.0),
+            "message": "خوشه‌های واقعی لیکوئیدیشن نیازمند فید اختصاصی توزیع اهرم‌ها (Coinglass/CoinAnalyze) هستند؛ هیچ خوشهٔ تخمینی یا ساختگی نمایش داده نمی‌شود (Fail-Closed).",
+            "long_clusters": [],
+            "short_clusters": [],
+            "magnet_direction": "UNKNOWN",
+            "cascade_warning": False,
+            "cascade_status": "نامشخص (دادهٔ لیکوئیدیشن در دسترس نیست)"
         }
 
 
@@ -2657,80 +2666,40 @@ class WhaleFlowEngine:
             else:
                 return cached
 
-        # 1. Determine live price for coin
+        # 1. Determine live price for coin (real exchange data only; no fabricated fallback)
         curr_price = float(current_price) if current_price and current_price > 0 else 0.0
         if curr_price <= 0:
-            try:
-                req = urllib.request.Request(f"https://api.binance.com/api/v3/ticker/price?symbol={clean_sym}USDT", headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=2.5) as r:
-                    data = json.loads(r.read().decode())
-                    curr_price = float(data.get("price", 0.0))
-            except Exception:
-                pass
+            for exch_url in [
+                f"https://api.binance.com/api/v3/ticker/price?symbol={clean_sym}USDT",
+                f"https://api.mexc.com/api/v3/ticker/price?symbol={clean_sym}USDT",
+            ]:
+                try:
+                    req = urllib.request.Request(exch_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, timeout=2.5) as r:
+                        data = json.loads(r.read().decode())
+                        p = float(data.get("price", 0.0))
+                        if p > 0:
+                            curr_price = p
+                            break
+                except Exception:
+                    continue
 
         if curr_price <= 0:
-            try:
-                req = urllib.request.Request(f"https://api.mexc.com/api/v3/ticker/price?symbol={clean_sym}USDT", headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=2.5) as r:
-                    data = json.loads(r.read().decode())
-                    curr_price = float(data.get("price", 0.0))
-            except Exception:
-                pass
+            fail_res = {
+                "success": False,
+                "ok": False,
+                "error": "LIVE_PRICE_UNAVAILABLE",
+                "symbol": clean_sym,
+                "message": "قیمت زندهٔ صرافی در دسترس نیست؛ تحلیل نهنگ ارائه نمی‌شود (Fail-Closed).",
+                "whale_wallets": [],
+                "recent_whale_txs": [],
+                "updated_at": time.strftime("%H:%M:%S UTC", time.gmtime())
+            }
+            cls._cached_whale_data[cache_key] = fail_res
+            cls._last_whale_time[cache_key] = now
+            return fail_res
 
-        if curr_price <= 0:
-            curr_price = 83000.0 if clean_sym == "BTC" else (2500.0 if clean_sym == "ETH" else (110.0 if clean_sym == "SOL" else 1.0))
-
-        # 2. Coin-Specific Top Whale Accumulator Wallets (What quantity & at what entry price they bought)
-        base_usd_values = [48_000_000, 115_000_000, 32_000_000, 75_000_000, 22_000_000]
-        multipliers = [0.962, 0.928, 0.985, 0.951, 1.012]
-        labels = [
-            ("Whale 0x3f89...f4a1", "نهنگ اسمارت‌مانی (Smart Money Accumulator)", "انباشت پله‌ای کف (DCA)"),
-            ("Whale 0x71b2...9a4c", "صندوق نگهداری نهادی (Institutional Custody)", "هولد بلندمدت الماسین (Diamond Hands)"),
-            ("Whale 0xa45f...63b7", "کیف‌پول سرد نهنگ قدیمی (O.G. Whale Vault)", "ورود هوشمند در شکست ساختار"),
-            ("Whale 0x19de...aa28", "مارکت‌میکر سازمانی (Market Maker Vault)", "جذب نقدینگی و دیپ بایینگ"),
-            ("Whale 0xd841...c09e", "نهنگ نوسان‌گیر دیفای (High-Roller Vault)", "خرید مومنتوم اخیر")
-        ]
-
-        whale_wallets = []
-        total_qty = 0.0
-        total_cost = 0.0
-
-        for (addr, ent, strat), usd_val, mult in zip(labels, base_usd_values, multipliers):
-            buy_px = round(curr_price * mult, 6 if curr_price < 1 else (4 if curr_price < 100 else 2))
-            qty = round(usd_val / max(1e-8, buy_px), 2 if curr_price > 10 else 0)
-            curr_val = round(qty * curr_price, 2)
-            pnl = round(((curr_price - buy_px) / max(1e-8, buy_px)) * 100.0, 2)
-            
-            pnl_badge = f"+{pnl}% (در سود)" if pnl >= 0 else f"{pnl}% (در زیان)"
-            pnl_col = "#00e676" if pnl >= 0 else "#ff3366"
-
-            whale_wallets.append({
-                "wallet": addr,
-                "entity": ent,
-                "strategy": strat,
-                "amount_coins": qty,
-                "amount_fmt": f"{qty:,.2f} {clean_sym}" if curr_price > 10 else f"{qty:,.0f} {clean_sym}",
-                "avg_buy_price": buy_px,
-                "avg_buy_price_fmt": f"${buy_px:,.4f}" if curr_price < 100 else f"${buy_px:,.2f}",
-                "usd_val_fmt": f"${curr_val/1e6:.1f}M",
-                "pnl_pct": pnl,
-                "pnl_status": pnl_badge,
-                "pnl_color": pnl_col,
-                "last_active": "۱۸ دقیقه پیش (UTC)"
-            })
-            total_qty += qty
-            total_cost += qty * buy_px
-
-        whale_avg_cost_basis = round(total_cost / max(1e-8, total_qty), 2 if curr_price > 100 else 6)
-        distance_pct = round(((curr_price - whale_avg_cost_basis) / max(1e-8, whale_avg_cost_basis)) * 100.0, 2)
-
-        support_desc = (
-            f"قیمت فعلی {distance_pct:+.2f}% بالاتر از میانگین خرید کل نهنگ‌ها (${whale_avg_cost_basis:,.2f}) است؛ میانگین خرید نهنگ‌ها به عنوان حمایت روانی و سازمانی عمل می‌کند."
-            if distance_pct >= 0 else
-            f"قیمت {distance_pct:+.2f}% پایین‌تر از میانگین خرید نهنگ‌هاست؛ نهنگ‌ها در ضرر موقت بوده و برای دفاع از پوزیشن خود در حال خرید پله‌ای هستند."
-        )
-
-        # 3. Global on-chain transactions
+        # 2. Real on-chain transactions (Bitcoin mempool via blockchain.info public API)
         whale_txs = []
         try:
             req = urllib.request.Request('https://blockchain.info/unconfirmed-transactions?format=json', headers={'User-Agent': 'Mozilla/5.0'})
@@ -2742,50 +2711,41 @@ class WhaleFlowEngine:
                     btc_val = sat_val / 1e8
                     if btc_val >= 25.0:
                         tx_hash = t.get('hash', '')[:12] + '...'
-                        usd_val = btc_val * curr_price if clean_sym == "BTC" else btc_val * 86000.0
+                        usd_val = btc_val * curr_price if clean_sym == "BTC" else None
                         tx_type = "انتقال بین ولت‌های ناشناس (Whale Transfer)"
                         if btc_val > 100:
                             tx_type = "واریز بالقوه به صرافی (Exchange Inflow Risk)" if len(t.get('out', [])) < 3 else "برداشت به کیف‌پول سرد (Cold Storage Outflow)"
                         whale_txs.append({
                             "hash": tx_hash,
                             "btc_amount": float(round(btc_val, 2)),
-                            "usd_amount": float(round(usd_val, 0)),
-                            "usd_fmt": f"${usd_val/1e6:.2f}M",
+                            "usd_amount": float(round(usd_val, 0)) if usd_val is not None else None,
+                            "usd_fmt": f"${usd_val/1e6:.2f}M" if usd_val is not None else "نامشخص (تراکنش واقعی BTC روی زنجیره)",
                             "type": tx_type,
                             "time": time.strftime("%H:%M:%S UTC", time.gmtime())
                         })
         except Exception:
             pass
-            
-        if not whale_txs:
-            whale_txs = [
-                {"hash": "f8a92b3c1d4e...", "btc_amount": 142.5, "usd_amount": 12300000.0, "usd_fmt": "$12.30M", "type": "برداشت به کیف‌پول سرد (Cold Storage Outflow)", "time": time.strftime("%H:%M:%S UTC", time.gmtime())},
-                {"hash": "3e4d5c6b7a89...", "btc_amount": 85.0, "usd_amount": 7340000.0, "usd_fmt": "$7.34M", "type": "انتقال بین ولت‌های نهادی (Institutional Transfer)", "time": time.strftime("%H:%M:%S UTC", time.gmtime())}
-            ]
-            
-        netflow_coins = -1840.0 if clean_sym == "BTC" else -12500.0
-        netflow_usd = float(netflow_coins * curr_price)
-        
-        status = f"خروج نهنگ‌های {clean_sym} از صرافی (Accumulation / Outflow)" if netflow_coins < 0 else f"ورود نهنگ‌های {clean_sym} به صرافی (Distribution / Inflow)"
-        bias = "BULLISH_ACCUMULATION" if netflow_coins < 0 else "BEARISH_DISTRIBUTION"
-        
+
         res = {
             "success": True,
+            "ok": True,
             "symbol": clean_sym,
             "current_price": curr_price,
-            "whale_avg_cost_basis": whale_avg_cost_basis,
-            "whale_avg_cost_basis_fmt": f"${whale_avg_cost_basis:,.4f}" if curr_price < 100 else f"${whale_avg_cost_basis:,.2f}",
-            "distance_from_whale_entry_pct": distance_pct,
-            "whale_support_status": support_desc,
-            "whale_wallets": whale_wallets,
-            "netflow_24h_coins": float(netflow_coins),
-            "netflow_24h_usd": float(netflow_usd),
-            "netflow_fmt": f"{netflow_coins:+,.0f} {clean_sym} (${abs(netflow_usd)/1e6:.1f}M)",
-            "flow_status": status,
-            "flow_bias": bias,
-            "whale_dump_alert": bool(netflow_coins > 0),
-            "accumulation_score": 88 if netflow_coins < 0 else 32,
+            "whale_wallets": [],
+            "whale_wallets_note": "کیف‌پول‌های نهنگ و میانگین خرید آن‌ها نیازمند فید اختصاصی Arkham/Glassnode است؛ هیچ کیف‌پول ساختگی نمایش داده نمی‌شود (Fail-Closed).",
+            "whale_avg_cost_basis": None,
+            "whale_avg_cost_basis_fmt": "نامشخص",
+            "distance_from_whale_entry_pct": None,
+            "whale_support_status": "میانگین خرید نهنگ‌ها بدون فید اختصاصی قابل محاسبه نیست (Fail-Closed).",
+            "netflow_24h_coins": None,
+            "netflow_24h_usd": None,
+            "netflow_fmt": "نامشخص (نیازمند فید Glassnode/CryptoQuant)",
+            "flow_status": "نامشخص (Netflow در دسترس نیست)",
+            "flow_bias": "UNKNOWN",
+            "whale_dump_alert": False,
+            "accumulation_score": None,
             "recent_whale_txs": whale_txs[:6],
+            "recent_whale_txs_note": "تراکنش بزرگ در ممپول بیت‌کوین مشاهده نشد." if not whale_txs else "",
             "updated_at": time.strftime("%H:%M:%S UTC", time.gmtime())
         }
         cls._cached_whale_data[cache_key] = res
@@ -2799,8 +2759,9 @@ class EconomicCalendarEngine:
     _last_leading_time = 0
 
     @classmethod
+    @classmethod
     def fetch_live_leading_indicators(cls) -> Dict[str, Any]:
-        """Fetches live market data for DXY, US10Y, Gold, Oil concurrently and computes CME FedWatch Probabilities"""
+        """Fetches live market data for DXY, US10Y, Gold, Oil concurrently. CME FedWatch is NOT simulated."""
         now = time.time()
         if cls._cached_leading and (now - cls._last_leading_time < 20):
             return cls._cached_leading
@@ -2821,7 +2782,9 @@ class EconomicCalendarEngine:
                     m = d['chart']['result'][0]['meta']
                     p = float(m.get('regularMarketPrice', 0.0))
                     prev = float(m.get('chartPreviousClose') or p)
-                    chg = round(((p - prev) / prev) * 100, 2) if prev else 0.0
+                    chg = round(((p - prev) / prev) * 100, 2) if prev else None
+                    if p <= 0:
+                        return key, None
                     return key, {'price': round(p, 3 if key == 'us10y' else 2), 'chg': chg}
             except Exception:
                 return key, None
@@ -2831,63 +2794,43 @@ class EconomicCalendarEngine:
             futures = [executor.submit(_fetch_one, k, u) for k, u in reqs.items()]
             for fut in concurrent.futures.as_completed(futures):
                 k, res = fut.result()
-                if res and res.get('price'):
-                    indicators[k] = res
-                else:
-                    indicators[k] = None
+                indicators[k] = res
 
-        # Fallback for Gold if Yahoo fails: KuCoin PAXG Live Ticker
-        if not indicators.get('gold') or not indicators['gold'].get('price'):
+        # Real fallback for Gold: KuCoin PAXG live ticker (24h change not available -> None)
+        if not indicators.get('gold'):
             try:
                 r = urllib.request.Request('https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=PAXG-USDT', headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(r, timeout=3.0) as resp:
                     d = json.loads(resp.read().decode())
                     p = float(d.get('data', {}).get('price', 0))
                     if p > 1000:
-                        indicators['gold'] = {'price': round(p, 2), 'chg': 0.25}
+                        indicators['gold'] = {'price': round(p, 2), 'chg': None}
             except Exception:
-                indicators['gold'] = {'price': 4185.50, 'chg': 0.15}
+                indicators['gold'] = None
 
-        # Fallback for DXY
-        if not indicators.get('dxy') or not indicators['dxy'].get('price'):
-            indicators['dxy'] = {'price': 102.24, 'chg': 0.08}
+        # Fail-Closed: no fabricated fallbacks for DXY / US10Y / Oil.
 
-        # Fallback for US10Y
-        if not indicators.get('us10y') or not indicators['us10y'].get('price'):
-            indicators['us10y'] = {'price': 5.28, 'chg': 0.12}
-
-        # Fallback for Oil
-        if not indicators.get('oil') or not indicators['oil'].get('price'):
-            indicators['oil'] = {'price': 90.25, 'chg': -0.45}
-
-        # Dynamic FedWatch Probability derived from US 10-Year and Inflation Trend
-        us10y_p = indicators.get('us10y', {}).get('price') or 4.2
-        if us10y_p < 4.0:
-            prob_cut_25 = 88
-            prob_pause = 12
-        elif us10y_p < 4.5:
-            prob_cut_25 = 82
-            prob_pause = 18
-        else:
-            prob_cut_25 = 74
-            prob_pause = 26
+        # CME FedWatch: real probabilities require the official CME FedWatch feed; no heuristic substitute.
+        fedwatch = {
+            "ok": False,
+            "error": "FEDWATCH_FEED_UNAVAILABLE",
+            "prob_cut_25": None,
+            "prob_pause": None,
+            "target_rate": "نامشخص",
+            "summary": "احتمالات واقعی فدرال‌واچ نیازمند فید زندهٔ CME است؛ هیچ عدد برآوردی نمایش داده نمی‌شود (Fail-Closed).",
+            "verdict_fa": "بدون دادهٔ زنده، قضاوت دربارهٔ مسیر نرخ بهره انجام نمی‌شود."
+        }
 
         now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
         iran_time_str = now_iran.strftime("%H:%M:%S")
 
         res = {
-            "dxy": indicators.get('dxy', {}),
-            "gold": indicators.get('gold', {}),
-            "us10y": indicators.get('us10y', {}),
-            "oil": indicators.get('oil', {}),
+            "dxy": indicators.get('dxy'),
+            "gold": indicators.get('gold'),
+            "us10y": indicators.get('us10y'),
+            "oil": indicators.get('oil'),
             "updated_at": iran_time_str,
-            "fedwatch": {
-                "prob_cut_25": prob_cut_25,
-                "prob_pause": prob_pause,
-                "target_rate": "4.50% - 4.75%",
-                "summary": f"{prob_cut_25}٪ احتمال کاهش ۰.۲۵٪ نرخ بهره | {prob_pause}٪ احتمال تثبیت",
-                "verdict_fa": "وال‌استریت کاهش قطعی نرخ بهره را پیش‌خور کرده است؛ سوخت صعودی برای طلا و بیت‌کوین."
-            }
+            "fedwatch": fedwatch
         }
         cls._cached_leading = res
         cls._last_leading_time = now
@@ -3826,8 +3769,33 @@ class EconomicCalendarEngine:
             next_ev = upcoming[0]
             time_diff = next_ev["epoch"] - now_epoch
         else:
-            next_ev = cls.MACRO_EVENTS[0]
-            time_diff = 86400 * 3
+            # Fail-Closed: static calendar is stale; no fabricated countdown is shown
+            return {
+                "success": False,
+                "ok": False,
+                "error": "MACRO_CALENDAR_STALE",
+                "message": "فید زندهٔ تقویم اقتصادی در دسترس نیست؛ وضعیت سپر کلان گزارش نمی‌شود (Fail-Closed).",
+                "next_event": None,
+                "event_code": None,
+                "impact": "UNKNOWN",
+                "impact_fa": "نامشخص",
+                "volatility_fa": "نامشخص",
+                "shield_state": "⚪ وضعیت سپر کلان نامشخص (بدون فید زندهٔ تقویم اقتصادی)",
+                "shield_color": "GRAY",
+                "shield_action": "بدون دادهٔ زندهٔ تقویم، ارزیابی پنجرهٔ امن کلان انجام نمی‌شود.",
+                "is_frozen": False,
+                "countdown_seconds": None,
+                "countdown_fmt": "نامشخص",
+                "date_utc": None,
+                "date_tehran": None,
+                "crypto_prediction": {},
+                "forecast": "نامشخص",
+                "previous": "نامشخص",
+                "reaction_inline": {},
+                "freeze_window_desc": "۴۵ دقیقه قبل تا ۳۰ دقیقه بعد از اخبار کلان قرمز",
+                "leading_indicators": cls.fetch_live_leading_indicators(),
+                "all_events": []
+            }
             
         hours = int(abs(time_diff) // 3600)
         minutes = int((abs(time_diff) % 3600) // 60)
@@ -3962,7 +3930,7 @@ class OptionsEngine:
                     "pcr_ratio": float(pcr),
                     "pcr_sentiment": sentiment,
                     "pcr_bias": pcr_bias,
-                    "max_pain_strike": float(max_pain_strike) if max_pain_strike else 74000.0,
+                    "max_pain_strike": float(max_pain_strike) if max_pain_strike else None,
                     "top_call_walls": call_walls,
                     "top_put_walls": put_walls,
                     "deribit_url": f"https://www.deribit.com/options/{curr}",
@@ -3974,16 +3942,18 @@ class OptionsEngine:
         except Exception as e:
             return {
                 "success": False,
+                "ok": False,
                 "error": str(e),
                 "currency": curr,
-                "total_calls_oi": 272600.0,
-                "total_puts_oi": 153500.0,
-                "pcr_ratio": 0.56,
-                "pcr_sentiment": "بسیار صعودی (برتری شدید کال‌ها در دریبیت)",
-                "pcr_bias": "BULLISH",
-                "max_pain_strike": 74000.0 if curr == "BTC" else 2400.0,
-                "top_call_walls": [{"strike": 85000.0, "oi": 18200.0}],
-                "top_put_walls": [{"strike": 70000.0, "oi": 12500.0}]
+                "total_calls_oi": None,
+                "total_puts_oi": None,
+                "pcr_ratio": None,
+                "pcr_sentiment": "نامشخص (دادهٔ دریبیت در دسترس نیست)",
+                "pcr_bias": "UNKNOWN",
+                "max_pain_strike": None,
+                "top_call_walls": [],
+                "top_put_walls": [],
+                "message": "دادهٔ زندهٔ آپشن دریبیت در دسترس نیست؛ هیچ عدد ساختگی نمایش داده نمی‌شود (Fail-Closed)."
             }
 
 
@@ -4287,15 +4257,42 @@ class GoldenSixCoreEngine:
             return cls._cached_eval[cache_key]
 
         symbol = symbol.upper()
-        direction = direction.upper()
+        direction = str(direction or "").upper()
+        if direction not in ["LONG", "SHORT"]:
+            return {
+                "success": False,
+                "ok": False,
+                "error": "GOLDEN_SIX_SKIPPED",
+                "symbol": symbol,
+                "direction": direction or "UNKNOWN",
+                "message": "جهت معامله مشخص نیست (NO TRADE / WAIT)؛ فیلترهای شش‌گانه فقط روی ستاپ اجرایی LONG/SHORT اعمال می‌شوند (Fail-Closed)."
+            }
 
-        # 1. Parallel fetch for all institutional data sources (OKX, CoinGecko, DefiLlama)
-        funding_rate = 0.00008
-        oi_usd = 2_470_000_000
-        btc_dominance = 58.0
-        btc_market_cap = 1_650_000_000_000
-        total_stable_cap = 290_000_000_000
-        buy_vol, sell_vol, delta_vol, vol_ratio = 35000.0, 35000.0, 0.0, 1.0
+        # 1. Live price: real exchange ticker only (no fabricated fallback)
+        price = float(current_price) if current_price else 0.0
+        if price <= 0:
+            try:
+                req = urllib.request.Request(f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}USDT", headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=2.5) as r:
+                    price = float(json.loads(r.read().decode()).get("price", 0.0))
+            except Exception:
+                price = 0.0
+        if price <= 0:
+            return {
+                "success": False,
+                "ok": False,
+                "error": "LIVE_PRICE_UNAVAILABLE",
+                "symbol": symbol,
+                "message": "قیمت زندهٔ صرافی در دسترس نیست؛ ارزیابی فیلترهای شش‌گانه متوقف شد (Fail-Closed)."
+            }
+
+        # 2. Parallel fetch for all institutional data sources (OKX, CoinGecko, DefiLlama)
+        funding_rate = None
+        oi_usd = None
+        btc_dominance = None
+        btc_market_cap = None
+        total_stable_cap = None
+        buy_vol = sell_vol = delta_vol = vol_ratio = None
 
         inst_id = f"{symbol}-USDT-SWAP" if symbol in ["BTC", "ETH", "SOL"] else "BTC-USDT-SWAP"
         urls = {
@@ -4313,16 +4310,16 @@ class GoldenSixCoreEngine:
             # Funding rate
             fr_data = fetched.get("okx_fr", {}).get("data", {}).get("data", [])
             if fr_data:
-                funding_rate = float(fr_data[0].get("fundingRate", 0.00008))
+                funding_rate = float(fr_data[0].get("fundingRate"))
 
             # Open interest
             oi_data = fetched.get("okx_oi", {}).get("data", {}).get("data", [])
             if oi_data:
-                oi_usd = float(oi_data[0].get("oiUsd", 2_470_000_000))
+                oi_usd = float(oi_data[0].get("oiUsd"))
 
             # OKX Taker volume (Real institutional CVD orderflow)
             taker_data = fetched.get("okx_taker", {}).get("data", {}).get("data", [])
-            if taker_data:
+            if taker_data and len(taker_data[0]) > 2:
                 row = taker_data[0]
                 sell_vol = float(row[1])
                 buy_vol = float(row[2])
@@ -4332,10 +4329,11 @@ class GoldenSixCoreEngine:
             # CoinGecko dominance and global market cap
             cg_data = fetched.get("cg", {}).get("data", {}).get("data", {})
             if cg_data:
-                btc_d = float(cg_data.get("market_cap_percentage", {}).get("btc", 58.0))
-                tot_cap = float(cg_data.get("total_market_cap", {}).get("usd", 2_800_000_000_000))
-                btc_dominance = round(btc_d, 2)
-                btc_market_cap = tot_cap * (btc_d / 100.0)
+                btc_d = float(cg_data.get("market_cap_percentage", {}).get("btc"))
+                tot_cap = float(cg_data.get("total_market_cap", {}).get("usd"))
+                if btc_d > 0 and tot_cap > 0:
+                    btc_dominance = round(btc_d, 2)
+                    btc_market_cap = tot_cap * (btc_d / 100.0)
 
             # DefiLlama stablecoins cap
             dl_stables = fetched.get("dl", {}).get("data", {}).get("peggedAssets", [])
@@ -4345,62 +4343,78 @@ class GoldenSixCoreEngine:
         except Exception:
             pass
 
-        ssr_ratio = round(btc_market_cap / max(1.0, total_stable_cap), 2)
+        ssr_ratio = round(btc_market_cap / max(1.0, total_stable_cap), 2) if (btc_market_cap and total_stable_cap) else None
 
-        # 2. Liquidation Heatmap Clusters
-        price = current_price if current_price else (85000.0 if symbol == "BTC" else (2500.0 if symbol == "ETH" else 150.0))
-        from institutional_addons import LiquidationHeatmapEngine
-        liq_data = LiquidationHeatmapEngine.calculate_clusters(symbol, price, price * 1.03, price * 0.97, oi_usd)
-        long_clusters = liq_data.get('long_clusters', [])
-        short_clusters = liq_data.get('short_clusters', [])
-        nearest_long_liq = long_clusters[0]['price'] if long_clusters else price * 0.985
-        nearest_short_liq = short_clusters[0]['price'] if short_clusters else price * 1.015
+        # Liquidation clusters: engine is Fail-Closed (no synthetic clusters) → filter stays UNKNOWN
+        nearest_long_liq = None
+        nearest_short_liq = None
 
-        # 3. MVRV Z-Score
-        realized_cap_est = 720_000_000_000
-        mvrv_ratio = round(btc_market_cap / max(1.0, realized_cap_est), 2)
-        mvrv_zscore = round((mvrv_ratio - 1.0) * 1.45, 2)
+        # MVRV requires realized cap (Glassnode/CoinMetrics) → not available without a dedicated feed
+        mvrv_ratio = None
+        mvrv_zscore = None
 
         # --- EVALUATION OF THE 6 VITAL FILTERS ---
         filters = []
         pass_count = 0
+        unknown_count = 0
+
+        def _mk_filter(fid, name, name_fa, passed, value_display, description, importance):
+            nonlocal pass_count, unknown_count
+            if passed is None:
+                status = "UNKNOWN"
+                unknown_count += 1
+            else:
+                status = "PASS" if passed else "FAIL"
+                if passed:
+                    pass_count += 1
+            return {
+                "id": fid,
+                "name": name,
+                "name_fa": name_fa,
+                "passed": passed,
+                "status": status,
+                "value_display": value_display,
+                "description": description,
+                "importance": importance
+            }
 
         # FILTER 1: Funding Rate + Open Interest
-        fr_pct = funding_rate * 100.0
-        if direction == "LONG":
-            f1_pass = fr_pct <= 0.015
-            f1_reason = (
-                f"فاندینگ ریت در سطح نرمال/خنثی ({fr_pct:+.4f}%) قرار دارد و بازار دچار حباب اهرمی خرید نیست؛ خطر ریزش آبشاری لیکوئیدیشن پایین است."
-                if f1_pass else
-                f"هشدار لوریج سنگین! فاندینگ ریت بیش از حد مثبت است ({fr_pct:+.4f}%)؛ بازار اشباع از خریداران اهرمی بوده و مستعد Long Squeeze و فلش کراش است."
-            )
+        if funding_rate is None:
+            f1_pass = None
+            f1_reason = "فاندینگ ریت زندهٔ OKX در دسترس نیست؛ این فیلتر قابل داوری نیست (Fail-Closed)."
+            f1_val = "FR: نامشخص | OI: نامشخص"
         else:
-            f1_pass = fr_pct >= -0.015
-            f1_reason = (
-                f"فاندینگ ریت ({fr_pct:+.4f}%) نشان‌دهنده عدم اشباع شدید پوزیشن‌های شورت است؛ پوزیشن شورت با خطر اسکوئیز ناگهانی مواجه نیست."
-                if f1_pass else
-                f"هشدار Short Squeeze! فاندینگ ریت به شدت منفی شده ({fr_pct:+.4f}%)؛ فروشندگان اهرمی در دام افتاده و احتمال جهش ناگهانی قیمت بالاست."
-            )
-        if f1_pass: pass_count += 1
-        filters.append({
-            "id": 1,
-            "name": "Funding Rate + Open Interest",
-            "name_fa": "فاندینگ ریت و اوپن اینترست (مشتقات)",
-            "passed": f1_pass,
-            "status": "PASS" if f1_pass else "FAIL",
-            "value_display": f"FR: {fr_pct:+.4f}% | OI: ${oi_usd/1e9:.2f}B",
-            "description": f1_reason,
-            "importance": "حذف تله‌های ناشی از Over-leverage و آبشار لیکوئیدیشن"
-        })
+            fr_pct = funding_rate * 100.0
+            if direction == "LONG":
+                f1_pass = fr_pct <= 0.015
+                f1_reason = (
+                    f"فاندینگ ریت در سطح نرمال/خنثی ({fr_pct:+.4f}%) قرار دارد و بازار دچار حباب اهرمی خرید نیست؛ خطر ریزش آبشاری لیکوئیدیشن پایین است."
+                    if f1_pass else
+                    f"هشدار لوریج سنگین! فاندینگ ریت بیش از حد مثبت است ({fr_pct:+.4f}%)؛ بازار اشباع از خریداران اهرمی بوده و مستعد Long Squeeze و فلش کراش است."
+                )
+            else:
+                f1_pass = fr_pct >= -0.015
+                f1_reason = (
+                    f"فاندینگ ریت ({fr_pct:+.4f}%) نشان‌دهنده عدم اشباع شدید پوزیشن‌های شورت است؛ پوزیشن شورت با خطر اسکوئیز ناگهانی مواجه نیست."
+                    if f1_pass else
+                    f"هشدار Short Squeeze! فاندینگ ریت به شدت منفی شده ({fr_pct:+.4f}%)؛ فروشندگان اهرمی در دام افتاده و احتمال جهش ناگهانی قیمت بالاست."
+                )
+            f1_val = f"FR: {fr_pct:+.4f}% | OI: {'$' + format(oi_usd/1e9, '.2f') + 'B' if oi_usd else 'نامشخص'}"
+        filters.append(_mk_filter(1, "Funding Rate + Open Interest", "فاندینگ ریت و اوپن اینترست (مشتقات)", f1_pass, f1_val, f1_reason, "حذف تله‌های ناشی از Over-leverage و آبشار لیکوئیدیشن"))
 
         # FILTER 2: Institutional Taker Volume Delta (Real Orderflow CVD)
-        if direction == "LONG":
+        if buy_vol is None or sell_vol is None:
+            f2_pass = None
+            f2_reason = "حجم تیکرهای تهاجمی OKX در دسترس نیست؛ این فیلتر قابل داوری نیست (Fail-Closed)."
+            f2_val = "دلتا: نامشخص"
+        elif direction == "LONG":
             f2_pass = vol_ratio >= 0.85
             f2_reason = (
                 f"حجم سفارشات مارکت نهادی تاییدکننده تقاضاست (خرید: {buy_vol:,.0f} | فروش: {sell_vol:,.0f} | نسبت: {vol_ratio:.2f})؛ نقدینگی خریداران تهاجمی جذب شده است."
                 if f2_pass else
                 f"هشدار فشار فروش! فروشندگان تهاجمی (Taker Sell) تسلط دارند (دلتا: {delta_vol:+,.0f})؛ ورود لانگ ریسک بالایی دارد."
             )
+            f2_val = f"دلتا: {delta_vol:+,.0f} (نسبت: {vol_ratio:.2f})"
         else:
             f2_pass = vol_ratio <= 1.15
             f2_reason = (
@@ -4408,44 +4422,36 @@ class GoldenSixCoreEngine:
                 if f2_pass else
                 f"خریداران تهاجمی در حال پامپ مارکت هستند (نسبت خرید: {vol_ratio:.2f})؛ خطر اسکوئیز پوزیشن شورت."
             )
-        if f2_pass: pass_count += 1
-        filters.append({
-            "id": 2,
-            "name": "Taker Volume Delta (CVD)",
-            "name_fa": "جریان دلتای حجم سفارشات تهاجمی (Order Flow)",
-            "passed": f2_pass,
-            "status": "PASS" if f2_pass else "FAIL",
-            "value_display": f"دلتا: {delta_vol:+,.0f} (نسبت: {vol_ratio:.2f})",
-            "description": f2_reason,
-            "importance": "راستی‌آزمایی حجم سفارشات مارکت واقعی صرافی‌ها"
-        })
+            f2_val = f"دلتا: {delta_vol:+,.0f} (نسبت: {vol_ratio:.2f})"
+        filters.append(_mk_filter(2, "Taker Volume Delta (CVD)", "جریان دلتای حجم سفارشات تهاجمی (Order Flow)", f2_pass, f2_val, f2_reason, "راستی‌آزمایی حجم سفارشات مارکت واقعی صرافی‌ها"))
 
         # FILTER 3: Stablecoin Supply Ratio (SSR)
-        f3_pass = ssr_ratio <= 9.0 if direction == "LONG" else ssr_ratio >= 6.0
-        if direction == "LONG":
-            f3_reason = (
-                f"شاخص SSR معادل {ssr_ratio:.2f} است؛ حجم نقدینگی استیبل‌کوین‌ها (${total_stable_cap/1e9:.1f}B) در حاشیه بازار برای حمایت و خرید بسیار بالاست."
-                if f3_pass else
-                f"شاخص SSR بالا ({ssr_ratio:.2f})؛ قدرت خرید استیبل‌کوین‌ها کاهش یافته و سوخت دلاری لازم برای تداوم رشد موجود نیست."
-            )
+        if ssr_ratio is None:
+            f3_pass = None
+            f3_reason = "دادهٔ مارکت‌کپ بیت‌کوین یا استیبل‌کوین‌ها در دسترس نیست؛ شاخص SSR قابل محاسبه نیست (Fail-Closed)."
+            f3_val = "SSR: نامشخص"
         else:
-            f3_reason = f"شاخص SSR ({ssr_ratio:.2f}) اجازه اصلاح و تسویه نقدینگی را می‌دهد."
-        if f3_pass: pass_count += 1
-        filters.append({
-            "id": 3,
-            "name": "Stablecoin Supply Ratio (SSR)",
-            "name_fa": "نسبت قدرت خرید استیبل‌کوین‌ها (SSR)",
-            "passed": f3_pass,
-            "status": "PASS" if f3_pass else "FAIL",
-            "value_display": f"SSR: {ssr_ratio:.2f} (Stables: ${total_stable_cap/1e9:.1f}B)",
-            "description": f3_reason,
-            "importance": "سنجش مهمات نقدی (Dry Powder) آماده ورود به بازار"
-        })
+            f3_pass = ssr_ratio <= 9.0 if direction == "LONG" else ssr_ratio >= 6.0
+            if direction == "LONG":
+                f3_reason = (
+                    f"شاخص SSR معادل {ssr_ratio:.2f} است؛ حجم نقدینگی استیبل‌کوین‌ها (${total_stable_cap/1e9:.1f}B) در حاشیه بازار برای حمایت و خرید بسیار بالاست."
+                    if f3_pass else
+                    f"شاخص SSR بالا ({ssr_ratio:.2f})؛ قدرت خرید استیبل‌کوین‌ها کاهش یافته و سوخت دلاری لازم برای تداوم رشد موجود نیست."
+                )
+            else:
+                f3_reason = f"شاخص SSR ({ssr_ratio:.2f}) اجازه اصلاح و تسویه نقدینگی را می‌دهد."
+            f3_val = f"SSR: {ssr_ratio:.2f} (Stables: ${total_stable_cap/1e9:.1f}B)"
+        filters.append(_mk_filter(3, "Stablecoin Supply Ratio (SSR)", "نسبت قدرت خرید استیبل‌کوین‌ها (SSR)", f3_pass, f3_val, f3_reason, "سنجش مهمات نقدی (Dry Powder) آماده ورود به بازار"))
 
         # FILTER 4: BTC Dominance (BTC.D)
-        if symbol == "BTC":
+        if btc_dominance is None:
+            f4_pass = None
+            f4_reason = "دامیننس بیت‌کوین (CoinGecko) در دسترس نیست؛ این فیلتر قابل داوری نیست (Fail-Closed)."
+            f4_val = "BTC.D: نامشخص"
+        elif symbol == "BTC":
             f4_pass = btc_dominance >= 50.0
             f4_reason = f"دامیننس بیت‌کوین در سطح قدرتمند {btc_dominance:.2f}% قرار دارد؛ تمرکز اصلی سرمایه‌های کلان نهادی روی بیت‌کوین است."
+            f4_val = f"BTC.D: {btc_dominance:.2f}%"
         else:
             # For Altcoins: High or sharply surging BTC.D drains alt liquidity
             f4_pass = btc_dominance < 62.0
@@ -4454,84 +4460,50 @@ class GoldenSixCoreEngine:
                 if f4_pass else
                 f"هشدار آلت‌سیزن منفی! دامیننس بیت‌کوین بسیار بالاست ({btc_dominance:.2f}%) و نقدینگی آلت‌کوین‌ها به سمت BTC مکیده می‌شود."
             )
-        if f4_pass: pass_count += 1
-        filters.append({
-            "id": 4,
-            "name": "BTC Dominance (BTC.D)",
-            "name_fa": "دامیننس بیت‌کوین و رژیم بازار",
-            "passed": f4_pass,
-            "status": "PASS" if f4_pass else "FAIL",
-            "value_display": f"BTC.D: {btc_dominance:.2f}%",
-            "description": f4_reason,
-            "importance": "تعیین رژیم جریان سرمایه بین بیت‌کوین و آلت‌کوین‌ها"
-        })
+            f4_val = f"BTC.D: {btc_dominance:.2f}%"
+        filters.append(_mk_filter(4, "BTC Dominance (BTC.D)", "دامیننس بیت‌کوین و رژیم بازار", f4_pass, f4_val, f4_reason, "تعیین رژیم جریان سرمایه بین بیت‌کوین و آلت‌کوین‌ها"))
 
-        # FILTER 5: Liquidation Heatmap
-        if direction == "LONG":
-            # Valid if price is protected by support cluster or distance to support cluster is reasonable
-            dist_to_sup_pct = round(((price - nearest_long_liq) / price) * 100, 2)
-            f5_pass = dist_to_sup_pct >= 0.5 and dist_to_sup_pct <= 4.0
-            f5_reason = (
-                f"قیمت در فاصله امن (+{dist_to_sup_pct}%) بالاتر از کلاستر متراکم لیکوئیدیشن (${nearest_long_liq:,.0f}) قرار دارد که به عنوان دیواره حمایتی اردرها عمل می‌کند."
-                if f5_pass else
-                f"قیمت مستقیماً روی خط آتش استخرهای لیکوئیدیشن قرار دارد یا فاصله تا کلاستر حمایتی نامطمئن است (${nearest_long_liq:,.0f})."
-            )
-        else:
-            dist_to_res_pct = round(((nearest_short_liq - price) / price) * 100, 2)
-            f5_pass = dist_to_res_pct >= 0.5 and dist_to_res_pct <= 4.0
-            f5_reason = f"کلاستر لیکوئیدیشن شورت (${nearest_short_liq:,.0f}) مانع صعود و مقاومت کلیدی است."
-        if f5_pass: pass_count += 1
-        filters.append({
-            "id": 5,
-            "name": "Liquidation Heatmap",
-            "name_fa": "آهنربای استخرهای لیکوئیدیشن",
-            "passed": f5_pass,
-            "status": "PASS" if f5_pass else "FAIL",
-            "value_display": f"Long Liq: ${nearest_long_liq:,.0f} | Short Liq: ${nearest_short_liq:,.0f}",
-            "description": f5_reason,
-            "importance": "شناسایی آهنرباهای قیمتی مارکت‌میکر و عدم ترید در تله‌های نقدینگی"
-        })
+        # FILTER 5: Liquidation Heatmap (Fail-Closed: no synthetic clusters)
+        f5_pass = None
+        f5_reason = "دادهٔ خوشه‌های لیکوئیدیشن واقعی در دسترس نیست؛ این فیلتر قابل داوری نیست (Fail-Closed)."
+        f5_val = "Long Liq: نامشخص | Short Liq: نامشخص"
+        filters.append(_mk_filter(5, "Liquidation Heatmap", "آهنربای استخرهای لیکوئیدیشن", f5_pass, f5_val, f5_reason, "شناسایی آهنرباهای قیمتی مارکت‌میکر و عدم ترید در تله‌های نقدینگی"))
 
-        # FILTER 6: MVRV Z-Score
-        if direction == "LONG":
-            f6_pass = mvrv_zscore <= 3.0 and mvrv_ratio <= 2.8
-            f6_reason = (
-                f"شاخص MVRV معادل {mvrv_ratio:.2f} (Z-Score: {mvrv_zscore:+.2f}) است؛ بیت‌کوین به هیچ وجه در ناحیه حباب سقف چرخه (Overvalued) قرار ندارد."
-                if f6_pass else
-                f"هشدار سقف ماکرو! شاخص MVRV در محدوده اشباع بحرانی قرار دارد؛ ریسک ریزش چرخه‌ای سنگین وجود دارد."
-            )
-        else:
-            f6_pass = mvrv_zscore >= 1.5
-            f6_reason = f"شاخص MVRV ({mvrv_ratio:.2f}) اجازه اصلاح قیمتی را صادر می‌کند."
-        if f6_pass: pass_count += 1
-        filters.append({
-            "id": 6,
-            "name": "MVRV Z-Score",
-            "name_fa": "ارزش بازار به ارزش تحقق‌یافته (MVRV)",
-            "passed": f6_pass,
-            "status": "PASS" if f6_pass else "FAIL",
-            "value_display": f"MVRV: {mvrv_ratio:.2f} | Z-Score: {mvrv_zscore:+.2f}",
-            "description": f6_reason,
-            "importance": "لنگر ارزش منصفانه فاندامنتال آنچین در برابر خطای محاسباتی سقف و کف"
-        })
+        # FILTER 6: MVRV Z-Score (needs realized cap feed)
+        f6_pass = None
+        f6_reason = "شاخص MVRV نیازمند دادهٔ Realized Cap (Glassnode/CoinMetrics) است؛ بدون فید اختصاصی قابل محاسبه نیست (Fail-Closed)."
+        f6_val = "MVRV: نامشخص | Z-Score: نامشخص"
+        filters.append(_mk_filter(6, "MVRV Z-Score", "ارزش بازار به ارزش تحقق‌یافته (MVRV)", f6_pass, f6_val, f6_reason, "لنگر ارزش منصفانه فاندامنتال آنچین در برابر خطای محاسباتی سقف و کف"))
 
-        # OVERALL VERDICT
-        if pass_count == 6:
+        # OVERALL VERDICT (only over filters that had real data)
+        evaluated_count = 6 - unknown_count
+        if evaluated_count == 0:
+            return {
+                "success": False,
+                "ok": False,
+                "error": "GOLDEN_SIX_DATA_UNAVAILABLE",
+                "symbol": symbol,
+                "direction": direction,
+                "message": "هیچ‌یک از منابع دادهٔ نهادی (OKX/CoinGecko/DefiLlama) در دسترس نیست؛ داوری فیلترهای شش‌گانه انجام نشد (Fail-Closed).",
+                "filters": filters
+            }
+
+        if pass_count == evaluated_count:
             grade = "AAA"
             verdict_fa = "سیگنال طلایی سازمانی بی‌نقص (Institutional Golden Clean)"
-            action_fa = "ورود قطعی مجاز است. تمامی ۶ فیلتر جریان سفارشات و آنچین سبز هستند و ۹۰٪ تله‌های رایج فیلتر شده‌اند."
+            action_fa = "ورود قطعی مجاز است. تمامی فیلترهای ارزیابی‌شده سبز هستند."
             color = "#00e676"
             is_valid_trade = True
-        elif pass_count == 5:
+        elif pass_count >= evaluated_count - 1:
             grade = "AA"
             verdict_fa = "سیگنال با قطعیت بالا (High-Conviction Valid)"
-            action_fa = "سیگنال کاملاً معتبر است؛ تنها ۱ فیلتر فرعی محتاطانه عمل کرده است. ورود با حدضرر استاندارد مجاز است."
+            action_fa = "سیگنال معتبر است؛ تنها ۱ فیلتر محتاطانه عمل کرده است. ورود با حدضرر استاندارد مجاز است."
             color = "#00d2ff"
             is_valid_trade = True
-        elif pass_count == 4:
+        elif pass_count / evaluated_count >= 0.5:
             grade = "A"
             verdict_fa = "سیگنال مشروط با ریسک متوسط (Moderate Conditional)"
-            action_fa = "سیگنال نیازمند تایید مضاعف پرایس‌اکشن است؛ با ۵۰٪ حجم وارد شوید و استاپ‌لاس را فشرده تنظیم کنید."
+            action_fa = "سیگنال نیازمند تایید مضاعف پرایس‌اکشن است؛ با حجم کاهش‌یافته وارد شوید و استاپ‌لاس را فشرده تنظیم کنید."
             color = "#ffd166"
             is_valid_trade = True
         else:
@@ -4543,12 +4515,15 @@ class GoldenSixCoreEngine:
 
         result = {
             "success": True,
+            "ok": True,
             "symbol": symbol,
             "direction": direction,
             "current_price": price,
             "pass_count": pass_count,
             "total_filters": 6,
-            "score_pct": round((pass_count / 6.0) * 100, 1),
+            "evaluated_filters": evaluated_count,
+            "unknown_filters": unknown_count,
+            "score_pct": round((pass_count / evaluated_count) * 100, 1),
             "grade": grade,
             "verdict_fa": verdict_fa,
             "action_fa": action_fa,
@@ -4556,7 +4531,7 @@ class GoldenSixCoreEngine:
             "is_valid_trade": is_valid_trade,
             "filters": filters,
             "raw_metrics": {
-                "funding_rate_pct": fr_pct,
+                "funding_rate_pct": (funding_rate * 100.0) if funding_rate is not None else None,
                 "open_interest_usd": oi_usd,
                 "taker_volume_delta": delta_vol,
                 "taker_buy_vol": buy_vol,
@@ -4691,7 +4666,10 @@ class ExchangeDataEngine:
             r = requests.get(url, timeout=5).json()
             rate_data = r.get('Realtime Currency Exchange Rate', {})
             if rate_data:
-                eur_usd = float(rate_data.get('5. Exchange Rate', 1.08))
+                eur_usd = rate_data.get('5. Exchange Rate')
+                eur_usd = float(eur_usd) if eur_usd else None
+                if eur_usd is None:
+                    raise ValueError("no exchange rate in payload")
                 last_refresh = rate_data.get('6. Last Refreshed', 'N/A')
                 dxy_sentiment = 'BULLISH_CRYPTO' if eur_usd >= 1.09 else 'BEARISH_CRYPTO'
                 macro_fa = 'دلار آمریکا تحت فشار و تضعیف (نقدینگی روان و صعودی برای کریپتو)' if eur_usd >= 1.09 else 'دلار آمریکا قدرتمند (فشار انقباضی و نزولی بر دارایی‌های ریسکی)'
@@ -4710,12 +4688,14 @@ class ExchangeDataEngine:
             pass
 
         return {
-            'eur_usd': 1.1448,
-            'dxy_proxy_direction': 'WEAKENING (نزولی)',
-            'macro_sentiment': 'BULLISH_CRYPTO',
-            'macro_fa': 'دلار آمریکا تحت فشار و تضعیف (نقدینگی روان و صعودی برای کریپتو)',
+            'ok': False,
+            'error': 'ALPHA_VANTAGE_UNAVAILABLE',
+            'eur_usd': None,
+            'dxy_proxy_direction': 'نامشخص',
+            'macro_sentiment': 'UNKNOWN',
+            'macro_fa': 'دادهٔ زندهٔ برابری EUR/USD از Alpha Vantage در دسترس نیست؛ هیچ عدد ساختگی نمایش داده نمی‌شود (Fail-Closed).',
             'last_updated': time.strftime('%Y-%m-%d %H:%M:%S UTC'),
-            'source': 'Alpha Vantage Real-Time Cache'
+            'source': 'Alpha Vantage (کلید معتبر موجود نیست یا API خطا داد)'
         }
 
     @classmethod
@@ -4734,9 +4714,26 @@ class ExchangeDataEngine:
         except Exception:
             pass
 
-        if global_price == 0.0:
-            prices = [p for p in [lbank.get('price', 0), toobit.get('price', 0)] if p > 0]
-            global_price = sum(prices) / len(prices) if prices else 86300.0
+        if global_price <= 0:
+            prices = [p for p in [lbank.get('price', 0), toobit.get('price', 0)] if p and p > 0]
+            global_price = sum(prices) / len(prices) if prices else 0.0
+
+        if global_price <= 0:
+            return {
+                'symbol': symbol.upper(),
+                'ok': False,
+                'error': 'GLOBAL_PRICE_UNAVAILABLE',
+                'message': 'قیمت مرجع از هیچ صرافی در دسترس نیست؛ مقایسهٔ بین‌صرافی ارائه نمی‌شود (Fail-Closed).',
+                'global_reference_price': None,
+                'lbank': lbank,
+                'toobit': toobit,
+                'kucoin': kucoin_data,
+                'slippage': None,
+                'spread': None,
+                'macro_confluence': cls.get_alpha_vantage_macro(),
+                'security_rule': 'حالت کاملاً تحلیلی و فقط خواندنی (Strict Read-Only Data Hub - بدون هرگونه ثبت اردر)',
+                'updated_at': time.strftime('%H:%M:%S UTC')
+            }
 
         # Live 3rd Exchange: KuCoin Telemetry
         kucoin_data = {'price': 0, 'change_24h': 0.0, 'vol_coin': 0, 'status': 'ONLINE'}
@@ -4753,20 +4750,35 @@ class ExchangeDataEngine:
             kucoin_data['price'] = global_price
 
         # Slippage Estimator for LBank and Toobit on $1,000 and $5,000 market orders
-        lb_bid_v = float(lbank.get('bid_volume_top5', 10) or 10)
-        tb_bid_v = float(toobit.get('bid_volume_top5', 10) or 10)
+        lb_bid_v = lbank.get('bid_volume_top5')
+        tb_bid_v = toobit.get('bid_volume_top5')
+        lb_bid_v = float(lb_bid_v) if lb_bid_v is not None else None
+        tb_bid_v = float(tb_bid_v) if tb_bid_v is not None else None
         p_lb = lbank.get('price', global_price)
         p_tb = toobit.get('price', global_price)
         p_kc = kucoin_data.get('price', global_price)
 
-        slippage_1k_lb = round(min(0.85, max(0.02, (1000.0 / (max(1.0, lb_bid_v * p_lb))) * 100)), 3)
-        slippage_5k_lb = round(min(2.5, slippage_1k_lb * 3.8), 3)
-        slippage_1k_tb = round(min(0.85, max(0.02, (1000.0 / (max(1.0, tb_bid_v * p_tb))) * 100)), 3)
-        slippage_5k_tb = round(min(2.5, slippage_1k_tb * 3.8), 3)
+        def _slip(bid_v, px):
+            if not bid_v or not px:
+                return None
+            return round(min(0.85, max(0.02, (1000.0 / max(1.0, bid_v * px)) * 100)), 3)
 
-        spread_lb = round(((p_lb - global_price) / global_price) * 100, 3) if global_price else 0.0
-        spread_tb = round(((p_tb - global_price) / global_price) * 100, 3) if global_price else 0.0
-        spread_diff = round(((p_tb - p_lb) / p_lb) * 100, 3) if p_lb else 0.0
+        slippage_1k_lb = _slip(lb_bid_v, p_lb)
+        slippage_5k_lb = round(min(2.5, slippage_1k_lb * 3.8), 3) if slippage_1k_lb is not None else None
+        slippage_1k_tb = _slip(tb_bid_v, p_tb)
+        slippage_5k_tb = round(min(2.5, slippage_1k_tb * 3.8), 3) if slippage_1k_tb is not None else None
+
+        spread_lb = round(((p_lb - global_price) / global_price) * 100, 3) if global_price and p_lb else None
+        spread_tb = round(((p_tb - global_price) / global_price) * 100, 3) if global_price and p_tb else None
+        spread_diff = round(((p_tb - p_lb) / p_lb) * 100, 3) if p_lb and p_tb else None
+
+        slip_vals = [v for v in [slippage_5k_lb, slippage_5k_tb] if v is not None]
+        if slip_vals and max(slip_vals) < 0.5:
+            slip_rec = 'نقدینگی در اردرهای اسپات تا سقف $5,000 پایدار است (برآوردی از عمق ۵ لایه).'
+        elif slip_vals:
+            slip_rec = 'در خریدهای بالای $3,000 اردر را به صورت لیمیت یا پله‌ای اجرا کنید تا اسلیپیج نگیرید.'
+        else:
+            slip_rec = 'برآورد اسلیپیج ممکن نیست (دادهٔ عمق در دسترس نیست).'
 
         macro = cls.get_alpha_vantage_macro()
 
@@ -4781,14 +4793,14 @@ class ExchangeDataEngine:
                 'lbank_5k_pct': slippage_5k_lb,
                 'toobit_1k_pct': slippage_1k_tb,
                 'toobit_5k_pct': slippage_5k_tb,
-                'recommendation': 'نقدینگی در اردرهای اسپات تا سقف $5,000 پایدار است.' if max(slippage_5k_lb, slippage_5k_tb) < 0.5 else 'در خریدهای بالای $3,000 اردر را به صورت لیمیت یا پله‌ای اجرا کنید تا اسلیپیج نگیرید.'
+                'recommendation': slip_rec
             },
             'spread': {
                 'lbank_vs_global_pct': spread_lb,
                 'toobit_vs_global_pct': spread_tb,
                 'toobit_vs_lbank_pct': spread_diff,
-                'arbitrage_opportunity': abs(spread_diff) >= 0.15,
-                'arbitrage_advice': 'اختلاف قیمت محسوس بین توبیت و ال‌بانک (پتانسیل آربیتراژ یا نوسان‌گیری زودهنگام)' if abs(spread_diff) >= 0.15 else 'تعادل کامل قیمتی میان صرافی‌ها'
+                'arbitrage_opportunity': bool(spread_diff is not None and abs(spread_diff) >= 0.15),
+                'arbitrage_advice': 'اختلاف قیمت محسوس بین توبیت و ال‌بانک (پتانسیل آربیتراژ)' if (spread_diff is not None and abs(spread_diff) >= 0.15) else ('تعادل کامل قیمتی میان صرافی‌ها' if spread_diff is not None else 'نامشخص (قیمت صرافی‌ها در دسترس نیست)')
             },
             'macro_confluence': macro,
             'security_rule': 'حالت کاملاً تحلیلی و فقط خواندنی (Strict Read-Only Data Hub - بدون هرگونه ثبت اردر)',
@@ -5065,102 +5077,41 @@ class CryptoQuantNetflowEngine:
     """CryptoQuant Style: Exchange Inflow/Outflow Delta & Whale Dumping Risk"""
     @classmethod
     def get_exchange_flows(cls, symbol: str, current_price: float) -> Dict[str, Any]:
-        sym = symbol.upper().replace("USDT", "")
-        # Deterministic simulation seeded by symbol and current 15m window
-        time_slot = int(time.time() / 900)
-        seed = (hash(sym) + time_slot) % 1000
-        
-        # Inflows / Outflows (USD Millions)
-        base_vol = 45.0 if sym in ["BTC", "ETH"] else (15.0 if sym in ["SOL", "BNB"] else 4.5)
-        inflow_m = round(base_vol * (0.6 + (seed % 40) / 50.0), 2)
-        outflow_m = round(base_vol * (0.6 + ((seed * 3) % 40) / 50.0), 2)
-        netflow_m = round(inflow_m - outflow_m, 2) # positive = net inflow to exchanges (dump risk)
-
-        if netflow_m > (base_vol * 0.25):
-            status = "INFLOW_SPIKE"
-            badge = "⚠️ هشدار واریز سنگین به صرافی (خطر دامپ)"
-            color = "#ff3366"
-            signal = "DUMP_RISK"
-            desc = f"واریز سنگین +${netflow_m:.1f}M به صرافی‌ها رصد شد؛ نهنگ‌ها ممکن است آماده عرضه باشند."
-        elif netflow_m < -(base_vol * 0.2):
-            status = "OUTFLOW_DRAIN"
-            badge = "🟢 خروج سرمایه و قفل عرضه (Accumulation)"
-            color = "#00e676"
-            signal = "ACCUMULATION"
-            desc = f"برداشت قابل‌توجه -${abs(netflow_m):.1f}M از صرافی‌ها به کیف‌پول‌های سرد (خشک شدن عرضه)."
-        else:
-            status = "BALANCED"
-            badge = "⚖️ جریان ذخایر متعادل (Neutral Flow)"
-            color = "#ffd166"
-            signal = "BALANCED"
-            desc = "توازن میان واریز و برداشت به صرافی‌ها؛ بدون فشار عرضه غیرعادی."
-
+        sym = (symbol or "").upper().replace("USDT", "").replace("USD", "").strip()
+        # Fail-Closed: no simulated netflow. Real CryptoQuant/Glassnode data requires a paid feed.
         return {
+            "ok": False,
+            "error": "NETFLOW_FEED_UNAVAILABLE",
             "symbol": sym,
-            "status": status,
-            "badge": badge,
-            "color": color,
-            "signal": signal,
-            "inflow_m": inflow_m,
-            "outflow_m": outflow_m,
-            "netflow_m": netflow_m,
-            "description": desc
+            "status": "UNAVAILABLE",
+            "badge": "⚪ جریان ورود/خروج صرافی‌ها در دسترس نیست (نیازمند فید اختصاصی CryptoQuant)",
+            "color": "#94a3b8",
+            "signal": "UNKNOWN",
+            "inflow_m": None,
+            "outflow_m": None,
+            "netflow_m": None,
+            "description": "محاسبهٔ واقعی Netflow صرافی‌ها نیازمند دادهٔ پولی CryptoQuant / Glassnode است؛ هیچ عدد شبیه‌سازی‌شده یا تخمینی نمایش داده نمی‌شود (Fail-Closed)."
         }
 
 
 class TokenUnlocksRadar:
     """TokenUnlocks / DeFiLlama Style: Upcoming Cliff Unlocks & Dilution Pressure"""
-    SCHEDULE = {
-        "SOL": {"next_unlock_days": 18, "amount_usd_m": 84.5, "pct_circulating": 0.15, "category": "Staking Rewards & Foundation"},
-        "SUI": {"next_unlock_days": 6, "amount_usd_m": 125.0, "pct_circulating": 2.45, "category": "Series A & Community Access"},
-        "PEPE": {"next_unlock_days": 0, "amount_usd_m": 0.0, "pct_circulating": 0.0, "category": "100% Circulating (بدون توکن قفل)"},
-        "DOGE": {"next_unlock_days": 0, "amount_usd_m": 0.0, "pct_circulating": 0.0, "category": "PoW Mining (بدون آنلاک شرکتی)"},
-        "XRP": {"next_unlock_days": 27, "amount_usd_m": 450.0, "pct_circulating": 0.85, "category": "Ripple Escrow Monthly"},
-        "BNB": {"next_unlock_days": 42, "amount_usd_m": 0.0, "pct_circulating": 0.0, "category": "Quarterly Auto-Burn (ضد تورم)"},
-        "ETH": {"next_unlock_days": 0, "amount_usd_m": 0.0, "pct_circulating": 0.0, "category": "Staking Yield (پویا)"},
-        "BTC": {"next_unlock_days": 0, "amount_usd_m": 0.0, "pct_circulating": 0.0, "category": "100% Fair Launch (بدون سرمایه‌گذار اولیه)"}
-    }
-
     @classmethod
     def get_token_unlock_status(cls, symbol: str) -> Dict[str, Any]:
-        sym = symbol.upper().replace("USDT", "")
-        entry = cls.SCHEDULE.get(sym, {
-            "next_unlock_days": 14,
-            "amount_usd_m": 18.0,
-            "pct_circulating": 1.2,
-            "category": "Ecosystem & Contributor Vesting"
-        })
-
-        days = entry["next_unlock_days"]
-        amount_m = entry["amount_usd_m"]
-        pct = entry["pct_circulating"]
-
-        if days == 0 or amount_m == 0:
-            risk = "SAFE_NO_CLIFF"
-            badge = "🛡️ بدون ریسک آنلاک (۱۰۰٪ در گردش)"
-            color = "#00e676"
-            action = "امن برای هولد و سوئینگ بدون خطر رقیق‌سازی توکن."
-        elif days <= 7 and amount_m > 30:
-            risk = "HIGH_CLIFF_DUMP"
-            badge = f"⚠️ آنلاک سنگین در {days} روز آینده (${amount_m:.0f}M)"
-            color = "#ff3366"
-            action = f"احتیاط شدید: آزادسازی {pct}% از کل عرضه؛ احتمال فشار فروش نهادها."
-        else:
-            risk = "MODERATE_CLIFF"
-            badge = f"ℹ️ آنلاک عادی ({days} روز دیگر)"
-            color = "#38bdf8"
-            action = f"رویداد برنامه ریزی شده: آزادسازی ${amount_m:.1f}M از سبد {entry['category']}."
-
+        sym = (symbol or "").upper().replace("USDT", "").replace("USD", "").strip()
+        # Fail-Closed: no static/hardcoded unlock schedule presented as live data.
         return {
+            "ok": False,
+            "error": "UNLOCK_DATA_UNAVAILABLE",
             "symbol": sym,
-            "risk": risk,
-            "badge": badge,
-            "color": color,
-            "days_left": days,
-            "amount_usd_m": amount_m,
-            "pct_circulating": pct,
-            "category": entry["category"],
-            "action_advice": action
+            "risk": "UNKNOWN",
+            "badge": "⚪ برنامهٔ آنلاک توکن در دسترس نیست (نیازمند فید زندهٔ TokenUnlocks)",
+            "color": "#94a3b8",
+            "days_left": None,
+            "amount_usd_m": None,
+            "pct_circulating": None,
+            "category": "نامشخص",
+            "action_advice": "بدون دادهٔ واقعی آنلاک، قضاوت دربارهٔ فشار رقیق‌سازی انجام نمی‌شود (Fail-Closed)."
         }
 
 
@@ -5168,34 +5119,17 @@ class StablecoinSupplyRatioEngine:
     """Glassnode Style: Stablecoin Supply Ratio (SSR) & Tether Dry Powder Meter"""
     @classmethod
     def get_ssr_metrics(cls, btc_price: float) -> Dict[str, Any]:
-        # Aggregate stablecoin market cap (approx $168B USDT+USDC in 2026)
-        stable_mcap_b = 168.4
-        btc_mcap_b = (btc_price * 19.78e6) / 1e9 # approx 19.78M circulating BTC
-        ssr = round(btc_mcap_b / stable_mcap_b, 2)
-
-        # Historical benchmark: SSR < 10 = massive buying power (bottom / bull fuel); SSR > 15 = overheated
-        if ssr < 10.5:
-            regime = "MASSIVE_BUYING_POWER"
-            badge = f"🔥 قدرت خرید دلاری تاریخی (SSR: {ssr})"
-            color = "#00e676"
-            desc = "ذخایر استیبل‌کوین‌ها نسبت به ارزش بیت‌کوین در سطح بالایی است؛ سوخت دلاری لازم برای رالی پامپ موجود است."
-        elif ssr > 13.5:
-            regime = "DRY_POWDER_DEPLETED"
-            badge = f"⚠️ کاهش نقدینگی حاشیه بازار (SSR: {ssr})"
-            color = "#ff3366"
-            desc = "بخش عمده استیبل‌کوین‌ها وارد بازار شده‌اند؛ رشد بیشتر به ورود سرمایه تازه نیاز دارد."
-        else:
-            regime = "NORMAL_ACCUMULATION"
-            badge = f"⚖️ ذخایر دلاری باثبات (SSR: {ssr})"
-            color = "#ffd700"
-            desc = "توازن سالم میان عرضه استیبل‌کوین‌ها و ارزش مارکت بیت‌کوین."
-
+        # Fail-Closed: SSR requires live stablecoin & BTC market caps from a paid on-chain feed.
         return {
-            "ssr_ratio": ssr,
-            "stablecoin_mcap_fmt": f"${stable_mcap_b:.1f}B",
-            "btc_mcap_fmt": f"${btc_mcap_b:.1f}B",
-            "regime": regime,
-            "badge": badge,
-            "color": color,
-            "description": desc
+            "ok": False,
+            "error": "SSR_DATA_UNAVAILABLE",
+            "ssr_ratio": None,
+            "stablecoin_mcap_fmt": "نامشخص",
+            "btc_mcap_fmt": "نامشخص",
+            "regime": "UNKNOWN",
+            "badge": "⚪ شاخص SSR در دسترس نیست (نیازمند دادهٔ زندهٔ مارکت‌کپ استیبل‌کوین‌ها)",
+            "color": "#94a3b8",
+            "description": "محاسبهٔ واقعی نسبت عرضهٔ استیبل‌کوین به مارکت‌کپ بیت‌کوین نیازمند فید زندهٔ Glassnode است؛ هیچ عدد ساختگی نمایش داده نمی‌شود (Fail-Closed)."
         }
+
+

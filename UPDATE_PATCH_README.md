@@ -95,7 +95,7 @@
 ---
 
 ### ۷. ادغام رسمی کلید CoinMarketCap Pro و مرکز داده‌های صرافی‌ها (Toobit, LBank & Macro Hub)
-* **کلید معتبر Pro کوین‌مارکت‌کپ (`6aafae9b308c469f938159ccfdc1ac97`):**
+* **کلید Pro کوین‌مارکت‌کپ (فقط از طریق متغیر محیطی `CMC_PRO_KEY`):**
   * اتصال رسمی به اندپوینت `v1/global-metrics/quotes/latest`
   * دریافت دقیق مارکت‌کپ کل بازار، حجم معاملات ۲۴ ساعته کل، دامیننس بیت‌کوین (BTC.D) و اتریوم (ETH.D)
   * کشینگ هوشمند ۵ دقیقه‌ای برای مدیریت بهینه سهمیه ۱۵,۰۰۰ کردیت ماهانه
@@ -137,4 +137,4 @@
 2. `institutional_addons.py`
 3. `server.py`
 4. `index.html`
-5. `static/index.html`
+5. `index.html`

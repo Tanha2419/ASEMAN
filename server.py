@@ -25,12 +25,10 @@ socket.setdefaulttimeout(5.0)
 try:
     import fastapi
     import uvicorn
-    import matplotlib
 except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "fastapi", "uvicorn", "matplotlib", "--quiet"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "fastapi", "uvicorn", "--quiet"])
     import fastapi
     import uvicorn
-    import matplotlib
 
 from fastapi import FastAPI, Query, HTTPException, Request, Header
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
@@ -248,28 +246,46 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
             if not unif or not unif.get("scalp"):
                 unif = cus.get_unified_signals(sym)
             sc = unif.get("scalp", {})
-            if sc and sc.get("entry", 0) > 0:
+            if sc:
                 if "scalp_setup" not in res or not isinstance(res["scalp_setup"], dict):
                     res["scalp_setup"] = {}
-                res["scalp_setup"]["entry_price"] = sc["entry"]
-                res["scalp_setup"]["stop_loss"] = sc["stop_loss"]
-                res["scalp_setup"]["tp1"] = sc["tp1"]
-                res["scalp_setup"]["tp2"] = sc["tp2"]
-                res["scalp_setup"]["tp3"] = sc["tp3"]
-                res["scalp_setup"]["action"] = sc["direction"]
-                res["scalp_setup"]["action_code"] = sc["direction_code"]
-                res["scalp_setup"]["direction"] = sc["direction_code"]
+                res["scalp_setup"]["action"] = sc.get("direction", "NO_TRADE")
+                res["scalp_setup"]["action_code"] = sc.get("direction_code", "NO_TRADE")
+                res["scalp_setup"]["direction"] = sc.get("direction_code", "NO_TRADE")
                 res["scalp_setup"]["generated_at_tehran"] = sc.get("time_tehran", "")
                 res["scalp_setup"]["holding_duration"] = sc.get("holding_duration", "۳۰ دقیقه الی ۲ ساعت")
                 res["scalp_setup"]["rationale"] = sc.get("rationale_fa", "")
                 res["scalp_setup"]["anti_stop_hunt"] = True
+                if sc.get("direction_code") == "NO_TRADE":
+                    res["scalp_setup"]["entry_price"] = None
+                    res["scalp_setup"]["stop_loss"] = None
+                    res["scalp_setup"]["tp1"] = None
+                    res["scalp_setup"]["tp2"] = None
+                    res["scalp_setup"]["tp3"] = None
+                elif sc.get("entry") is not None:
+                    res["scalp_setup"]["entry_price"] = sc["entry"]
+                    res["scalp_setup"]["stop_loss"] = sc["stop_loss"]
+                    res["scalp_setup"]["tp1"] = sc["tp1"]
+                    res["scalp_setup"]["tp2"] = sc["tp2"]
+                    res["scalp_setup"]["tp3"] = sc["tp3"]
         except Exception as e_unif:
             print(f"Error syncing scalp_setup with unified signals: {e_unif}")
 
         # Calculate Default Kelly Risk & Position Sizing
         scalp = res.get("scalp_setup", {})
+        scalp_action_code = str(scalp.get("action_code") or scalp.get("direction") or "").upper()
+        if scalp_action_code == "NO_TRADE":
+            res["kelly_risk"] = {"error": "سیگنال در وضعیت NO TRADE است؛ بدون ستاپ اجرایی، محاسبه ریسک و سایز پوزیشن انجام نمی‌شود (Fail-Closed)."}
+            res["golden_six"] = {
+                "ok": False,
+                "error": "GOLDEN_SIX_SKIPPED",
+                "message": "سیگنال در وضعیت NO TRADE است؛ فیلترهای شش‌گانه نهادی روی ستاپ اجرایی اعمال نمی‌شوند (Fail-Closed)."
+            }
+            _analyze_cache[sym_clean] = res
+            _last_analyze_time[sym_clean] = now
+            return res
         entry_s = float(scalp.get("entry_price") or price)
-        sl_s = float(scalp.get("stop_loss") or (price * 0.985 if "BUY" in scalp.get("direction", "BUY") else price * 1.015))
+        sl_s = float(scalp.get("stop_loss") or 0.0)
         tp_s = float(scalp.get("tp2") or scalp.get("tp1") or 0.0)
         win_r = float(res.get("backtest", {}).get("win_rate_pct", 0.0))
         if win_r <= 0:
@@ -287,7 +303,7 @@ def analyze(symbol: str = Query("BTC", description="Cryptocurrency symbol, e.g. 
                 direction=direction_val
             )
         else:
-            res["kelly_risk"] = {"error": "داده‌های ستاپ برای محاسبه ریسک کافی نیست"}
+            res["kelly_risk"] = {"error": "داده‌های ستاپ برای محاسبه ریسک کافی نیست (حد ضرر یا تارگت ساختاری ثبت نشده است)."}
 
         # 6 Golden Institutional Noise-Free Filters
         res["golden_six"] = GoldenSixCoreEngine.evaluate(
@@ -655,8 +671,8 @@ def update_signal_in_journal(symbol, status, pnl_pct, signal_id: Optional[str] =
                     "id": f"SIG-{int(match.get('created_at', time.time()))}-{clean_target}",
                     "symbol": clean_target,
                     "action": match.get("action", "LONG"),
-                    "grade": "A+",
-                    "score": 85,
+                    "grade": match.get("grade", "MANUAL"),
+                    "score": float(match.get("score") or 0),
                     "entry": match.get("entry", 0),
                     "sl": match.get("sl", 0),
                     "tp1": match.get("tp1", 0),
@@ -1291,11 +1307,13 @@ def auto_sentinel_loop():
                                         continue
 
                                 # Order book depth check:
-                                ob_ratio = float(analysis.get("order_book", {}).get("ratio", 1.0))
-                                if scalp_act in ["BUY", "LONG"] and ob_ratio < 0.85:
+                                _ob = analysis.get("orderbook", {}) or {}
+                                _ob_ratio = _ob.get("ratio")
+                                ob_ratio = float(_ob_ratio) if _ob_ratio is not None else None
+                                if ob_ratio is not None and scalp_act in ["BUY", "LONG"] and ob_ratio < 0.85:
                                     print(f"[SENTINEL] Skipping {sym} because order book has heavy sell wall ({ob_ratio:.2f}x).")
                                     continue
-                                if scalp_act in ["SELL", "SHORT"] and ob_ratio > 1.25:
+                                if ob_ratio is not None and scalp_act in ["SELL", "SHORT"] and ob_ratio > 1.25:
                                     print(f"[SENTINEL] Skipping {sym} because order book has heavy buy wall ({ob_ratio:.2f}x).")
                                     continue
 
@@ -1372,7 +1390,9 @@ def get_sentinel_status():
     }
 
 @app.post("/api/sentinel/toggle")
-def toggle_sentinel_status():
+def toggle_sentinel_status(admin_key: Optional[str] = Query(None)):
+    if not ADMIN_SECRET or admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای تغییر وضعیت دیده‌بان به کلید ادمین نیاز است. (ADMIN_SECRET_KEY باید روی سرور تنظیم شده باشد)")
     global _sentinel_paused
     _sentinel_paused = not _sentinel_paused
     _sentinel_stats["is_paused"] = _sentinel_paused
@@ -1431,10 +1451,16 @@ def reset_all_signal_journals(admin_key: Optional[str] = Query(None), confirm: O
             _active_signal_trackers.clear()
     except Exception:
         pass
+
+    # Clear local journal files too, otherwise they re-hydrate on next load
+    save_signal_journal([])
+    save_4h_journal([])
     return {"ok": True, "message": "تمامی رکوردهای ژورنال با موفقیت پاک شدند."}
 
 @app.post("/api/telegram/reset-cooldown")
-def reset_telegram_cooldown():
+def reset_telegram_cooldown(admin_key: Optional[str] = Query(None)):
+    if not ADMIN_SECRET or admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای پاک‌سازی کول‌داون به کلید ادمین نیاز است. (ADMIN_SECRET_KEY باید روی سرور تنظیم شده باشد)")
     global _sent_cooldown
     _sent_cooldown.clear()
     save_sent_cooldown(_sent_cooldown)
@@ -1442,6 +1468,7 @@ def reset_telegram_cooldown():
 
 @app.get("/api/telegram/config")
 def get_telegram_config():
+    cfg = {}
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     auto_pilot = True
@@ -1475,8 +1502,8 @@ def get_telegram_config():
 
 @app.post("/api/telegram/config")
 def save_telegram_config(cfg: TelegramConfigRequest, admin_key: Optional[str] = Query(None)):
-    if ADMIN_SECRET and admin_key != ADMIN_SECRET:
-        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای تغییر تنظیمات تلگرام به کلید ادمین نیاز است.")
+    if not ADMIN_SECRET or admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای تغییر تنظیمات تلگرام به کلید ادمین نیاز است. (ADMIN_SECRET_KEY باید روی سرور تنظیم شده باشد)")
     try:
         existing = {}
         if os.path.exists(CONFIG_FILE):
@@ -1506,8 +1533,8 @@ def save_telegram_config(cfg: TelegramConfigRequest, admin_key: Optional[str] = 
 
 @app.post("/api/telegram/send")
 def send_telegram_signal(req: TelegramSendRequest, admin_key: Optional[str] = Query(None)):
-    if ADMIN_SECRET and admin_key != ADMIN_SECRET:
-        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ارسال دستی پیام به کلید ادمین نیاز است.")
+    if not ADMIN_SECRET or admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ارسال دستی پیام به کلید ادمین نیاز است. (ADMIN_SECRET_KEY باید روی سرور تنظیم شده باشد)")
     bot_token = (req.bot_token or "").strip()
     chat_id = (req.chat_id or "").strip()
 
@@ -1537,21 +1564,41 @@ def send_telegram_signal(req: TelegramSendRequest, admin_key: Optional[str] = Qu
     # Fetch institutional dual-engine signals
     try:
         unif = cus.get_unified_signals(clean_sym)
-    except Exception as e:
+    except Exception:
         unif = None
 
-    if sig_type == "swing" and unif and unif.get("swing"):
+    s3d = analysis.get("scores_3d", {})
+    honest_grade = s3d.get("grade") or "MANUAL"
+    try:
+        honest_score = float(s3d.get("composite_confidence") or s3d.get("composite_score") or s3d.get("score") or 0)
+    except Exception:
+        honest_score = 0.0
+
+    if sig_type == "swing":
+        if not unif or not unif.get("swing"):
+            return {"success": False, "error": "SIGNAL_UNAVAILABLE", "message": "سیگنال سوئینگ ۴ ساعته در دسترس نیست؛ ارسال متوقف شد (Fail-Closed)."}
         sw = unif["swing"]
+        if str(sw.get("direction_code", "")).upper() == "NO_TRADE":
+            return {"success": False, "error": "NO_TRADE_SIGNAL", "message": "سیگنال سوئینگ در وضعیت NO TRADE است؛ هیچ پیامی ارسال و هیچ رکوردی ثبت نشد (Fail-Closed).", "rationale": sw.get("rationale_fa", "")}
+        if sw.get("entry") is None or sw.get("stop_loss") is None or not sw.get("tp1"):
+            return {"success": False, "error": "INCOMPLETE_SETUP", "message": "سطوح کامل ساختاری (ورود / حد ضرر / تارگت) در سیگنال سوئینگ ثبت نشده است؛ ارسال متوقف شد (Fail-Closed)."}
+        if honest_score <= 0:
+            return {"success": False, "error": "SCORE_UNAVAILABLE", "message": "امتیاز اعتبارسنجی واقعی برای این نماد در دسترس نیست؛ ارسال متوقف شد (Fail-Closed)."}
+        journal_4h = load_4h_journal()
+        if any(r.get("symbol") == clean_sym and r.get("status") in ["TRACKING", "OPEN"] for r in journal_4h):
+            return {"success": False, "error": "DUPLICATE_ACTIVE_SETUP", "message": f"برای {clean_sym} همین حالا یک ستاپ ۴ ساعته فعال در ژورنال وجود دارد؛ ارسال مجدد مسدود شد (Anti-Spam)."}
         custom_text = cus.format_clean_telegram_signal(sw, clean_sym)
         dispatch_res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis, custom_text=custom_text)
-        
+        really_sent = bool(dispatch_res.get("success")) and not bool(dispatch_res.get("simulated"))
+        if not really_sent:
+            return {**dispatch_res, "journal_recorded": False, "message": "ارسال تلگرام موفق نبود؛ رکورد ژورنال ایجاد نشد (Fail-Closed)."}
         # Record into 4H Swing Journal
         rec = record_4h_swing_setup(
             symbol=clean_sym,
             action=sw.get("direction_code", "LONG"),
-            structure=sw.get("structure", "تغییر کاراکتر CHoCH / شکست ساختار BOS"),
-            grade="A+",
-            score=92,
+            structure=sw.get("structure", ""),
+            grade=honest_grade,
+            score=honest_score,
             entry=sw.get("entry", 0),
             sl=sw.get("stop_loss", 0),
             tp1=sw.get("tp1", 0),
@@ -1559,69 +1606,84 @@ def send_telegram_signal(req: TelegramSendRequest, admin_key: Optional[str] = Qu
             tp3=sw.get("tp3", 0),
             force_record=True
         )
-        dispatch_res["journal_recorded"] = True
+        dispatch_res["journal_recorded"] = rec.get("id") is not None
         dispatch_res["journal_type"] = "4H_SWING"
         dispatch_res["record"] = rec
+        return dispatch_res
+
+    # Default SCALP (15m)
+    if unif and unif.get("scalp"):
+        sc = unif["scalp"]
+        act_code = str(sc.get("direction_code", "")).upper()
+        if act_code == "NO_TRADE":
+            return {"success": False, "error": "NO_TRADE_SIGNAL", "message": "سیگنال اسکالپ در وضعیت NO TRADE است؛ هیچ پیامی ارسال و هیچ رکوردی ثبت نشد (Fail-Closed).", "rationale": sc.get("rationale_fa", "")}
+        if sc.get("entry") is None or sc.get("stop_loss") is None or not sc.get("tp1"):
+            return {"success": False, "error": "INCOMPLETE_SETUP", "message": "سطوح کامل ساختاری (ورود / حد ضرر / تارگت) در سیگنال اسکالپ ثبت نشده است؛ ارسال متوقف شد (Fail-Closed)."}
+        entry_p = float(sc.get("entry", 0) or 0)
+        sl_p = float(sc.get("stop_loss", 0) or 0)
+        tp1_p = float(sc.get("tp1", 0) or 0)
+        tp2_p = float(sc.get("tp2", 0) or 0)
+        tp3_p = float(sc.get("tp3", 0) or 0)
+        custom_text = cus.format_clean_telegram_signal(sc, clean_sym)
+        dispatch_res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis, custom_text=custom_text)
     else:
-        # Default SCALP (15m)
-        if unif and unif.get("scalp"):
-            sc = unif["scalp"]
-            custom_text = cus.format_clean_telegram_signal(sc, clean_sym)
-            dispatch_res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis, custom_text=custom_text)
-            act_code = sc.get("direction_code", "LONG")
-            entry_p = sc.get("entry", analysis.get("price", 0))
-            sl_p = sc.get("stop_loss", 0)
-            tp1_p = sc.get("tp1", 0)
-            tp2_p = sc.get("tp2", 0)
-            tp3_p = sc.get("tp3", 0)
-        else:
-            scalp_data = analysis.get("scalp_setup", {})
-            dispatch_res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis)
-            act_code = "LONG" if "BUY" in scalp_data.get("action", "").upper() or "LONG" in scalp_data.get("action", "").upper() else "SHORT"
-            entry_p = analysis.get("price", 0)
-            sl_p = scalp_data.get("stop_loss", 0)
-            tp1_p = scalp_data.get("tp1", 0)
-            tp2_p = scalp_data.get("tp2", 0)
-            tp3_p = scalp_data.get("tp3", 0)
+        scalp_data = analysis.get("scalp_setup", {})
+        act_code = str(scalp_data.get("action_code") or "").upper()
+        if act_code not in ["LONG", "SHORT", "BUY", "SELL"]:
+            return {"success": False, "error": "NO_TRADE_SIGNAL", "message": "ستاپ اسکالپ قابل اجرا در دسترس نیست؛ ارسال متوقف شد (Fail-Closed)."}
+        entry_p = float(scalp_data.get("entry_price") or 0)
+        sl_p = float(scalp_data.get("stop_loss") or 0)
+        tp1_p = float(scalp_data.get("tp1") or 0)
+        tp2_p = float(scalp_data.get("tp2") or 0)
+        tp3_p = float(scalp_data.get("tp3") or 0)
+        dispatch_res = TelegramDispatcher.send_to_telegram(bot_token, chat_id, analysis)
 
-        # Record into Scalp Journal
-        rec = record_dispatched_signal(
-            symbol=clean_sym,
-            action=act_code,
-            grade="A+",
-            score=92,
-            entry=entry_p,
-            sl=sl_p,
-            tp1=tp1_p,
-            tp2=tp2_p,
-            tp3=tp3_p,
-            force_record=True
-        )
+    really_sent = bool(dispatch_res.get("success")) and not bool(dispatch_res.get("simulated"))
+    if not really_sent:
+        return {**dispatch_res, "journal_recorded": False, "message": "ارسال تلگرام موفق نبود؛ رکورد ژورنال و ترکر ایجاد نشد (Fail-Closed)."}
+    if honest_score <= 0:
+        return {**dispatch_res, "journal_recorded": False, "message": "امتیاز اعتبارسنجی واقعی در دسترس نیست؛ رکورد ژورنال ایجاد نشد (Fail-Closed)."}
+    if entry_p <= 0 or sl_p <= 0 or tp1_p <= 0:
+        return {**dispatch_res, "journal_recorded": False, "message": "سطوح کامل ساختاری ثبت نشده است؛ رکورد ژورنال ایجاد نشد (Fail-Closed)."}
 
-        with _trackers_lock:
-            _active_signal_trackers.append({
-                "symbol": clean_sym,
-                "action": act_code,
-                "entry": entry_p,
-                "sl": sl_p,
-                "tp1": tp1_p,
-                "tp2": tp2_p,
-                "tp3": tp3_p,
-                "created_at": time.time(),
-                "bot_token": bot_token,
-                "chat_id": chat_id,
-                "tp1_hit": False,
-                "tp2_hit": False,
-                "tp3_hit": False,
-                "closed": False
-            })
+    # Record into Scalp Journal
+    rec = record_dispatched_signal(
+        symbol=clean_sym,
+        action=act_code,
+        grade=honest_grade,
+        score=honest_score,
+        entry=entry_p,
+        sl=sl_p,
+        tp1=tp1_p,
+        tp2=tp2_p,
+        tp3=tp3_p,
+        force_record=True
+    )
 
-        norm_s = _normalize_cooldown_sym(req.symbol)
-        _sent_cooldown[norm_s] = time.time()
-        save_sent_cooldown(_sent_cooldown)
-        dispatch_res["journal_recorded"] = True
-        dispatch_res["journal_type"] = "SCALP_15M"
-        dispatch_res["record"] = rec
+    with _trackers_lock:
+        _active_signal_trackers.append({
+            "symbol": clean_sym,
+            "action": act_code,
+            "entry": entry_p,
+            "sl": sl_p,
+            "tp1": tp1_p,
+            "tp2": tp2_p,
+            "tp3": tp3_p,
+            "created_at": time.time(),
+            "bot_token": bot_token,
+            "chat_id": chat_id,
+            "tp1_hit": False,
+            "tp2_hit": False,
+            "tp3_hit": False,
+            "closed": False
+        })
+
+    norm_s = _normalize_cooldown_sym(req.symbol)
+    _sent_cooldown[norm_s] = time.time()
+    save_sent_cooldown(_sent_cooldown)
+    dispatch_res["journal_recorded"] = rec.get("id") is not None
+    dispatch_res["journal_type"] = "SCALP_15M"
+    dispatch_res["record"] = rec
 
     return dispatch_res
 
@@ -1884,7 +1946,9 @@ def get_4h_signal_journal():
     }
 
 @app.post("/api/journal/4h/reset")
-def reset_4h_signal_journal():
+def reset_4h_signal_journal(admin_key: Optional[str] = Query(None)):
+    if not ADMIN_SECRET or admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ریست ژورنال ۴ ساعته به کلید ادمین نیاز است. (ADMIN_SECRET_KEY باید روی سرور تنظیم شده باشد)")
     global _active_signal_trackers, _sent_cooldown
     with _trackers_lock:
         _active_signal_trackers.clear()
@@ -1905,7 +1969,9 @@ class Record4HRequest(BaseModel):
     symbol: str
 
 @app.post("/api/journal/4h/record")
-def record_4h_from_symbol(req: Record4HRequest):
+def record_4h_from_symbol(req: Record4HRequest, admin_key: Optional[str] = Query(None)):
+    if not ADMIN_SECRET or admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ثبت دستی ستاپ ۴ ساعته به کلید ادمین نیاز است. (ADMIN_SECRET_KEY باید روی سرور تنظیم شده باشد)")
     sym = clean_symbol(req.symbol)
     analysis = agent.analyze_symbol(sym)
     if not analysis.get("success"):
@@ -1916,12 +1982,14 @@ def record_4h_from_symbol(req: Record4HRequest):
         return {"success": False, "message": f"رمزارز {sym} در تایم ۴ ساعته فاقد ستاپ ورود فعال است (WAIT)."}
 
     s3d = analysis.get("scores_3d", {})
+    honest_grade = s3d.get("grade") or "MANUAL"
+    honest_score = float(s3d.get("total_score") or s3d.get("composite_confidence") or 0)
     rec = record_4h_swing_setup(
         symbol=sym,
         action=swing.get("action_code", "BUY"),
-        structure=analysis.get("smc", {}).get("4h", {}).get("market_structure", "BOS صعودی ۴ ساعته"),
-        grade=s3d.get("grade", "A"),
-        score=s3d.get("total_score", 88),
+        structure=analysis.get("smc", {}).get("4h", {}).get("market_structure", ""),
+        grade=honest_grade,
+        score=honest_score,
         entry=analysis.get("price", 0),
         sl=swing.get("stop_loss", 0),
         tp1=swing.get("tp1", 0),
@@ -1929,6 +1997,8 @@ def record_4h_from_symbol(req: Record4HRequest):
         tp3=swing.get("tp3", 0),
         rr=str(swing.get("risk_reward", "1:2.8"))
     )
+    if rec.get("id") is None:
+        return {"success": False, "message": rec.get("error", "ثبت ستاپ متوقف شد."), "record": rec}
     return {"success": True, "message": f"ستاپ ۴ ساعته {sym} با موفقیت به ژورنال سوئینگ افزوده شد.", "record": rec}
 
 class MacroRecordRequest(BaseModel):
@@ -1955,8 +2025,8 @@ def get_macro_journal_endpoint():
     hits_count = len([r for r in verified_records if r.get("accuracy_status") in ["VERIFIED_HIT", "VERIFIED_ACCURATE"]])
 
     scores = [float(r.get("accuracy_score")) for r in verified_records if r.get("accuracy_score") is not None]
-    avg_score = round(sum(scores) / len(scores), 1) if scores else 95.0
-    win_rate = round((hits_count / verified_count * 100), 1) if verified_count > 0 else 100.0
+    avg_score = round(sum(scores) / len(scores), 1) if scores else None
+    win_rate = round((hits_count / verified_count * 100), 1) if verified_count > 0 else None
 
     return {
         "success": True,
@@ -1974,7 +2044,9 @@ def get_macro_journal_endpoint():
     }
 
 @app.post("/api/macro/journal/record")
-def record_macro_event_endpoint(req: Optional[MacroRecordRequest] = None):
+def record_macro_event_endpoint(req: Optional[MacroRecordRequest] = None, admin_key: Optional[str] = Query(None)):
+    if not ADMIN_SECRET or admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای ثبت رویداد کلان به کلید ادمین نیاز است. (ADMIN_SECRET_KEY باید روی سرور تنظیم شده باشد)")
     records = load_macro_journal()
     now_iran = datetime.now(timezone.utc) + timedelta(hours=3, minutes=30)
     time_iran_str = now_iran.strftime("%Y-%m-%d %H:%M:%S")
@@ -1982,18 +2054,24 @@ def record_macro_event_endpoint(req: Optional[MacroRecordRequest] = None):
     cal = EconomicCalendarEngine.get_macro_shield_status()
     code = (req and req.event_code) or cal.get("event_code", "CPI")
     name = (req and req.event_name) or cal.get("next_event", "US Macro Event")
-    cons = (req and req.consensus) or cal.get("forecast", "2.4%")
+    cons = (req and req.consensus) or cal.get("forecast", "نامشخص")
     cp = cal.get("crypto_prediction", {})
-    ai_pred = (req and req.ai_prediction) or cp.get("summary", "تعادل آماری و سناریوی رشد تدریجی")
-    bias_dir = (req and req.bias_direction) or cp.get("expected_dir", "صعودی (Bullish)")
+    ai_pred = (req and req.ai_prediction) or cp.get("summary", "پیش‌بینی در دسترس نیست")
+    bias_dir = (req and req.bias_direction) or cp.get("expected_dir", "نامشخص")
 
     tk = agent.fetcher.fetch_ticker("BTCUSDT")
-    live_btc = float(tk.get("last_price") or tk.get("price") or 84200.0) if tk else 84200.0
-    v_pct = float(cal.get("expected_volatility_pct") or 3.2)
-    bull_tgt = int(live_btc * (1 + v_pct / 100.0))
-    bear_tgt = int(live_btc * (1 - v_pct / 100.0))
+    live_btc = float(tk.get("last_price") or tk.get("price") or 0.0) if tk else 0.0
+    if live_btc <= 0:
+        return {"success": False, "error": "LIVE_PRICE_UNAVAILABLE", "message": "قیمت زنده بیت‌کوین در دسترس نیست؛ ثبت رویداد متوقف شد (Fail-Closed)."}
+    v_pct = float(cal.get("expected_volatility_pct") or 0.0)
+    if v_pct > 0:
+        bull_tgt = int(live_btc * (1 + v_pct / 100.0))
+        bear_tgt = int(live_btc * (1 - v_pct / 100.0))
+        tgt_default = f"تارگت صعود: ${bull_tgt:,} (+{v_pct}%) | سناریوی احتیاط: ${bear_tgt:,} (-{v_pct}%)"
+    else:
+        tgt_default = "تارگت پروجکشن: نامشخص (برآورد نوسان در دسترس نیست)"
 
-    tgt = (req and req.target_projection) or f"تارگت صعود: ${bull_tgt:,} (+{v_pct}%) | سناریوی احتیاط: ${bear_tgt:,} (-{v_pct}%)"
+    tgt = (req and req.target_projection) or tgt_default
     notes = (req and req.audit_notes) or f"پیش‌بینی زنده در ساعت {time_iran_str} به وقت تهران ثبت و فریز شد."
 
     existing = next((r for r in records if r.get("event_code") == code and r.get("accuracy_status") == "PENDING_LIVE"), None)
@@ -2072,17 +2150,17 @@ def get_liquidity_suite(symbol: str = Query("BTC")):
     clean_sym = symbol.upper().replace("USDT", "").replace("USD", "").replace("-", "").strip() if symbol else "BTC"
     sym_full = f"{clean_sym}USDT"
     tk = agent.fetcher.fetch_ticker(sym_full)
-    
+    if not tk or not (tk.get("last_price") or tk.get("lastPrice")):
+        raise HTTPException(status_code=503, detail="قیمت زنده صرافی در دسترس نیست؛ محاسبه مجموعه نقدینگی متوقف شد (Fail-Closed).")
+
     # Correct key: last_price, high_24h, low_24h
-    price = float(tk.get("last_price") or tk.get("lastPrice") or 84800.0) if tk else 84800.0
+    price = float(tk.get("last_price") or tk.get("lastPrice"))
     h24 = float(tk.get("high_24h") or tk.get("highPrice") or 0.0) if tk else 0.0
     l24 = float(tk.get("low_24h") or tk.get("lowPrice") or 0.0) if tk else 0.0
 
-    # Dynamic Open Interest for coin
+    # Dynamic Open Interest for coin (real data only; never invent an OI figure)
     hl_metrics = HyperliquidWhaleEngine.get_asset_metrics(clean_sym)
-    oi_usd = hl_metrics.get("oi_usd", 0)
-    if not oi_usd or oi_usd <= 0:
-        oi_usd = max(20_000_000, price * 150_000)
+    oi_usd = float(hl_metrics.get("oi_usd") or 0.0)
 
     # Parallel gather of Liquidation Heatmap, Whale Identity, Footprint Absorption, and Unified Multi-Timeframe Analysis
     import fastfetch as FF
@@ -2262,14 +2340,15 @@ def get_crypto_ninjatrader(symbol: str = Query("BTC"), timeframe: str = Query("1
     data["superdom_levels"] = data.get("super_dom", [])
     vw = data.get("vwap", {})
     cur_p = float(data.get("current_price") or 0.0)
-    data["session_vwap"] = vw.get("mid", vw.get("center", cur_p))
-    data["vwap_sd1_up"] = vw.get("upper_1sd", vw.get("sd1_up", cur_p * 1.008))
-    data["vwap_sd1_dn"] = vw.get("lower_1sd", vw.get("sd1_dn", cur_p * 0.992))
-    data["vwap_sd2_up"] = vw.get("upper_2sd", vw.get("sd2_up", cur_p * 1.016))
-    data["vwap_sd2_dn"] = vw.get("lower_2sd", vw.get("sd2_dn", cur_p * 0.984))
+    data["session_vwap"] = vw.get("mid", vw.get("center"))
+    data["vwap_sd1_up"] = vw.get("upper_1sd", vw.get("sd1_up"))
+    data["vwap_sd1_dn"] = vw.get("lower_1sd", vw.get("sd1_dn"))
+    data["vwap_sd2_up"] = vw.get("upper_2sd", vw.get("sd2_up"))
+    data["vwap_sd2_dn"] = vw.get("lower_2sd", vw.get("sd2_dn"))
+    cvd = data.get("cvd", {})
     data["verdict"] = {
-        "scalp_bias": data.get("cvd", {}).get("verdict_fa", "صعودی"),
-        "rationale": data.get("summary_fa", "حفظ قیمت بالای VWAP سشن و برتری دلتای خرید.")
+        "scalp_bias": cvd.get("verdict_fa", "نامشخص") if isinstance(cvd, dict) else "نامشخص",
+        "rationale": data.get("summary_fa", "داده کافی برای قضاوت اردرفلو در دسترس نیست.")
     }
     return data
 
@@ -2277,33 +2356,41 @@ def get_crypto_ninjatrader(symbol: str = Query("BTC"), timeframe: str = Query("1
 def get_crypto_atas(symbol: str = Query("BTC")):
     data = coe.get_crypto_atas_live(symbol)
     ts = data.get("tape_speed", {})
-    data["tape_speed_tps"] = ts.get("trades_per_sec", 35)
-    data["tape_speed_status"] = ts.get("status_fa", "سرعت بالا و فعال")
+    data["tape_speed_tps"] = ts.get("trades_per_sec", 0.0) if isinstance(ts, dict) else 0.0
+    data["tape_speed_status"] = ts.get("status_fa", "نامشخص") if isinstance(ts, dict) else "نامشخص"
     norm_trades = []
     for tr in data.get("big_trades", []):
         norm_trades.append({
             "time": tr.get("time"),
             "side": tr.get("side"),
             "side_fa": tr.get("side_fa", "🟢 خرید مارکت" if tr.get("side") == "BUY" else "🔴 فروش مارکت"),
-            "size_btc": tr.get("volume_lots", tr.get("size_lots", 50)),
+            "size_btc": tr.get("volume_lots", tr.get("size_lots")),
             "price": tr.get("price"),
-            "value_usd": tr.get("value_usd", "$5,000,000"),
+            "value_usd": tr.get("value_usd", "نامشخص"),
             "exchange": tr.get("exchange", "Binance Live Taker Flow")
         })
     data["big_trades"] = norm_trades
     norm_imbs = []
     for imb in data.get("diagonal_imbalances", []):
+        ratio_str = str(imb.get("ratio", ""))
+        if "x" in ratio_str:
+            try:
+                imb_pct = int(float(ratio_str.replace("x", "")) * 100)
+            except Exception:
+                imb_pct = 0
+        else:
+            imb_pct = 0
         norm_imbs.append({
             "price": imb.get("price_level", imb.get("price")),
             "type": "BUY" if "BUY" in imb.get("type", "") else "SELL",
-            "imbalance_pct": int(float(imb.get("ratio", "3.0x").replace("x", "")) * 100) if "x" in imb.get("ratio", "") else 300,
-            "intensity": imb.get("note", "فشار خرید نهادی")
+            "imbalance_pct": imb_pct,
+            "intensity": imb.get("note", "نامشخص")
         })
     data["diagonal_imbalances"] = norm_imbs
     data["verdict"] = {
-        "tape_flow": data.get("summary_fa", "جریان نوار معاملات پایدار است."),
-        "hft_activity": "فعالیت الگوریتم‌های پربسامد HFT در کف‌های قیمتی",
-        "scalp_edge": "برتری خریداران تهاجمی"
+        "tape_flow": data.get("summary_fa", "داده نوار معاملات در دسترس نیست."),
+        "hft_activity": "نامشخص (بدون فید اختصاصی HFT)",
+        "scalp_edge": "نامشخص"
     }
     return data
 
@@ -2311,11 +2398,14 @@ def get_crypto_atas(symbol: str = Query("BTC")):
 def get_crypto_quantower(symbol: str = Query("BTC"), timeframe: str = Query("1h")):
     data = coe.get_crypto_quantower_live(symbol, timeframe)
     mp = data.get("market_profile", {})
-    data["vah"] = mp.get("vah", 0)
-    data["val"] = mp.get("val", 0)
-    data["vpoc"] = mp.get("vpoc", 0)
-    data["day_type"] = mp.get("shape_fa", "حراج متوازن")
-    data["initial_balance"] = {"ib_high": round(mp.get("vah", 0) * 0.998, 1), "ib_low": round(mp.get("val", 0) * 1.002, 1)}
+    data["vah"] = mp.get("vah")
+    data["val"] = mp.get("val")
+    data["vpoc"] = mp.get("vpoc")
+    data["day_type"] = mp.get("shape_fa", "نامشخص")
+    data["initial_balance"] = {
+        "ib_high": round(mp.get("vah", 0) * 0.998, 1) if mp.get("vah") else None,
+        "ib_low": round(mp.get("val", 0) * 1.002, 1) if mp.get("val") else None
+    }
     norm_nodes = []
     for n in data.get("volume_nodes", []):
         norm_nodes.append({
@@ -2325,18 +2415,18 @@ def get_crypto_quantower(symbol: str = Query("BTC"), timeframe: str = Query("1h"
             "significance": n.get("role_fa", "منطقه جذب قیمت")
         })
     data["volume_nodes"] = norm_nodes
-    data["basis_spread"] = "+0.42% کانتانگو"
-    data["synthetic_spread"] = "پرمیوم صعودی در برابر S&P و طلا"
+    data["basis_spread"] = data.get("spreads_note", "نامشخص")
+    data["synthetic_spread"] = data.get("spreads_note", "نامشخص")
     data["verdict"] = {
-        "auction_phase": mp.get("shape_fa", "حراج متوازن در رنج ارزش ۷۰٪"),
-        "strategy_recommendation": mp.get("trading_guidance_fa", "خرید در VAL و فروش در VAH")
+        "auction_phase": mp.get("shape_fa", "نامشخص"),
+        "strategy_recommendation": mp.get("trading_guidance_fa", "داده کافی برای پیشنهاد استراتژی در دسترس نیست.")
     }
     return data
 
 @app.get("/api/crypto/sierrachart")
 def get_crypto_sierrachart(symbol: str = Query("BTC"), timeframe: str = Query("15m")):
     data = coe.get_crypto_sierrachart_data(symbol, timeframe)
-    data["divergence"] = data.get("delta_divergence", {}).get("type_fa", "نرمال")
+    data["divergence"] = data.get("delta_divergence", {}).get("type_fa", "نامشخص")
     norm_bars = []
     for b in data.get("numbered_bars", []):
         norm_bars.append({
@@ -2346,62 +2436,45 @@ def get_crypto_sierrachart(symbol: str = Query("BTC"), timeframe: str = Query("1
             "low": b.get("low"),
             "close": b.get("close"),
             "vol": b.get("vol"),
-            "bid_vol": round(b.get("vol", 100) * 0.48),
-            "ask_vol": round(b.get("vol", 100) * 0.52),
+            "bid_vol": b.get("bid_vol"),
+            "ask_vol": b.get("ask_vol"),
             "delta": b.get("delta")
         })
     data["numbered_bars"] = norm_bars
-    vbp = data.get("vbp_profile", {})
-    poc_p = vbp.get("vbp_poc", data.get("current_price", 83000))
-    step = 50
-    vbp_rows = []
-    for i in range(-5, 6):
-        lp = poc_p + (i * step)
-        is_p = (i == 0)
-        vbp_rows.append({
-            "price": lp,
-            "is_poc": is_p,
-            "total_vol": 450 if is_p else 180 + abs(i) * 20,
-            "bid_pct": 58 if i <= 0 else 42,
-            "ask_pct": 42 if i <= 0 else 58
-        })
-    data["vbp_rows"] = vbp_rows
+    data["vbp_rows"] = []
+    data["vbp_note"] = "پروفایل حجم-قیمت واقعی نیازمند دادهٔ تفکیکی Bid/Ask صرافی است؛ ردیف‌های ساختگی حذف شدند (Fail-Closed)."
     data["verdict"] = {
-        "absorption_bias": data.get("delta_divergence", {}).get("type_fa", "جذب صعودی در کف"),
-        "key_observation": data.get("summary_fa", "نبود حجم فروش تهاجمی"),
-        "action_guide": "حفظ پوزیشن‌های خرید با حد ضرر زیر تراز POC"
+        "absorption_bias": data.get("delta_divergence", {}).get("type_fa", "نامشخص"),
+        "key_observation": data.get("summary_fa", "دادهٔ کافی برای داوری در دسترس نیست."),
+        "action_guide": "بدون دادهٔ معتبر، اقدامی توصیه نمی‌شود."
     }
     return data
 
 @app.get("/api/crypto/geopolitics")
 def get_crypto_geopolitics():
     data = coe.get_crypto_geopolitics_radar()
-    data["gpr_status"] = data.get("gpr_status_fa", "ریسک متوسط")
+    data["gpr_status"] = data.get("gpr_status_fa", "نامشخص")
     norm_hs = []
     for h in data.get("hotspots", []):
         norm_hs.append({
             "region": h.get("region"),
-            "severity": h.get("level", "HIGH"),
-            "impact_on_crypto": h.get("crypto_impact", "تقاضای پناهگاه امن")
+            "severity": h.get("level", "نامشخص"),
+            "impact_on_crypto": h.get("crypto_impact", "نامشخص")
         })
     data["hotspots"] = norm_hs
-    data["safe_haven_matrix"] = [
-        {"asset": "بیت‌کوین (BTC)", "capital_flow": "+۱.۴ میلیارد دلار", "correlation_with_btc": "۱.۰۰"},
-        {"asset": "انس طلا (XAU/USD)", "capital_flow": "+۲.۸ میلیارد دلار", "correlation_with_btc": "+۰.۶۵ (همبستگی مثبت)"},
-        {"asset": "شاخص دلار (DXY)", "capital_flow": "متعادل", "correlation_with_btc": "-۰.۷۲ (همبستگی معکوس)"},
-        {"asset": "اوراق ۱۰ ساله (US10Y)", "capital_flow": "تثبیت در ۴.۲٪", "correlation_with_btc": "-۰.۴۵"}
-    ]
+    data["safe_haven_matrix"] = []
+    data["safe_haven_note"] = "جریان‌های سرمایه‌ای صندوق‌ها و همبستگی واقعی نیازمند فید اختصاصی است؛ مقادیر ساختگی حذف شدند (Fail-Closed)."
     st = data.get("stablecoin_minting", {})
     data["stablecoin_minting"] = {
-        "recent_tether_mints": st.get("usdt_market_cap", "ضرب ۱.۲ میلیارد دلار"),
-        "circle_usdc_flow": st.get("usdc_market_cap", "ورود ۴۵۰ میلیون دلار"),
-        "net_7d_liquidity_inflow": "+۲.۴ میلیارد دلار نقدینگی تازه",
-        "market_signal": st.get("minting_velocity_fa", "سوخت پامپ صعودی")
+        "recent_tether_mints": st.get("usdt_market_cap", "نامشخص") if isinstance(st, dict) else "نامشخص",
+        "circle_usdc_flow": st.get("usdc_market_cap", "نامشخص") if isinstance(st, dict) else "نامشخص",
+        "net_7d_liquidity_inflow": "نامشخص",
+        "market_signal": st.get("minting_velocity_fa", "نامشخص") if isinstance(st, dict) else "نامشخص"
     }
     data["verdict"] = {
-        "macro_bias": data.get("gpr_status_fa", "تنش کنترل‌شده"),
-        "bitcoin_hedge_status": "بیت‌کوین در شوک‌های ژئوپلیتیک عملکرد ضدسانسور دارد.",
-        "forward_guidance": data.get("verdict_fa", "تزریق نقدینگی تتر روند کلی را صعودی نگه می‌دارد.")
+        "macro_bias": data.get("gpr_status_fa", "نامشخص"),
+        "bitcoin_hedge_status": "دادهٔ زندهٔ ژئوپلیتیک در دسترس نیست (Fail-Closed).",
+        "forward_guidance": data.get("verdict_fa", "بدون دادهٔ معتبر، رهنمود صادر نمی‌شود.")
     }
     return data
 
@@ -2463,7 +2536,7 @@ def audit_coin_with_arbiter(symbol: str = Query("BTC")):
             "symbol": clean_s,
             "action": scalp.get("action_code", "BUY"),
             "price": analysis.get("price", 0),
-            "score": analysis.get("scores_3d", {}).get("score", 85),
+            "score": analysis.get("scores_3d", {}).get("score", 0),
             "sl": scalp.get("stop_loss", 0),
             "tp1": scalp.get("tp1", 0),
             "tp2": scalp.get("tp2", 0),
@@ -2478,15 +2551,17 @@ def audit_coin_with_arbiter(symbol: str = Query("BTC")):
                 "price": analysis.get("price", 0),
                 "bias_15m": analysis.get("timeframes", {}).get("15m", {}).get("bias", "NEUTRAL"),
                 "bias_4h": analysis.get("timeframes", {}).get("4h", {}).get("bias", "NEUTRAL"),
-                "order_book_ratio": analysis.get("order_book", {}).get("ratio", 1.0)
+                "order_book_ratio": analysis.get("orderbook", {}).get("ratio")
             }
         }
     except Exception as e:
         return {"success": False, "symbol": clean_s, "error": str(e)}
 
 @app.post("/api/arbiter/clear-cooldowns")
-def clear_arbiter_cooldowns_endpoint():
+def clear_arbiter_cooldowns_endpoint(admin_key: Optional[str] = Query(None)):
     """Clears symbol cooldown freeze for manual testing."""
+    if not ADMIN_SECRET or admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="دسترسی غیرمجاز: برای پاک‌سازی کول‌داون دروازه‌بان به کلید ادمین نیاز است. (ADMIN_SECRET_KEY باید روی سرور تنظیم شده باشد)")
     global_arbiter._symbol_cooldowns.clear()
     global_arbiter._last_global_dispatch_ts = 0.0
     return {"success": True, "message": "قفل زمانی و کول‌داون نمادهای دروازه‌بان صفر شد."}
@@ -2527,7 +2602,7 @@ def get_master_signal_status():
                 "tp2": t.get("tp2"),
                 "tp3": t.get("tp3"),
                 "timeframe": "15m (تاییدیه ۴H)",
-                "conviction_score": 92,
+                "conviction_score": t.get("conviction_score", t.get("score")),
                 "is_breakeven": t.get("is_breakeven", False),
                 "tp1_hit": t.get("tp1_hit", False),
                 "created_at": t.get("created_at")
@@ -2552,7 +2627,7 @@ def get_master_signal_status():
                         "tp2": st.get("tp2"),
                         "tp3": st.get("tp3"),
                         "timeframe": "15m (تاییدیه ۴H)",
-                        "conviction_score": v.get("conviction_score", 88),
+                        "conviction_score": v.get("conviction_score"),
                         "defense_notes": v.get("defense_notes", [])
                     }
                     break
@@ -2564,7 +2639,7 @@ def get_master_signal_status():
     except Exception:
         pass
 
-    btc_bias = btc_analysis.get("timeframes", {}).get("4h", {}).get("bias", "BULLISH") if btc_analysis else "BULLISH"
+    btc_bias = btc_analysis.get("timeframes", {}).get("4h", {}).get("bias", "نامشخص") if btc_analysis else "نامشخص"
     btc_price = btc_analysis.get("price", 0) if btc_analysis else 0
 
     return {
@@ -2597,7 +2672,7 @@ def audit_custom_symbol(symbol: str = Query("BTC")):
             "symbol": clean_s,
             "action": scalp.get("action_code", "BUY"),
             "price": analysis.get("price", 0),
-            "score": analysis.get("scores_3d", {}).get("score", 85),
+            "score": analysis.get("scores_3d", {}).get("score", 0),
             "sl": scalp.get("stop_loss", 0),
             "tp1": scalp.get("tp1", 0),
             "tp2": scalp.get("tp2", 0),
@@ -2612,7 +2687,7 @@ def audit_custom_symbol(symbol: str = Query("BTC")):
                 "price": analysis.get("price", 0),
                 "bias_15m": analysis.get("timeframes", {}).get("15m", {}).get("bias", "NEUTRAL"),
                 "bias_4h": analysis.get("timeframes", {}).get("4h", {}).get("bias", "NEUTRAL"),
-                "order_book_ratio": analysis.get("order_book", {}).get("ratio", 1.0)
+                "order_book_ratio": analysis.get("orderbook", {}).get("ratio")
             }
         }
     except Exception as e:
@@ -2630,7 +2705,7 @@ def get_crypto_sierra_direct(symbol: str = "BTC"):
 @app.get("/api/orderbook")
 def get_orderbook_direct(symbol: str = "BTC"):
     sym = clean_symbol(symbol)
-    ob = agent.fetcher.fetch_order_book(f"{sym}USDT", limit=50)
+    ob = agent.fetcher.fetch_orderbook(f"{sym}USDT", limit=50)
     return {"ok": True, "symbol": sym, "orderbook": ob}
 
 # Alias for journal endpoint

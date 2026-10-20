@@ -93,7 +93,7 @@ nohup python3 server.py > server.log 2>&1 &
 - `analyzer_engine.py`: هسته تحلیل پرایس‌اکشن، ICT، FVG، واگرایی‌ها و حجم
 - `institutional_addons.py`: ۱۷ موتور محاسباتی نهادی (فیلترهای ۶ گانه طلایی، کِلی، آلفا، هیت‌مپ، جریان نهنگ‌ها، کریپتوپنیک)
 - `crypto_agent.py`: ابزار خط فرمان ترمینال (CLI)
-- `static/index.html`: وب‌اپلیکیشن داشبورد حرفه‌ای
+- `index.html`: وب‌اپلیکیشن داشبورد حرفه‌ای
 - `run_windows.bat`: اسکریپت اجرای تک‌کلیک ویندوز
 - `run_linux_mac.sh`: اسکریپت اجرای مک و لینوکس
 - `Dockerfile`: فایل استقرار داکر

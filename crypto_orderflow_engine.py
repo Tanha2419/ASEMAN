@@ -51,7 +51,10 @@ def _fetch_binance_api(endpoint: str) -> Optional[Any]:
         except Exception:
             return None
 
-def _get_live_crypto_price(symbol: str = "BTC") -> float:
+_PRICE_INFO: Dict[str, Any] = {}
+
+def _get_live_crypto_price(symbol: str = "BTC") -> Optional[float]:
+    """Fail-closed: returns None when Binance is unreachable — never a fabricated price."""
     base = _clean_symbol(symbol)
     sym_pair = f"{base}USDT"
     now = time.time()
@@ -59,21 +62,35 @@ def _get_live_crypto_price(symbol: str = "BTC") -> float:
     if cache_key in _CACHE and (now - _CACHE_TIME.get(cache_key, 0.0) < 3.0):
         return _CACHE[cache_key]
 
-    default_prices = {"BTC": 83250.0, "ETH": 2510.0, "SOL": 110.0, "XRP": 1.40, "DOGE": 0.086}
-    price = default_prices.get(base, 10.0)
-
+    price: Optional[float] = None
+    chg_24h: Optional[float] = None
     ticker = _fetch_binance_api(f"ticker/24hr?symbol={sym_pair}")
     if ticker and ticker.get("lastPrice"):
         try:
             p = float(ticker["lastPrice"])
             if p > 0:
                 price = p
+                try:
+                    chg_24h = float(ticker.get("priceChangePercent", 0))
+                except Exception:
+                    chg_24h = None
         except Exception:
             pass
 
+    if price is None:
+        return None
+
     _CACHE[cache_key] = price
     _CACHE_TIME[cache_key] = now
+    _PRICE_INFO[base] = {"price": price, "chg_24h": chg_24h, "ts": now}
     return price
+
+
+def _get_live_price_change(base: str) -> Optional[float]:
+    info = _PRICE_INFO.get(base)
+    if info and (time.time() - info.get("ts", 0.0) < 120.0):
+        return info.get("chg_24h")
+    return None
 
 def _get_price_decimals(p: float) -> int:
     if p >= 50:
@@ -99,25 +116,23 @@ def get_crypto_bookmap_data(symbol: str = "BTC", timeframe: str = "15m") -> Dict
         return _CACHE[cache_key]
 
     p_live = _get_live_crypto_price(base)
+    if p_live is None:
+        return {"ok": False, "error": "LIVE_PRICE_UNAVAILABLE",
+                "message": "قیمت زندهٔ بایننس در دسترس نیست؛ دفتر سفارش نمایش داده نمی‌شود (Fail-Closed)."}
     dec = _get_price_decimals(p_live)
 
     # 1. Fetch REAL Live Binance Orderbook Depth (50 levels of bids and asks)
     raw_depth = _fetch_binance_api(f"depth?symbol={sym_pair}&limit=50")
-    
+
     # 2. Fetch REAL Live Recent Trades for Bubble Canvas Animation
     raw_trades = _fetch_binance_api(f"aggTrades?symbol={sym_pair}&limit=25")
 
-    real_bids: List[List[float]] = []
-    real_asks: List[List[float]] = []
+    if not (raw_depth and "bids" in raw_depth and "asks" in raw_depth):
+        return {"ok": False, "error": "ORDERBOOK_UNAVAILABLE",
+                "message": "عمق سفارشات زندهٔ بایننس در دسترس نیست؛ دفتر سفارش ساختگی نمایش داده نمی‌شود (Fail-Closed)."}
 
-    if raw_depth and "bids" in raw_depth and "asks" in raw_depth:
-        real_bids = [[float(b[0]), float(b[1])] for b in raw_depth["bids"]]
-        real_asks = [[float(a[0]), float(a[1])] for a in raw_depth["asks"]]
-    else:
-        # Fallback if network drops
-        step = max(p_live * 0.002, 1e-6)
-        real_bids = [[round(p_live - i * step, dec), round(15.0 + i * 2.5, 2)] for i in range(1, 20)]
-        real_asks = [[round(p_live + i * step, dec), round(14.0 + i * 2.5, 2)] for i in range(1, 20)]
+    real_bids: List[List[float]] = [[float(b[0]), float(b[1])] for b in raw_depth["bids"]]
+    real_asks: List[List[float]] = [[float(a[0]), float(a[1])] for a in raw_depth["asks"]]
 
     total_bid = sum(q for _, q in real_bids)
     total_ask = sum(q for _, q in real_asks)
@@ -147,8 +162,8 @@ def get_crypto_bookmap_data(symbol: str = "BTC", timeframe: str = "15m") -> Dict
             wall_px = round(matched_order[0], dec)
             wall_qty = round(matched_order[1], 2)
         else:
-            wall_px = round(target_price, dec)
-            wall_qty = round(max(0.5, (total_ask / 45.0) * (2.8 - idx * 0.45)), 2)
+            # Fail-closed: no real resting order near this tier — skip instead of fabricating a wall
+            continue
 
         used_ask_prices.add(wall_px)
         dist = round(abs(wall_px - p_live), dec)
@@ -188,8 +203,8 @@ def get_crypto_bookmap_data(symbol: str = "BTC", timeframe: str = "15m") -> Dict
             shelf_px = round(matched_order[0], dec)
             shelf_qty = round(matched_order[1], 2)
         else:
-            shelf_px = round(target_price, dec)
-            shelf_qty = round(max(0.5, (total_bid / 45.0) * (2.8 - idx * 0.45)), 2)
+            # Fail-closed: no real resting order near this tier — skip instead of fabricating a wall
+            continue
 
         used_bid_prices.add(shelf_px)
         dist = round(abs(shelf_px - p_live), dec)
@@ -206,38 +221,41 @@ def get_crypto_bookmap_data(symbol: str = "BTC", timeframe: str = "15m") -> Dict
             "note": f"تجمع واقعی {shelf_qty:,.2f} {base} در دفتر سفارشات بایننس"
         })
 
-    # Real Iceberg orders: identified from top-volume concentration
-    top_ask_wall = ask_levels[0] if ask_levels else {"price": round(p_live * 1.005, dec), "volume_lots": 50.0}
-    top_bid_wall = bid_levels[0] if bid_levels else {"price": round(p_live * 0.995, dec), "volume_lots": 50.0}
+    # Iceberg estimates: hidden volume is an ESTIMATE derived from real top walls (not a live measurement)
+    top_ask_wall = ask_levels[0] if ask_levels else None
+    top_bid_wall = bid_levels[0] if bid_levels else None
 
-    iceberg_orders = [
-        {
+    iceberg_orders = []
+    if top_ask_wall:
+        iceberg_orders.append({
             "price": top_ask_wall["price"],
-            "revealed_vol": round(top_ask_wall["volume_lots"] * 0.25, 2),
+            "revealed_vol": round(top_ask_wall["volume_lots"], 2),
             "estimated_hidden_vol": round(top_ask_wall["volume_lots"] * 1.8, 2),
             "size_btc": round(top_ask_wall["volume_lots"] * 1.8, 2),
             "direction": "SELL",
             "side": "ASK",
-            "direction_fa": "فروش پنهان نهنگ",
+            "direction_fa": "عرضه سنگین (برآوردی)",
             "color": "#ff3366",
-            "status": "در حال جذب سفارشات خرید مارکت (Binance L2)",
-            "absorption_status": "در حال جذب سفارشات خرید"
-        },
-        {
+            "status": "برآورد حجم پنهان از دیوارهٔ واقعی بایننس (تخمینی)",
+            "absorption_status": "برآوردی — نه دادهٔ زندهٔ آیسبرگ",
+            "estimated": True
+        })
+    if top_bid_wall:
+        iceberg_orders.append({
             "price": top_bid_wall["price"],
-            "revealed_vol": round(top_bid_wall["volume_lots"] * 0.25, 2),
+            "revealed_vol": round(top_bid_wall["volume_lots"], 2),
             "estimated_hidden_vol": round(top_bid_wall["volume_lots"] * 1.8, 2),
             "size_btc": round(top_bid_wall["volume_lots"] * 1.8, 2),
             "direction": "BUY",
             "side": "BID",
-            "direction_fa": "خرید پنهان نهنگ",
+            "direction_fa": "تقاضای سنگین (برآوردی)",
             "color": "#00e676",
-            "status": "انباشت مخفیانه و تکمیل پوزیشن در کف (Binance L2)",
-            "absorption_status": "انباشت مخفیانه و جذب فروش‌ها"
-        }
-    ]
+            "status": "برآورد حجم پنهان از دیوارهٔ واقعی بایننس (تخمینی)",
+            "absorption_status": "برآوردی — نه دادهٔ زندهٔ آیسبرگ",
+            "estimated": True
+        })
 
-    # Parse REAL Recent Trades for Bookmap Canvas Bubbles
+    # Parse REAL Recent Trades for Bookmap Canvas Bubbles (fail-closed: no invented trades)
     recent_trades = []
     if raw_trades:
         for tr in raw_trades[-12:]:
@@ -251,18 +269,15 @@ def get_crypto_bookmap_data(symbol: str = "BTC", timeframe: str = "15m") -> Dict
                 "side": side,
                 "time": t_time
             })
-    else:
-        t_time = datetime.now(TEHRAN_TZ).strftime("%H:%M:%S")
-        recent_trades = [
-            {"price": p_live, "amount": 1.25, "side": "BUY", "time": t_time},
-            {"price": p_live, "amount": 0.85, "side": "SELL", "time": t_time}
-        ]
+
+    chg_24h = _get_live_price_change(base)
+    price_change_str = f"{chg_24h:+.2f}%" if chg_24h is not None else "نامشخص"
 
     res = {
         "ok": True,
         "symbol": sym_pair,
         "current_price": p_live,
-        "price_change": "+1.42%",
+        "price_change": price_change_str,
         "timeframe": timeframe,
         "timeframe_name_fa": "۱۵ دقیقه",
         "total_resting_ask_volume": round(total_ask, 2),
@@ -279,23 +294,17 @@ def get_crypto_bookmap_data(symbol: str = "BTC", timeframe: str = "15m") -> Dict
             "net_delta": round((imbalance_pct - 50) * (total_bid / 10.0), 1),
             "buy_vol": round(total_bid, 1),
             "sell_vol": round(total_ask, 1),
-            "absorption": "جذب واقعی سفارشات در کف حمایتی بایننس (Binance L2 Depth)"
+            "absorption": "بازسازی از عمق لیمیت لحظه‌ای (تخمینی — نه تیک‌دادهٔ واقعی)"
         },
         "verdict": {
             "bias": "BULLISH ACCUMULATION" if imbalance_pct >= 50 else "BEARISH DISTRIBUTION",
             "summary": f"دفتر سفارشات زنده بایننس نشان‌دهنده استقرار {total_bid:,.1f} {base} اردر لیمیت خرید در برابر {total_ask:,.1f} {base} فروش است.",
-            "actionable_takeaway": "ورود بر اساس دیواره‌های معتبر دفتر سفارشات با استاپ پشت دیواره بزرگ."
+            "actionable_takeaway": "ورود بر اساس دیواره‌های واقعی دفتر سفارشات با استاپ پشت دیواره بزرگ."
         },
         "liquidity_state": "LIQUIDITY_HEALTHY",
         "liquidity_replenishment_rate": {
-            "rate_pct": 87.2,
-            "speed_ms": 260,
-            "regime": "HIGH_REPLENISHMENT",
-            "hft_share_pct": 68.0,
-            "passive_limit_share_pct": 32.0,
-            "spoofing_detection": "LOW (دیواره‌های سفارشات بایننس ۱۰۰٪ اصیل و واقعی)",
-            "badge": "⚡ نرخ پر شدن مجدد نقدینگی (Replenishment Rate): ۸۷.۲٪ (شارژ ۲۶۰ میلی‌ثانیه)",
-            "verdict_fa": f"نقدینگی سطح {top_bid_wall['price']} بلافاصله ظرف ۲۶۰ میلی‌ثانیه پس از تاچ توسط بازارسازان بایننس بازسازی می‌شود."
+            "available": False,
+            "note": "دادهٔ سرعت بازسازی سفارشات (Replenishment Rate) بدون فید اختصاصی در دسترس نیست."
         },
         "source": "Binance Global Live Orderbook L2 (data-api.binance.vision)",
         "updated_at": datetime.now(TEHRAN_TZ).strftime("%H:%M:%S")
@@ -317,71 +326,64 @@ def get_crypto_atas_live(symbol: str = "BTC") -> Dict[str, Any]:
         return _CACHE[cache_key]
 
     p_live = _get_live_crypto_price(base)
+    if p_live is None:
+        return {"ok": False, "error": "LIVE_PRICE_UNAVAILABLE",
+                "message": "قیمت زندهٔ بایننس در دسترس نیست؛ نوار معاملات اتاس نمایش داده نمی‌شود (Fail-Closed)."}
     dec = _get_price_decimals(p_live)
 
     # 1. Fetch REAL Live Executed Trades from Binance (last 60 trades)
     raw_trades = _fetch_binance_api(f"aggTrades?symbol={sym_pair}&limit=60")
 
+    if not (raw_trades and len(raw_trades) > 5):
+        return {"ok": False, "error": "TRADES_UNAVAILABLE",
+                "message": "نوار معاملات زندهٔ بایننس در دسترس نیست؛ تیک‌دادهٔ ساختگی نمایش داده نمی‌شود (Fail-Closed)."}
+
     big_trades: List[Dict[str, Any]] = []
-    tape_speed_tps = 24.5
+    tape_speed_tps = 0.0
     total_buy_vol = 0.0
     total_sell_vol = 0.0
 
-    if raw_trades and len(raw_trades) > 5:
-        # Calculate real tape speed
-        first_t = raw_trades[0].get("T", int(now * 1000))
-        last_t = raw_trades[-1].get("T", int(now * 1000))
-        span_sec = max(0.5, (last_t - first_t) / 1000.0)
-        tape_speed_tps = round(len(raw_trades) / span_sec, 1)
+    # Calculate real tape speed
+    first_t = raw_trades[0].get("T", int(now * 1000))
+    last_t = raw_trades[-1].get("T", int(now * 1000))
+    span_sec = max(0.5, (last_t - first_t) / 1000.0)
+    tape_speed_tps = round(len(raw_trades) / span_sec, 1)
 
-        # Sort trades by volume to extract the largest REAL Big Trades
-        sorted_by_size = sorted(raw_trades, key=lambda x: float(x.get("q", 0.0)), reverse=True)
-        for idx, tr in enumerate(sorted_by_size[:4]):
-            t_price = float(tr.get("p", p_live))
-            t_qty = float(tr.get("q", 1.0))
-            is_buyer_maker = tr.get("m", False)
-            side = "SELL" if is_buyer_maker else "BUY"
-            side_fa = "🟢 خرید مارکت تهاجمی (Taker Buy)" if side == "BUY" else "🔴 فروش مارکت تهاجمی (Taker Sell)"
-            t_time = datetime.fromtimestamp(tr.get("T", int(now * 1000)) / 1000.0, tz=TEHRAN_TZ).strftime("%H:%M:%S")
-            val_usd = t_price * t_qty
+    # Sort trades by volume to extract the largest REAL Big Trades
+    sorted_by_size = sorted(raw_trades, key=lambda x: float(x.get("q", 0.0)), reverse=True)
+    for idx, tr in enumerate(sorted_by_size[:4]):
+        t_price = float(tr.get("p", p_live))
+        t_qty = float(tr.get("q", 1.0))
+        is_buyer_maker = tr.get("m", False)
+        side = "SELL" if is_buyer_maker else "BUY"
+        side_fa = "🟢 خرید مارکت تهاجمی (Taker Buy)" if side == "BUY" else "🔴 فروش مارکت تهاجمی (Taker Sell)"
+        t_time = datetime.fromtimestamp(tr.get("T", int(now * 1000)) / 1000.0, tz=TEHRAN_TZ).strftime("%H:%M:%S")
+        val_usd = t_price * t_qty
 
-            big_trades.append({
-                "id": idx + 1,
-                "time": t_time,
-                "price": round(t_price, dec),
-                "size_lots": round(t_qty, 3 if base == "BTC" else 2),
-                "volume_lots": round(t_qty, 3 if base == "BTC" else 2),
-                "side": side,
-                "side_fa": side_fa,
-                "exchange": "Binance Live Taker Flow",
-                "value_usd": f"${val_usd:,.0f}",
-                "aggression_fa": "شکار اردربوک فروشندگان" if side == "BUY" else "تخلیه تهاجمی در اردربوک خریداران"
-            })
+        big_trades.append({
+            "id": idx + 1,
+            "time": t_time,
+            "price": round(t_price, dec),
+            "size_lots": round(t_qty, 3 if base == "BTC" else 2),
+            "volume_lots": round(t_qty, 3 if base == "BTC" else 2),
+            "side": side,
+            "side_fa": side_fa,
+            "exchange": "Binance Live Taker Flow",
+            "value_usd": f"${val_usd:,.0f}",
+            "aggression_fa": "شکار اردربوک فروشندگان" if side == "BUY" else "تخلیه تهاجمی در اردربوک خریداران"
+        })
 
-        for tr in raw_trades:
-            q = float(tr.get("q", 0.0))
-            if tr.get("m", False):
-                total_sell_vol += q
-            else:
-                total_buy_vol += q
-    else:
-        tape_speed_tps = 28.0
-        total_buy_vol = 145.0
-        total_sell_vol = 95.0
-        t_time = datetime.now(TEHRAN_TZ).strftime("%H:%M:%S")
-        big_trades = [
-            {"id": 1, "time": t_time, "price": p_live, "size_lots": 15.2, "volume_lots": 15.2, "side": "BUY", "side_fa": "🟢 خرید مارکت تهاجمی", "exchange": "Binance Live", "value_usd": f"${(15.2 * p_live):,.0f}", "aggression_fa": "شکار نقدینگی"},
-            {"id": 2, "time": t_time, "price": p_live, "size_lots": 12.8, "volume_lots": 12.8, "side": "SELL", "side_fa": "🔴 فروش مارکت تهاجمی", "exchange": "Binance Live", "value_usd": f"${(12.8 * p_live):,.0f}", "aggression_fa": "تصفیه پوزیشن"}
-        ]
+    for tr in raw_trades:
+        q = float(tr.get("q", 0.0))
+        if tr.get("m", False):
+            total_sell_vol += q
+        else:
+            total_buy_vol += q
 
     absorption_ratio = round(total_buy_vol / max(total_sell_vol, 1e-4), 2)
-    step = max(p_live * 0.0015, 1e-6)
 
-    diagonal_imbalances = [
-        {"price_level": round(p_live + step * 1.5, dec), "bid_vol": 18, "ask_vol": 78, "ratio": "4.3x", "type": "BUY_IMBALANCE", "note": "حمله خریداران تهاجمی"},
-        {"price_level": round(p_live - step * 1.2, dec), "bid_vol": 82, "ask_vol": 20, "ratio": "4.1x", "type": "SELL_ABSORPTION", "note": "جذب فروش‌ها در کف"},
-        {"price_level": round(p_live - step * 2.5, dec), "bid_vol": 95, "ask_vol": 15, "ratio": "6.3x", "type": "STRONG_SUPPORT", "note": "دیوار بتنی خرید نقد"}
-    ]
+    # Diagonal imbalances only from REAL executed trades — never invented numbers
+    diagonal_imbalances: List[Dict[str, Any]] = []
 
     res = {
         "ok": True,
@@ -425,11 +427,15 @@ def get_crypto_ninjatrader_live(symbol: str = "BTC", timeframe: str = "15m") -> 
         return _CACHE[cache_key]
 
     p_live = _get_live_crypto_price(base)
+    if p_live is None:
+        return {"ok": False, "error": "LIVE_PRICE_UNAVAILABLE",
+                "message": "قیمت زندهٔ بایننس در دسترس نیست؛ فوت‌پرینت نینجاتریدر نمایش داده نمی‌شود (Fail-Closed)."}
     dec = _get_price_decimals(p_live)
 
     # 1. Fetch REAL Live SuperDOM from Binance Depth
     raw_depth = _fetch_binance_api(f"depth?symbol={sym_pair}&limit=20")
     super_dom: List[Dict[str, Any]] = []
+    dom_available = False
 
     if raw_depth and "bids" in raw_depth and "asks" in raw_depth:
         b_levels = [[float(b[0]), float(b[1])] for b in raw_depth["bids"][:5]]
@@ -465,18 +471,11 @@ def get_crypto_ninjatrader_live(symbol: str = "BTC", timeframe: str = "15m") -> 
                 "ask_bar_pct": 0
             })
     else:
-        step = max(p_live * 0.0005, 1e-6)
-        for i in range(-5, 6):
-            lp = round(p_live + i * step, dec)
-            super_dom.append({
-                "price": lp,
-                "bid_vol": 25 if i <= 0 else 0,
-                "ask_vol": 25 if i >= 0 else 0,
-                "is_current": i == 0,
-                "bid_bar_pct": 50 if i <= 0 else 0,
-                "ask_bar_pct": 50 if i >= 0 else 0
-            })
-        super_dom.reverse()
+        # Fail-closed: no synthetic SuperDOM when depth is unavailable
+        super_dom = []
+
+    if super_dom:
+        dom_available = True
 
     # 2. Fetch 12 REAL Live Candlesticks from Binance
     interval_map = {"1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h", "4h": "4h"}
@@ -541,8 +540,51 @@ def get_crypto_ninjatrader_live(symbol: str = "BTC", timeframe: str = "15m") -> 
         # Fallback simulation
         footprint_candles = []
 
+    has_klines = bool(footprint_candles)
     step_pct = max(p_live * 0.0015, 1e-6)
     cvd_val = round(total_net_cvd, 1)
+
+    # Real session VWAP + standard-deviation bands from klines (fail-closed: empty when no klines)
+    vwap_data: Dict[str, Any] = {"available": False, "note": "دادهٔ کندلی برای محاسبه VWAP در دسترس نیست."}
+    if has_klines:
+        typ_prices = [(float(k[2]) + float(k[3]) + float(k[4])) / 3.0 for k in raw_klines]
+        vols_k = [max(float(k[5]), 1e-9) for k in raw_klines]
+        vwap_mid = sum(t * v for t, v in zip(typ_prices, vols_k)) / sum(vols_k)
+        var = sum(v * (t - vwap_mid) ** 2 for t, v in zip(typ_prices, vols_k)) / sum(vols_k)
+        sd = math.sqrt(max(var, 0.0))
+        above = p_live >= vwap_mid
+        vwap_data = {
+            "available": True,
+            "mid": round(vwap_mid, dec),
+            "upper_1sd": round(vwap_mid + sd, dec),
+            "upper_2sd": round(vwap_mid + 2 * sd, dec),
+            "lower_1sd": round(vwap_mid - sd, dec),
+            "lower_2sd": round(vwap_mid - 2 * sd, dec),
+            "bias_fa": "🟢 قیمت بالای خط مرکزی VWAP در نوسان است" if above else "🔴 قیمت زیر خط مرکزی VWAP در نوسان است"
+        }
+
+    if has_klines:
+        unfinished = {
+            "detected": cvd_val != 0,
+            "side": "HIGH" if cvd_val > 0 else "LOW",
+            "price": round(p_live + (step_pct * 3.5 if cvd_val >= 0 else -step_pct * 3.5), dec),
+            "volume_unfilled": round(abs(cvd_val), 2),
+            "badge": f"🧲 حراج ناقص در سقف (Unfinished High): ${round(p_live + step_pct * 3.5, dec):,}" if cvd_val > 0 else f"🧲 حراج ناقص در کف (Unfinished Low): ${round(p_live - step_pct * 3.5, dec):,}",
+            "verdict_fa": f"بر اساس دلتای تجمیعی {cvd_val:+} آخرین کندل‌ها، حراج ناقص {'در سقف' if cvd_val >= 0 else 'در کف'} ثبت شده است (برآورد ساختاری)."
+        }
+        cvd_block = {
+            "value": cvd_val,
+            "verdict_fa": "برتری خریداران تهاجمی بایننس" if cvd_val >= 0 else "برتری فروشندگان تهاجمی بایننس",
+            "trend": "BULLISH_EXPANSION" if cvd_val >= 0 else "BEARISH_PRESSURE",
+            "status_fa": f"{'🟢 دلتای تجمیعی مثبت (انباشت پایدار خریداران بایننس)' if cvd_val >= 0 else '🔴 دلتای تجمیعی منفی (فشار فروش)'}"
+        }
+    else:
+        unfinished = {"detected": False, "available": False,
+                      "note": "دادهٔ کندلی در دسترس نیست؛ حراج ناقص قابل تشخیص نیست (Fail-Closed)."}
+        cvd_block = {"value": 0.0, "available": False,
+                     "verdict_fa": "دادهٔ کندلی در دسترس نیست؛ CVD واقعی قابل محاسبه نیست.",
+                     "trend": "UNKNOWN",
+                     "status_fa": "⚪ دلتای تجمیعی در دسترس نیست"}
 
     res = {
         "ok": True,
@@ -552,30 +594,14 @@ def get_crypto_ninjatrader_live(symbol: str = "BTC", timeframe: str = "15m") -> 
         "timeframe_name_fa": tf_clean,
         "super_dom": super_dom,
         "superdom_levels": super_dom,
+        "dom_available": dom_available,
         "footprint_candles": footprint_candles,
-        "unfinished_auction": {
-            "detected": True,
-            "side": "HIGH" if cvd_val >= 0 else "LOW",
-            "price": round(p_live + (step_pct * 3.5 if cvd_val >= 0 else -step_pct * 3.5), dec),
-            "volume_unfilled": 86,
-            "badge": f"🧲 حراج ناقص در سقف (Unfinished High): ${round(p_live + step_pct * 3.5, dec):,}",
-            "verdict_fa": f"در سقف کندل، سفارش خرید مارکت بدون پاسخ متوازن مانده است (حراج ناقص در ${round(p_live + step_pct * 3.5, dec):,})."
-        },
-        "cvd": {
-            "value": cvd_val,
-            "verdict_fa": "برتری خریداران تهاجمی بایننس" if cvd_val >= 0 else "برتری فروشندگان تهاجمی بایننس",
-            "trend": "BULLISH_EXPANSION" if cvd_val >= 0 else "BEARISH_PRESSURE",
-            "status_fa": f"{'🟢 دلتای تجمیعی مثبت (انباشت پایدار خریداران بایننس)' if cvd_val >= 0 else '🔴 دلتای تجمیعی منفی (فشار فروش)'}"
-        },
-        "vwap": {
-            "mid": round(p_live * 0.999, dec),
-            "upper_1sd": round(p_live * 1.008, dec),
-            "upper_2sd": round(p_live * 1.015, dec),
-            "lower_1sd": round(p_live * 0.992, dec),
-            "lower_2sd": round(p_live * 0.985, dec),
-            "bias_fa": "🟢 قیمت بالای خط مرکزی VWAP در نوسان است"
-        },
-        "summary_fa": f"فوت‌پرینت ۱۲ کندل اخیر از بایننس محاسبه شد؛ دلتای تجمعی {cvd_val:+} است.",
+        "unfinished_auction": unfinished,
+        "cvd": cvd_block,
+        "vwap": vwap_data,
+        "summary_fa": (f"فوت‌پرینت ۱۲ کندل اخیر از بایننس محاسبه شد؛ دلتای تجمعی {cvd_val:+} است."
+                       if has_klines else
+                       "دادهٔ کندلی بایننس در دسترس نیست؛ فوت‌پرینت و CVD نمایش داده نمی‌شود (Fail-Closed)."),
         "source": "Binance Global Real Klines & Depth",
         "updated_at": datetime.now(TEHRAN_TZ).strftime("%H:%M:%S")
     }
@@ -596,38 +622,64 @@ def get_crypto_quantower_live(symbol: str = "BTC", timeframe: str = "1h") -> Dic
         return _CACHE[cache_key]
 
     p_live = _get_live_crypto_price(base)
+    if p_live is None:
+        return {"ok": False, "error": "LIVE_PRICE_UNAVAILABLE",
+                "message": "قیمت زندهٔ بایننس در دسترس نیست؛ پروفایل کوانت‌تاور نمایش داده نمی‌شود (Fail-Closed)."}
     dec = _get_price_decimals(p_live)
 
-    # Fetch 24 REAL 1h klines from Binance
-    raw_klines = _fetch_binance_api(f"klines?symbol={sym_pair}&interval=1h&limit=24")
+    # Respect the requested timeframe (was previously hardcoded to 1h)
+    interval_map = {"15m": "15m", "30m": "30m", "1h": "1h", "2h": "2h", "4h": "4h", "1d": "1d"}
+    b_interval = interval_map.get((timeframe or "1h").lower(), "1h")
+    raw_klines = _fetch_binance_api(f"klines?symbol={sym_pair}&interval={b_interval}&limit=24")
 
-    if raw_klines and len(raw_klines) >= 12:
-        highs = [float(k[2]) for k in raw_klines]
-        lows = [float(k[3]) for k in raw_klines]
-        closes = [float(k[4]) for k in raw_klines]
-        vols = [float(k[5]) for k in raw_klines]
+    if not (raw_klines and len(raw_klines) >= 12):
+        return {"ok": False, "error": "KLINES_UNAVAILABLE",
+                "message": "کندل‌های بایننس در دسترس نیست؛ پروفایل TPO ساختگی نمایش داده نمی‌شود (Fail-Closed)."}
 
-        s_high = max(highs)
-        s_low = min(lows)
-        vpoc_idx = vols.index(max(vols))
-        vpoc = round(closes[vpoc_idx], dec)
-        vah = round(vpoc + (s_high - vpoc) * 0.70, dec)
-        val = round(vpoc - (vpoc - s_low) * 0.70, dec)
-        ib_high = round(max(highs[:2]), dec)
-        ib_low = round(min(lows[:2]), dec)
+    highs = [float(k[2]) for k in raw_klines]
+    lows = [float(k[3]) for k in raw_klines]
+    closes = [float(k[4]) for k in raw_klines]
+    vols = [float(k[5]) for k in raw_klines]
+
+    s_high = max(highs)
+    s_low = min(lows)
+    vpoc_idx = vols.index(max(vols))
+    vpoc = round(closes[vpoc_idx], dec)
+    vah = round(vpoc + (s_high - vpoc) * 0.70, dec)
+    val = round(vpoc - (vpoc - s_low) * 0.70, dec)
+    ib_high = round(max(highs[:2]), dec)
+    ib_low = round(min(lows[:2]), dec)
+
+    ib_range = max(abs(ib_high - ib_low), 1e-9)
+    if p_live > ib_high:
+        expansion_state = "EXPANSION_UP"
+        expansion_ratio = round((p_live - ib_low) / ib_range, 2)
+        ib_badge = f"⚡ گسترش صعودی Initial Balance ({expansion_ratio}x)"
+        ib_verdict = "شکست سقف ۳۰ دقیقهٔ اول (IB High) ثبت شده است (بر پایهٔ کندل‌های واقعی)."
+    elif p_live < ib_low:
+        expansion_state = "EXPANSION_DOWN"
+        expansion_ratio = round((ib_high - p_live) / ib_range, 2)
+        ib_badge = f"⚡ گسترش نزولی Initial Balance ({expansion_ratio}x)"
+        ib_verdict = "شکست کف ۳۰ دقیقهٔ اول (IB Low) ثبت شده است (بر پایهٔ کندل‌های واقعی)."
     else:
-        vpoc = round(p_live * 0.998, dec)
-        vah = round(vpoc * 1.018, dec)
-        val = round(vpoc * 0.982, dec)
-        ib_high = round(p_live * 1.012, dec)
-        ib_low = round(p_live * 0.988, dec)
+        expansion_state = "INSIDE_IB"
+        expansion_ratio = 0.0
+        ib_badge = "داخل محدودهٔ Initial Balance"
+        ib_verdict = "قیمت همچنان داخل محدودهٔ ۳۰ دقیقهٔ اول است؛ جهت مشخص نشده است."
+
+    if p_live >= vah:
+        day_type = "صعودی (بالای سقف ارزش)"
+    elif p_live <= val:
+        day_type = "نزولی (زیر کف ارزش)"
+    else:
+        day_type = "متعادل (داخل ناحیه ارزش)"
 
     res = {
         "ok": True,
         "symbol": sym_pair,
         "current_price": p_live,
-        "timeframe": timeframe,
-        "day_type": "حراج متوازن منصفانه",
+        "timeframe": b_interval,
+        "day_type": day_type,
         "vah": vah,
         "val": val,
         "vpoc": vpoc,
@@ -636,8 +688,8 @@ def get_crypto_quantower_live(symbol: str = "BTC", timeframe: str = "1h") -> Dic
             "vah": vah,
             "val": val,
             "vpoc": vpoc,
-            "shape": "D_SHAPED_BALANCED",
-            "shape_fa": "پروفایل متقارن D (تراکم نقدینگی و آماده جهش ترند)",
+            "shape": "CALCULATED_FROM_REAL_KLINES",
+            "shape_fa": "پروفایل محاسبه‌شده از کندل‌های واقعی بایننس",
             "value_area_pct": "70% حجم کل سشن بایننس",
             "trading_guidance_fa": f"تا زمانی که قیمت بالای VPOC (${vpoc:,.{dec}f}) معامله می‌شود، هدف اولیه سقف VAH (${vah:,.{dec}f}) است."
         },
@@ -645,18 +697,15 @@ def get_crypto_quantower_live(symbol: str = "BTC", timeframe: str = "1h") -> Dic
             "ib_high": ib_high,
             "ib_low": ib_low,
             "ib_range_pts": round(abs(ib_high - ib_low), dec),
-            "expansion_state": "EXPANSION_UP" if p_live >= ib_high else "INSIDE_IB",
-            "expansion_ratio": 1.48,
-            "badge": "⚡ گسترش صعودی Initial Balance (1.48x)",
-            "verdict_fa": "شکست سقف ۳۰ دقیقه اول (IB High) ثبت شده است؛ ۷۹٪ احتمال گسترش روند صعودی تا تراز سقف روزانه."
+            "expansion_state": expansion_state,
+            "expansion_ratio": expansion_ratio,
+            "badge": ib_badge,
+            "verdict_fa": ib_verdict
         },
-        "synthetic_spreads": [
-            {"pair": f"{base} / Gold (XAU)", "ratio": f"{(p_live / 4185.0):.2f}x", "change_pct": "+1.15%", "direction": "OUTPERFORM", "status_fa": f"{base} در حال رشد سریع‌تر از طلا است"},
-            {"pair": f"{base} / Nasdaq 100", "ratio": f"{(p_live / 31100.0):.3f}", "change_pct": "+0.85%", "direction": "OUTPERFORM", "status_fa": "همبستگی مثبت با سهام فناوری آمریکا"},
-            {"pair": f"{base} / Dollar Index (DXY)", "ratio": f"{(p_live / 102.2):.1f}", "change_pct": "+1.65%", "direction": "INVERSE", "status_fa": "واگرایی صعودی معکوس در برابر شاخص دلار"}
-        ],
-        "summary_fa": f"کوانت‌تاور تایید می‌کند قیمت در ناحیه ارزش (Value Area) بایننس قرار دارد و خریداران در حال تثبیت هستند.",
-        "source": "Binance Real 1H Candlesticks",
+        "synthetic_spreads": [],
+        "spreads_note": "مقایسه‌های میان‌دارایی (طلا/نزدک/DXY) بدون دادهٔ زندهٔ معتبر نمایش داده نمی‌شود (Fail-Closed).",
+        "summary_fa": f"کوانت‌تاور تایید می‌کند قیمت در {day_type} بایننس قرار دارد.",
+        "source": "Binance Real Candlesticks",
         "updated_at": datetime.now(TEHRAN_TZ).strftime("%H:%M:%S")
     }
 
@@ -677,61 +726,95 @@ def get_crypto_sierrachart_data(symbol: str = "BTC", timeframe: str = "15m") -> 
         return _CACHE[cache_key]
 
     p_live = _get_live_crypto_price(base)
+    if p_live is None:
+        return {"ok": False, "error": "LIVE_PRICE_UNAVAILABLE",
+                "message": "قیمت زندهٔ بایننس در دسترس نیست؛ دادهٔ سیراچارت نمایش داده نمی‌شود (Fail-Closed)."}
     dec = _get_price_decimals(p_live)
 
-    interval_map = {"1m": "1m", "5m": "5m", "15m": "15m", "4h": "4h", "1d": "1d"}
+    interval_map = {"1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m", "1h": "1h", "4h": "4h", "1d": "1d"}
     b_interval = interval_map.get(tf, "15m")
     raw_klines = _fetch_binance_api(f"klines?symbol={sym_pair}&interval={b_interval}&limit=12")
 
+    if not (raw_klines and len(raw_klines) >= 6):
+        return {"ok": False, "error": "KLINES_UNAVAILABLE",
+                "message": "کندل‌های بایننس در دسترس نیست؛ نوارهای شماره‌دار ساختگی نمایش داده نمی‌شود (Fail-Closed)."}
+
     numbered_bars = []
-    if raw_klines and len(raw_klines) >= 6:
-        for idx, k in enumerate(raw_klines):
-            b_time = datetime.fromtimestamp(k[0] / 1000.0, tz=TEHRAN_TZ).strftime("%H:%M")
-            b_open = round(float(k[1]), dec)
-            b_high = round(float(k[2]), dec)
-            b_low = round(float(k[3]), dec)
-            b_close = round(float(k[4]), dec)
-            b_vol = int(float(k[5]))
-            taker_b = float(k[9])
-            taker_s = float(k[5]) - taker_b
-            b_delta = int(taker_b - taker_s)
-            is_bull = b_close >= b_open
+    for idx, k in enumerate(raw_klines):
+        b_time = datetime.fromtimestamp(k[0] / 1000.0, tz=TEHRAN_TZ).strftime("%H:%M")
+        b_open = round(float(k[1]), dec)
+        b_high = round(float(k[2]), dec)
+        b_low = round(float(k[3]), dec)
+        b_close = round(float(k[4]), dec)
+        b_vol = int(float(k[5]))
+        taker_b = float(k[9])
+        taker_s = float(k[5]) - taker_b
+        b_delta = int(taker_b - taker_s)
+        is_bull = b_close >= b_open
 
-            numbered_bars.append({
-                "bar_id": 100 + idx + 1,
-                "time": b_time,
-                "open": b_open,
-                "high": b_high,
-                "low": b_low,
-                "close": b_close,
-                "vol": b_vol,
-                "delta": b_delta,
-                "bid_vol": int(taker_b),
-                "ask_vol": int(taker_s),
-                "state": "BULLISH_EXPANSION" if is_bull else "PULLBACK_HOLD",
-                "absorption": "YES_BULLISH" if b_delta > 0 else "NO"
-            })
+        numbered_bars.append({
+            "bar_id": 100 + idx + 1,
+            "time": b_time,
+            "open": b_open,
+            "high": b_high,
+            "low": b_low,
+            "close": b_close,
+            "vol": b_vol,
+            "delta": b_delta,
+            "bid_vol": int(taker_b),
+            "ask_vol": int(taker_s),
+            "state": "BULLISH_EXPANSION" if is_bull else "PULLBACK_HOLD",
+            "absorption": "YES_BULLISH" if b_delta > 0 else "NO"
+        })
+
+    # Real divergence detection from actual bars (price vs delta)
+    last3 = numbered_bars[-3:]
+    price_moved_down = last3[-1]["close"] < last3[0]["open"]
+    price_moved_up = last3[-1]["close"] > last3[0]["open"]
+    delta_sum = sum(b["delta"] for b in last3)
+    if delta_sum > 0 and price_moved_down:
+        divergence = {"detected": True, "type": "BULLISH_ABSORPTION",
+                      "type_fa": "🟢 جذب فروش‌ها همراه با دلتای مثبت (واگرایی صعودی — از کندل‌های واقعی)",
+                      "confidence": min(95, 55 + abs(delta_sum))}
+        div_str = "🟢 واگرایی صعودی دلتا"
+    elif delta_sum < 0 and price_moved_up:
+        divergence = {"detected": True, "type": "BEARISH_DISTRIBUTION",
+                      "type_fa": "🔴 توزیع در سقف همراه با دلتای منفی (واگرایی نزولی — از کندل‌های واقعی)",
+                      "confidence": min(95, 55 + abs(delta_sum))}
+        div_str = "🔴 واگرایی نزولی دلتا"
     else:
-        # Fallback simulation
-        for i in range(12, 0, -1):
-            numbered_bars.append({
-                "bar_id": 100 + (13 - i),
-                "time": f"{i}m",
-                "open": p_live,
-                "high": p_live,
-                "low": p_live,
-                "close": p_live,
-                "vol": 100,
-                "delta": 25,
-                "bid_vol": 60,
-                "ask_vol": 40,
-                "state": "BULLISH_EXPANSION",
-                "absorption": "YES_BULLISH"
-            })
+        divergence = {"detected": False, "type": "NONE", "type_fa": "بدون واگرایی مشخص دلتا", "confidence": 0}
+        div_str = "بدون واگرایی مشخص دلتا"
 
-    vbp_poc = round(p_live * 0.998, dec)
-    vbp_high = round(p_live * 1.015, dec)
-    vbp_low = round(p_live * 0.985, dec)
+    # Real Volume-by-Price from the fetched bars
+    vols = [float(k[5]) for k in raw_klines]
+    closes = [float(k[4]) for k in raw_klines]
+    highs = [float(k[2]) for k in raw_klines]
+    lows = [float(k[3]) for k in raw_klines]
+    vbp_poc = round(closes[vols.index(max(vols))], dec)
+    vbp_high = round(max(highs[-4:]), dec)
+    vbp_low = round(min(lows[-4:]), dec)
+
+    # Real value migration: split 12 bars into Asia/London/NY thirds
+    third = max(1, len(numbered_bars) // 3)
+    groups = {"asian": numbered_bars[:third], "london": numbered_bars[third:2 * third], "ny": numbered_bars[2 * third:]}
+
+    def _group_poc(group: List[Dict[str, Any]]) -> float:
+        return max(group, key=lambda b: b.get("vol", 0))["close"]
+
+    if groups["asian"] and groups["london"] and groups["ny"]:
+        asian_poc = round(_group_poc(groups["asian"]), dec)
+        london_poc = round(_group_poc(groups["london"]), dec)
+        ny_poc = round(_group_poc(groups["ny"]), dec)
+        if ny_poc > asian_poc:
+            mig_dir, mig_badge, mig_verdict = "UPWARD_MIGRATION", "📈 مهاجرت صعودی ارزش حراج", "مرکز ارزش (POC) از سشن آسیا به نیویورک در حال جابجایی صعودی است (از کندل‌های واقعی)."
+        elif ny_poc < asian_poc:
+            mig_dir, mig_badge, mig_verdict = "DOWNWARD_MIGRATION", "📉 مهاجرت نزولی ارزش حراج", "مرکز ارزش (POC) از سشن آسیا به نیویورک در حال جابجایی نزولی است (از کندل‌های واقعی)."
+        else:
+            mig_dir, mig_badge, mig_verdict = "FLAT_MIGRATION", "⚖️ مهاجرت خنثی ارزش حراج", "مرکز ارزش (POC) بین سشن‌ها تغییر محسوسی نداشته است."
+    else:
+        asian_poc = london_poc = ny_poc = round(p_live, dec)
+        mig_dir, mig_badge, mig_verdict = "UNKNOWN", "دادهٔ ناکافی برای مهاجرت ارزش", "دادهٔ کافی برای محاسبهٔ مهاجرت ارزش در دسترس نیست."
 
     res = {
         "ok": True,
@@ -740,13 +823,8 @@ def get_crypto_sierrachart_data(symbol: str = "BTC", timeframe: str = "15m") -> 
         "timeframe": tf,
         "timeframe_name_fa": tf,
         "numbered_bars": numbered_bars,
-        "delta_divergence": {
-            "detected": True,
-            "type": "BULLISH_ABSORPTION",
-            "type_fa": "🟢 جذب واقعی سفارشات فروش در بایننس و پرتاب صعودی دلتا",
-            "confidence": 88
-        },
-        "divergence": "🟢 جذب واقعی سفارشات در بایننس و واگرایی مثبت دلتا",
+        "delta_divergence": divergence,
+        "divergence": div_str,
         "vbp_profile": {
             "vbp_high": vbp_high,
             "vbp_low": vbp_low,
@@ -754,14 +832,14 @@ def get_crypto_sierrachart_data(symbol: str = "BTC", timeframe: str = "15m") -> 
             "value_area": f"${vbp_low:,.{dec}f} — ${vbp_high:,.{dec}f}"
         },
         "value_migration": {
-            "asian_poc": round(p_live * 0.992, dec),
-            "london_poc": round(p_live * 0.997, dec),
-            "ny_poc": round(p_live * 1.002, dec),
-            "migration_direction": "UPWARD_MIGRATION",
-            "badge": "📈 مهاجرت صعودی ارزش حراج (Value Migration: Asia ➔ London ➔ NY)",
-            "verdict_fa": "مرکز ارزش منصفانه (POC) از سشن آسیا به سمت لندن و نیویورک پیوسته در حال جابجایی صعودی است."
+            "asian_poc": asian_poc,
+            "london_poc": london_poc,
+            "ny_poc": ny_poc,
+            "migration_direction": mig_dir,
+            "badge": mig_badge,
+            "verdict_fa": mig_verdict
         },
-        "summary_fa": f"سیرا چارت تایید می‌کند ۱۲ کندل گذشته بایننس جذب سفارشات در کف را نشان می‌دهند.",
+        "summary_fa": f"سیرا چارت بر پایهٔ ۱۲ کندل واقعی بایننس محاسبه شد.",
         "source": "Binance Real Candlesticks",
         "updated_at": datetime.now(TEHRAN_TZ).strftime("%H:%M:%S")
     }
@@ -774,117 +852,23 @@ def get_crypto_sierrachart_data(symbol: str = "BTC", timeframe: str = "15m") -> 
 # 6. GEOPOLITICAL & FUNDAMENTAL RADAR
 # =============================================================================
 def get_crypto_geopolitics_radar() -> Dict[str, Any]:
-    now = time.time()
-    cache_key = "geopolitics_crypto"
-    if cache_key in _CACHE and (now - _CACHE_TIME.get(cache_key, 0.0) < 30.0):
-        return _CACHE[cache_key]
-
-    res = {
-        "ok": True,
-        "gpr_index": 168.5,
-        "gpr_status_fa": "⚠️ شاخص ریسک ژئوپلیتیک جهانی در منطقه حساس ۱۶۸ قرار دارد",
-        "hotspots": [
-            {"region": "خاورمیانه و تنگه هرمز", "level": "HIGH", "level_fa": "بحرانی / تنش بالا", "color": "#ff3366", "crypto_impact": "جهش تقاضای دارایی‌های خارج از سیستم بانکی سنتی (طلا و بیت‌کوین)"},
-            {"region": "جنگ تعرفه‌ها و فناوری آمریکا و چین", "level": "ELEVATED", "level_fa": "محتاطانه", "color": "#fb923c", "crypto_impact": "فرار سرمایه‌های آسیایی به استیبل‌کوین‌های دلاری"},
-            {"region": "سیاست‌های مالی فدرال‌رزرو و بدهی ۳۶ تریلیون دلاری آمریکا", "level": "CRITICAL", "level_fa": "حیاتی", "color": "#ffd700", "crypto_impact": "تضعیف تدریجی دلار کاغذی و صعود بیت‌کوین به عنوان طلای دیجیتال"}
-        ],
-        "stablecoin_minting": {
-            "usdt_market_cap": "$138.5B (+۱.۲B$ ضرب جدید در ۷ روز گذشته)",
-            "usdc_market_cap": "$39.2B (+۴۵۰M$ ورود نقدینگی خزانه‌داری آمریکا)",
-            "total_stablecoins": "$185.4B",
-            "minting_velocity_fa": "🟢 شتاب ضرب استیبل‌کوین‌ها به شدت صعودی است (سوخت پامپ آینده)"
-        },
-        "safe_haven_rotation": {
-            "gold_btc_ratio": "۱۹.۸ انس طلا به ازای هر ۱ بیت‌کوین",
-            "flow_bias": "ROTATION_TO_BITCOIN",
-            "flow_bias_fa": "چرخش بخشی از نقدینگی شمش طلا به سمت بیت‌کوین اسپات"
-        },
-        "macro_flight_to_crypto": {
-            "flight_index": 78.4,
-            "stablecoin_velocity": 1.46,
-            "geopolitical_hedging": "ACTIVE_ACCUMULATION",
-            "badge": "🛡️ چرخش سرمایه امن (Digital Gold Hedging): فعال",
-            "verdict_fa": "شاخص ریسک ژئوپلیتیک با افزایش تقاضای پوشش ریسک به نفع بیت‌کوین و استیبل‌کوین‌ها عمل کرده و فشار تقاضای بدون اهرم را تقویت نموده است."
-        },
-        "verdict_fa": "تنش‌های ژئوپلیتیک و رشد بی‌پایان بدهی‌های دولتی جهان باعث تقویت نظریه ذخیره ارزش بیت‌کوین شده است.",
-        "updated_at": datetime.now(TEHRAN_TZ).strftime("%H:%M:%S")
+    """Fail-closed: no verified live GPR/news feed is connected, so no fabricated index is returned."""
+    return {
+        "ok": False,
+        "error": "LIVE_GPR_DATA_UNAVAILABLE",
+        "message": "اتصال زندهٔ شاخص ریسک ژئوپلیتیک (GPR) و خبرگزاری معتبر متصل نیست؛ امتیاز و رویداد ساختگی ارائه نمی‌شود (Fail-Closed)."
     }
-    _CACHE[cache_key] = res
-    _CACHE_TIME[cache_key] = now
-    return res
 
 # =============================================================================
 # 7. WALL STREET SPOT ETF & BANK REPORTS
 # =============================================================================
 def get_crypto_bank_reports() -> Dict[str, Any]:
-    now = time.time()
-    cache_key = "bank_reports_crypto"
-    if cache_key in _CACHE and (now - _CACHE_TIME.get(cache_key, 0.0) < 60.0):
-        return _CACHE[cache_key]
-
-    res = {
-        "ok": True,
-        "spot_etf_summary": {
-            "total_daily_net_usd": "+$394.9M",
-            "weekly_net_usd": "+$2.02B",
-            "net_btc_absorbed": "+4,750 BTC",
-            "institutional_sentiment": "STRONG_ACCUMULATION",
-            "point_impact_estimate": "+185.0 pts / $1,250 boost",
-            "badge": "🏦 ورود خالص روزانه ETFهای اسپات وال‌استریت: +۳۹۴.۹ میلیون دلار (انباشت پرقدرت)"
-        },
-        "tether_treasury_minting": {
-            "recent_event": "1,000,000,000 USDT ضرب در خزانه‌داری Tether و انتقال به بایننس",
-            "mint_date": "امروز (سشن جاری)",
-            "status": "LIQUIDITY_INJECTION",
-            "badge": "💵 ضرب ۱ میلیارد دلاری تتر در خزانه (Tether Treasury Minting): سوخت رالی پامپ",
-            "impact_fa": "تزریق نقدینگی مستقیم تتر به استخرهای معاملاتی بایننس، عرضه استیبل‌کوین را افزایش داده و موتور محرک صعود است."
-        },
-        "etf_institutional_flows": {
-            "total_daily_net_inflow_usd": "+$394.9M",
-            "funds": [
-                {"name": "BlackRock iShares Bitcoin Trust", "ticker": "IBIT", "daily_flow": "+۲۸۴.۵ میلیون دلار", "aum": "۴۸۵,۲۰۰ BTC ($40.3B)", "status": "🟢 انباشت پرقدرت"},
-                {"name": "Fidelity Wise Origin Bitcoin Fund", "ticker": "FBTC", "daily_flow": "+۹۸.۲ میلیون دلار", "aum": "۱۹۸,۴۰۰ BTC ($16.5B)", "status": "🟢 جریان ورودی پیوسته"},
-                {"name": "Bitwise Bitcoin ETF", "ticker": "BITB", "daily_flow": "+۲۶.۴ میلیون دلار", "aum": "۴۲,۱۰۰ BTC ($3.5B)", "status": "🟢 رشد ورودی"},
-                {"name": "Grayscale Bitcoin Trust", "ticker": "GBTC", "daily_flow": "-۱۴.۲ میلیون دلار", "aum": "۱۷۸,۰۰۰ BTC ($14.8B)", "status": "🟡 خروج کارمزد"}
-            ]
-        },
-        "bank_desks": [
-            {"bank": "Goldman Sachs (Digital Assets Desk)", "analyst_stance": "خرید بلندمدت", "target": "$125,000", "target_btc": "$125,000", "horizon": "سه‌ماهه سوم ۲۰۲۶", "rationale": "افزایش تخصیص صندوق‌های بازنشستگی آمریکا و ETFهای اسپات.", "thesis": "افزایش تخصیص صندوق‌های بازنشستگی آمریکا و تقاضای مستمر ETFهای اسپات."},
-            {"bank": "JPMorgan Chase (Global Market Strategy)", "analyst_stance": "انباشت در اصلاحات", "target": "$110,000", "target_btc": "$110,000", "horizon": "پایان سال ۲۰۲۶", "rationale": "مقایسه ارزش بازار بیت‌کوین با طلای بخش خصوصی.", "thesis": "مقایسه ارزش بازار بیت‌کوین با طلای بخش خصوصی و کاهش سهم نقدینگی سنتی."},
-            {"bank": "Morgan Stanley (Wealth Management Desk)", "analyst_stance": "تخصیص صعودی (Bullish)", "target": "$135,000", "target_btc": "$135,000", "horizon": "سیکل جاری ۲۰۲۶", "rationale": "پیشنهاد رسمی بیت‌کوین به مشتریان فوق ثروتمند و صندوق‌های ثروت خانوادگی.", "thesis": "توصیه به سرمایه‌گذاران نهادی برای تخصیص ۱ تا ۳ درصد سبد به بیت‌کوین اسپات."},
-            {"bank": "Standard Chartered (Crypto Research)", "analyst_stance": "فوق صعودی (Ultra Bullish)", "target": "$150,000", "target_btc": "$150,000", "horizon": "سیکل جاری ۲۰۲۶", "rationale": "سرعت ورود سرمایه‌های سازمانی و اثر کاهش عرضه هاوینگ.", "thesis": "کاهش موجودی صرافی‌ها و انباشت پایدار ETFها اهداف بالای ۱۵۰ هزار دلار را محتمل می‌کند."},
-            {"bank": "Citigroup / BlackRock Global Allocation", "analyst_stance": "انباشت استراتژیک (Accumulate)", "target": "$140,000", "target_btc": "$140,000", "horizon": "افق ۱۲ ماهه", "rationale": "تبدیل شدن بیت‌کوین به پوشش ریسک بدهی‌های جهانی و تورم اعتباری.", "thesis": "تثبیت جریان سرمایه‌های بازنشستگی به سمت ذخایر دیجیتال به عنوان دارایی بدون ریسک متقابل."}
-        ],
-        "bank_models": [
-            {"bank": "Goldman Sachs (Digital Assets Desk)", "analyst_stance": "خرید بلندمدت", "target": "$125,000", "target_btc": "$125,000", "horizon": "سه‌ماهه سوم ۲۰۲۶", "rationale": "افزایش تخصیص صندوق‌های بازنشستگی آمریکا و ETFهای اسپات.", "thesis": "افزایش تخصیص صندوق‌های بازنشستگی آمریکا و تقاضای مستمر ETFهای اسپات."},
-            {"bank": "JPMorgan Chase (Global Market Strategy)", "analyst_stance": "انباشت در اصلاحات", "target": "$110,000", "target_btc": "$110,000", "horizon": "پایان سال ۲۰۲۶", "rationale": "مقایسه ارزش بازار بیت‌کوین با طلای بخش خصوصی.", "thesis": "مقایسه ارزش بازار بیت‌کوین با طلای بخش خصوصی و کاهش سهم نقدینگی سنتی."},
-            {"bank": "Morgan Stanley (Wealth Management Desk)", "analyst_stance": "تخصیص صعودی (Bullish)", "target": "$135,000", "target_btc": "$135,000", "horizon": "سیکل جاری ۲۰۲۶", "rationale": "پیشنهاد رسمی بیت‌کوین به مشتریان فوق ثروتمند و صندوق‌های ثروت خانوادگی.", "thesis": "توصیه به سرمایه‌گذاران نهادی برای تخصیص ۱ تا ۳ درصد سبد به بیت‌کوین اسپات."},
-            {"bank": "Standard Chartered (Crypto Research)", "analyst_stance": "فوق صعودی (Ultra Bullish)", "target": "$150,000", "target_btc": "$150,000", "horizon": "سیکل جاری ۲۰۲۶", "rationale": "سرعت ورود سرمایه‌های سازمانی و اثر کاهش عرضه هاوینگ.", "thesis": "کاهش موجودی صرافی‌ها و انباشت پایدار ETFها اهداف بالای ۱۵۰ هزار دلار را محتمل می‌کند."},
-            {"bank": "Citigroup / BlackRock Global Allocation", "analyst_stance": "انباشت استراتژیک (Accumulate)", "target": "$140,000", "target_btc": "$140,000", "horizon": "افق ۱۲ ماهه", "rationale": "تبدیل شدن بیت‌کوین به پوشش ریسک بدهی‌های جهانی و تورم اعتباری.", "thesis": "تثبیت جریان سرمایه‌های بازنشستگی به سمت ذخایر دیجیتال به عنوان دارایی بدون ریسک متقابل."}
-        ],
-        "macro_consensus_targets": {
-            "bull_target": "$145,000",
-            "bull_probability": "احتمال ۶۵٪",
-            "base_target": "$115,000",
-            "base_probability": "احتمال ۲۵٪",
-            "bear_target": "$74,500",
-            "bear_probability": "احتمال ۱۰٪"
-        },
-        "institutional_whales": {
-            "microstrategy_holding": "499,000+ BTC ($41.5B)",
-            "asset_managers_position": "84% لانگ در CME",
-            "leveraged_funds_position": "آربیتراژ Basis Trade بدون ریسک جهت‌دار"
-        },
-        "cme_cot_crypto": {
-            "asset_managers_position": "84% لانگ",
-            "leveraged_funds_position": "آربیتراژ Basis Trade"
-        },
-        "updated_at": datetime.now(TEHRAN_TZ).strftime("%H:%M:%S")
+    """Fail-closed: no verified live ETF-flow / Tether-mint / bank-desk feed is connected."""
+    return {
+        "ok": False,
+        "error": "LIVE_ETF_BANK_DATA_UNAVAILABLE",
+        "message": "اتصال زندهٔ جریان‌های ETF اسپات، ضرب تتر و گزارش میزهای بانکی متصل نیست؛ اعداد و تارگت ساختگی ارائه نمی‌شود (Fail-Closed)."
     }
-
-    _CACHE[cache_key] = res
-    _CACHE_TIME[cache_key] = now
-    return res
 
 if __name__ == "__main__":
     bm = get_crypto_bookmap_data("BTC")

@@ -12,6 +12,7 @@ import time
 import math
 import json
 import logging
+import re
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -74,7 +75,7 @@ class CryptoArbiterGatekeeper:
         Protects total portfolio margin from directional market correlation shock.
         """
         if self.active_trackers_ref is None:
-            return True, "پایشگر پورتفو غیرفعال است", 0
+            return False, "پایشگر پورتفو در دسترس نیست؛ طبق اصل Fail-Closed ورود تایید نمی‌شود.", 0
 
         try:
             # Count trades that are open and have NOT yet reached TP1 (not yet risk-free)
@@ -90,7 +91,7 @@ class CryptoArbiterGatekeeper:
             return True, f"ظرفیت پورتفو تایید است ({count} از {self.MAX_CONCURRENT_OPEN_TRADES} معامله باز).", count
         except Exception as e:
             logger.warning(f"Portfolio exposure check error: {e}")
-            return True, "عبور پورتفو", 0
+            return False, "خطا در بررسی مواجههٔ پورتفو؛ طبق اصل Fail-Closed ورود تایید نمی‌شود.", 0
 
     # =========================================================================
     # RULE 2: ASIAN DEAD HOURS FILTER (فیلتر نقدینگی ساعات مرده شبانه)
@@ -172,7 +173,7 @@ class CryptoArbiterGatekeeper:
             return True, "نماد خودِ بیت‌کوین است (لیدر بازار)", {"btc_healthy": True}
 
         if not self.agent or not hasattr(self.agent, "fetcher"):
-            return True, "ایجنت در دسترس نیست، عبور پیش‌فرض", {}
+            return False, "بررسی گرانش بیت‌کوین ممکن نیست (ایجنت در دسترس نیست)؛ طبق اصل Fail-Closed ورود آلت‌کوین تایید نمی‌شود.", {}
 
         try:
             btc_1h = self.agent.fetcher.fetch_klines("BTCUSDT", "1h", 24)
@@ -207,58 +208,70 @@ class CryptoArbiterGatekeeper:
             return True, "وضعیت بیت‌کوین باثبات و همراه با روند ارزیابی شد", {"btc_healthy": True}
         except Exception as e:
             logger.warning(f"Error checking BTC gravity trap: {e}")
-            return True, "خطا در واکشی وضعیت BTC - عبور محتاطانه", {}
+            return False, "خطا در واکشی وضعیت BTC؛ طبق اصل Fail-Closed ورود آلت‌کوین تایید نمی‌شود.", {}
 
     def check_trap_2_judas_sweep(self, sym: str, klines_15m: List[Dict[str, Any]], action: str) -> Tuple[bool, str]:
         """
         Trap 2: Judas Swing & Liquidity Sweep Verification
-        Ensure that market makers have ALREADY swept the previous swing low before we buy.
+        Ensure that market makers have ALREADY swept the previous swing low/high before we enter.
+        Fail-Closed: if the sweep cannot be verified, the entry is blocked.
         """
         if not klines_15m or len(klines_15m) < 12:
-            return True, "داده‌های کندل کافی نیست - عبور پیش‌فرض"
+            return False, "تله Judas: دادهٔ کندل کافی برای بررسی سوئیپ نقدینگی در دسترس نیست؛ طبق اصل Fail-Closed ورود تایید نمی‌شود."
 
         try:
             recent_lows = [float(k.get("low", 0)) for k in klines_15m[-12:-1] if float(k.get("low", 0)) > 0]
+            recent_highs = [float(k.get("high", 0)) for k in klines_15m[-12:-1] if float(k.get("high", 0)) > 0]
             current_close = float(klines_15m[-1].get("close", 0))
             current_low = float(klines_15m[-1].get("low", 0))
+            current_high = float(klines_15m[-1].get("high", 0))
 
             is_long = "BUY" in action.upper() or "LONG" in action.upper()
-            if is_long and recent_lows:
+            if is_long:
+                if not recent_lows:
+                    return False, "تله Judas: دادهٔ کف برای بررسی سوئیپ معتبر نیست؛ طبق اصل Fail-Closed ورود تایید نمی‌شود."
                 min_recent_low = min(recent_lows)
                 has_wicked_below = current_low <= min_recent_low * 1.0015
                 closed_above = current_close > min_recent_low
-
                 if has_wicked_below and closed_above:
                     return True, "تایید شد: سوئیپ نقدینگی و شکار کف قبلی (Judas Sweep) با موفقیت انجام شده و قیمت برگشته است."
-
-            return True, "ساختار نقدینگی بدون تله سوئیپ آشکار است"
+                return False, "تله Judas: کف نوسانی اخیر هنوز سوئیپ نشده است؛ احتمال شکار استاپ پس از ورود وجود دارد و طبق اصل Fail-Closed ورود تایید نمی‌شود."
+            else:
+                if not recent_highs:
+                    return False, "تله Judas: دادهٔ سقف برای بررسی سوئیپ معتبر نیست؛ طبق اصل Fail-Closed ورود تایید نمی‌شود."
+                max_recent_high = max(recent_highs)
+                has_wicked_above = current_high >= max_recent_high * 0.9985
+                closed_below = current_close < max_recent_high
+                if has_wicked_above and closed_below:
+                    return True, "تایید شد: سوئیپ سقف قبلی (Judas Sweep) انجام شده و قیمت برگشته است."
+                return False, "تله Judas: سقف نوسانی اخیر هنوز سوئیپ نشده است؛ احتمال شکار استاپ پس از ورود وجود دارد و طبق اصل Fail-Closed ورود تایید نمی‌شود."
         except Exception as e:
-            return True, f"بررسی سوئیپ: {e}"
+            return False, f"بررسی سوئیپ ممکن نیست ({e})؛ طبق اصل Fail-Closed ورود تایید نمی‌شود."
 
     def check_trap_3_funding_and_dominance(self, sym: str, action: str) -> Tuple[bool, str]:
         """
         Trap 3: Funding Rate Squeeze & Crowded Trade Trap
-        If funding rate on Binance/Bybit is excessively high (> +0.035%), retail longs are trapped.
+        Uses the REAL Binance Futures funding rate. Fail-Closed: unverifiable funding blocks entry.
         """
         is_long = "BUY" in action.upper() or "LONG" in action.upper()
-        clean_sym = sym.upper().replace("USDT", "").strip()
+        clean_sym = sym.upper().replace("USDT", "").replace("/", "").replace("-", "").strip()
 
         try:
-            funding_rate = 0.0001
-            if self.agent and hasattr(self.agent, "fetcher"):
-                fund_data = self.agent.fetcher.fetch_funding_rate(f"{clean_sym}USDT")
-                if fund_data and "rate" in fund_data:
-                    funding_rate = float(fund_data["rate"])
+            import crypto_smt_and_liquidation_engine as csle
+            funding_pct = csle._fetch_real_funding_rate(clean_sym)
+        except Exception:
+            funding_pct = None
 
-            if is_long and funding_rate >= 0.00045:
-                return False, f"تله فاندینگ ریت (Long Squeeze): فاندینگ ریت {clean_sym} بسیار بالاست ({funding_rate*100:.3f}%). تریدرهای خرد بیش از حد لانگ باز کرده‌اند و خطر دامپ صرافی بالاست."
+        if funding_pct is None:
+            return False, f"تله فاندینگ ریت: نرخ فاندینگ زندهٔ بایننس فیوچرز برای {clean_sym} در دسترس نیست؛ طبق اصل Fail-Closed ورود تایید نمی‌شود."
 
-            if not is_long and funding_rate <= -0.00045:
-                return False, f"تله فاندینگ ریت (Short Squeeze): فاندینگ ریت منفی افراطی ({funding_rate*100:.3f}%). احتمال جهش صرافی برای شورت‌اسکوئیز بالاست."
+        if is_long and funding_pct >= 0.02:
+            return False, f"تله فاندینگ ریت (Long Squeeze): فاندینگ ریت {clean_sym} بالاست ({funding_pct:+.3f}%). ریسک پاک‌سازی پوزیشن‌های لانگ اهرم‌دار بالاست."
 
-            return True, f"فاندینگ ریت در تعادل نرمال است ({funding_rate*100:.4f}%)"
-        except Exception as e:
-            return True, "عبور فاندینگ ریت"
+        if not is_long and funding_pct <= -0.005:
+            return False, f"تله فاندینگ ریت (Short Squeeze): فاندینگ ریت {clean_sym} منفی است ({funding_pct:+.3f}%). احتمال شکار شورت‌ها و پرتاب قیمت بالاست."
+
+        return True, f"فاندینگ ریت در تعادل نرمال است ({funding_pct:+.4f}%)"
 
     def check_trap_4_macro_blackout(self) -> Tuple[bool, str]:
         """
@@ -274,7 +287,7 @@ class CryptoArbiterGatekeeper:
                 return False, f"تله اخبار کلان اقتصادی (Macro Blackout): فیوز حفاظتی فعال است رویداد: {name}. جهت حفظ سرمایه از شدوهای پرسرعت خبر، ارسال سیگنال ممنوع است."
             return True, "تقویم کلان اقتصادی آرام و فاقد شوک تورمی ارزیابی شد"
         except Exception:
-            return True, "تقویم کلان: نرمال"
+            return False, "فیوز اخبار کلان قابل ارزیابی نیست؛ طبق اصل Fail-Closed ارسال سیگنال متوقف شد."
 
     def check_trap_5_spoofing_depth(self, sym: str, action: str) -> Tuple[bool, str]:
         """
@@ -285,7 +298,7 @@ class CryptoArbiterGatekeeper:
         is_long = "BUY" in action.upper() or "LONG" in action.upper()
 
         if not self.agent or not hasattr(self.agent, "fetcher"):
-            return True, "عمق دفتر سفارشات تایید است"
+            return False, "بررسی عمق دفتر سفارشات ممکن نیست (ایجنت در دسترس نیست)؛ طبق اصل Fail-Closed ورود تایید نمی‌شود."
 
         try:
             depth = self.agent.fetcher.fetch_orderbook(f"{clean_sym}USDT", limit=30)
@@ -304,7 +317,7 @@ class CryptoArbiterGatekeeper:
 
             return True, "تراکم و اعتبار دیوارهای سفارشات تایید شد"
         except Exception as e:
-            return True, f"بررسی عمق: {e}"
+            return False, f"بررسی عمق دفتر سفارشات با خطا مواجه شد ({e})؛ طبق اصل Fail-Closed ورود تایید نمی‌شود."
 
     # =========================================================================
     # DYNAMIC PARAMETER FORMULATOR (SL & ANTI-FRONT-RUNNING TP)
@@ -414,12 +427,33 @@ class CryptoArbiterGatekeeper:
         Runs full 5-trap audit + Portfolio Cap + Asian Dead Hours on candidate.
         """
         now = time.time()
-        sym = candidate.get("symbol", "").upper().replace("USDT", "").strip()
-        action = candidate.get("action", candidate.get("action_code", "BUY")).upper()
-        price = float(candidate.get("price", candidate.get("entry", 0.0)))
-        raw_score = float(candidate.get("growth_score", candidate.get("score", 75)))
+        sym = re.sub(r"[^A-Z0-9]", "", candidate.get("symbol", "").upper())
+        if not sym:
+            sym = candidate.get("symbol", "").upper().replace("USDT", "").replace("/", "").strip()
+        action = str(candidate.get("action", candidate.get("action_code", "BUY"))).upper()
+        raw_price_val = candidate.get("price", candidate.get("entry", 0.0))
+        try:
+            price = float(raw_price_val) if raw_price_val is not None else 0.0
+        except (TypeError, ValueError):
+            price = 0.0
+        raw_score_val = candidate.get("growth_score", candidate.get("score", 0))
+        try:
+            raw_score = float(raw_score_val) if raw_score_val is not None else 0.0
+        except (TypeError, ValueError):
+            raw_score = 0.0
 
         self.stats["audited_total"] += 1
+
+        # Reject NO_TRADE candidates outright (Fail-Closed)
+        if "NO_TRADE" in action or candidate.get("direction_code") == "NO_TRADE":
+            verdict = {
+                "approved": False,
+                "symbol": sym,
+                "reason": "سیگنال در وضعیت «بدون معامله (NO TRADE)» است؛ هیچ سفارشی ارسال نمی‌شود.",
+                "trap_failed": "NO_TRADE_SIGNAL"
+            }
+            self._log_verdict(verdict, candidate, source)
+            return verdict
 
         # Check Symbol Cooldown Freeze (45-Minute Lock)
         last_sent = self._symbol_cooldowns.get(sym, 0.0)
@@ -547,18 +581,17 @@ class CryptoArbiterGatekeeper:
         final_verdict = {
             "approved": True,
             "grade": "A+",
-            "conviction_score": max(85, int(raw_score)),
+            "conviction_score": int(raw_score),
             "source": source,
             "setup": setup,
             "defense_notes": [
                 "تایید سلامت و عدم ریزش لیدر بازار (بیت‌کوین)",
-                f"اعمال بافر ضد استاپ‌هانت {setup.get('sl_pct')}% پشت سطوح نقدینگی",
-                "تارگت‌های ضد فرانت‌رانینگ مستقر جلوتر از دیوارهای سفارشات",
-                "بررسی عدم وجود تله فاندینگ ریت و لانگ‌اسکوئیز",
+                f"اعمال بافر ضد استاپ‌هانت {setup.get('sl_pct')}% برای حد ضرر",
+                "تارگت‌های سود با ضرایب ریسک/ریوارد و بافر اجرایی محاسبه شدند",
+                "بررسی عدم وجود تله فاندینگ ریت و اسکوئیز اهرمی",
                 "عمق اردر بوک و نقدینگی واقعی تایید شد",
                 "سقف ریسک هم‌زمان پورتفو رعایت شد",
-                "سشن دارای نقدینگی کافی و به دور از نویز ساعات مرده",
-                "انطباق کامل نقطه ورود با تراز طلایی OTE فیبوناچی (۷۰.۵٪)"
+                "سشن دارای نقدینگی کافی و به دور از نویز ساعات مرده"
             ]
         }
 
@@ -588,7 +621,8 @@ class CryptoArbiterGatekeeper:
     def execute_atomic_approval(self, verdict: Dict[str, Any], bot_token: str, chat_id: str) -> Dict[str, Any]:
         """
         Executes approved setup simultaneously across Telegram and the Journal.
-        Guarantees that Telegram and Journal are 100% identical mirror images.
+        Fail-Closed: if journal recording fails, Telegram dispatch is halted;
+        if Telegram dispatch fails, the result honestly reports success=False.
         """
         if not verdict.get("approved"):
             return {"success": False, "reason": "سیگنال مورد تایید دروازه‌بان قرار نگرفت."}
@@ -597,11 +631,7 @@ class CryptoArbiterGatekeeper:
         sym = setup["symbol"]
         now = time.time()
 
-        # Update Cooldowns
-        self._symbol_cooldowns[sym] = now
-        self._last_global_dispatch_ts = now
-
-        # 1. ATOMIC RECORDING TO SIGNAL JOURNAL
+        # 1. RECORD TO SIGNAL JOURNAL FIRST (atomic mirror order)
         recorded_entry = None
         if self.recorder_func:
             try:
@@ -620,6 +650,12 @@ class CryptoArbiterGatekeeper:
                 logger.info(f"[ARBITER] Atomically recorded {sym} to signal journal.")
             except Exception as e:
                 logger.error(f"[ARBITER JOURNAL ERR] {e}")
+                return {
+                    "success": False,
+                    "symbol": sym,
+                    "error": "JOURNAL_RECORD_FAILED",
+                    "reason": "ثبت ژورنال ناموفق بود؛ ارسال تلگرام متوقف شد تا ژورنال و تلگرام آینهٔ یکدیگر بمانند (Fail-Closed)."
+                }
 
         # 2. DISPATCH TO TELEGRAM
         telegram_res = {"success": False}
@@ -631,12 +667,21 @@ class CryptoArbiterGatekeeper:
                 logger.info(f"[ARBITER] Dispatched verified signal {sym} to Telegram.")
             except Exception as e:
                 logger.error(f"[ARBITER TELEGRAM ERR] {e}")
+                telegram_res = {"success": False, "error": str(e)}
+
+        telegram_ok = bool(telegram_res.get("success")) and not bool(telegram_res.get("simulated"))
+        success = telegram_ok or not (bot_token and chat_id)
+
+        # Cooldowns only engage on a truly successful live dispatch
+        if telegram_ok:
+            self._symbol_cooldowns[sym] = now
+            self._last_global_dispatch_ts = now
 
         return {
-            "success": True,
+            "success": success,
             "symbol": sym,
             "journal_recorded": recorded_entry is not None,
-            "telegram_dispatched": telegram_res.get("success", False),
+            "telegram_dispatched": telegram_ok,
             "setup": setup
         }
 
@@ -667,17 +712,16 @@ class CryptoArbiterGatekeeper:
 🛑 <b>حد ضرر ضد استاپ‌هانت (SL):</b> <code>${sl}</code> (-{sl_pct}%)
 <i>(مستقر پشت سووینگ ماژور و کف اردربوک جهت دفع شدوهای فیک)</i>
 
-🎯 <b>اهداف سود بر مبنای اکستنشن فیبوناچی و ضد فرانت‌رانینگ:</b>
-• <b>تارگت اول (TP1):</b> <code>${tp1}</code> <i>(سقف قبلی ۰.۰٪ • سیو ۵۰٪ سود و ریسک‌فری فوری)</i>
-• <b>تارگت دوم (TP2):</b> <code>${tp2}</code> <i>(اکستنشن ۲۷.۲-٪ فیبوناچی)</i>
-• <b>تارگت سوم (TP3):</b> <code>${tp3}</code> <i>(اکستنشن ۶۱.۸-٪ فیبوناچی و استخر نهایی)</i>
+🎯 <b>اهداف سود (مضرب ریسک به ریوارد با بافر اجرایی):</b>
+• <b>تارگت اول (TP1):</b> <code>${tp1}</code> <i>(۱:۱.۹۵ ریسک • سیو ۵۰٪ سود و ریسک‌فری فوری)</i>
+• <b>تارگت دوم (TP2):</b> <code>${tp2}</code> <i>(۱:۳.۱۰ ریسک)</i>
+• <b>تارگت سوم (TP3):</b> <code>${tp3}</code> <i>(۱:۴.۸۰ ریسک)</i>
 
-📐 <b>تراز طلایی فیبوناچی (ICT OTE):</b>
-ورود در تراز طلایی ۷۰.۵٪ فیبوناچی • حد ضرر ریاضی پشت تراز ۷۸.۶٪ و اردر بلاک
+📐 <b>مرجع ریاضی اهداف:</b>
+مضرب ریسک به ریوارد روی قیمت زندهٔ بازار • حد ضرر با بافر ضد استاپ‌هانت
 
 🛡️ <b>تاییدیه دفاعی دروازه‌بان:</b>
 ✅ همسویی گرانش بیت‌کوین (همراه با جهت ریزش/رشد مارکت)
-✅ سوئیپ نقدینگی استاپ‌ها و تخلیه حجم نهادی (Judas Sweep) تایید شد
 ✅ تله فاندینگ ریت منفی/مثبت و اسکوئیز صرافی اعتبارسنجی شد
 ✅ دیوارهای نقدینگی اردربوک و عدم جذب فیک تایید شد
 ✅ تقویم کلان اقتصادی آرام و فاقد انتشار داده تورمی

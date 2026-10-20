@@ -165,10 +165,19 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         smt_liq = None
 
     raw_price = bm.get("current_price", 0.0)
-    if raw_price <= 0:
+    if not raw_price or raw_price <= 0:
         raw_price = coe._get_live_crypto_price(symbol_clean)
-    if raw_price <= 0:
-        raw_price = 83000.0 if symbol_clean == "BTC" else (2500.0 if symbol_clean == "ETH" else (175.0 if symbol_clean == "SOL" else 1.0))
+    if not raw_price or raw_price <= 0:
+        res_err = {
+            "ok": False,
+            "error": "LIVE_PRICE_UNAVAILABLE",
+            "symbol": symbol_clean,
+            "message": "قیمت زندهٔ بایننس در دسترس نیست؛ سیگنال تولید نمی‌شود تا از ارائهٔ اعداد غیرواقعی جلوگیری شود (Fail-Closed).",
+            "updated_at_iran": f"{tehran_date_str} ساعت {tehran_time_str}"
+        }
+        _SIG_CACHE[cache_k] = res_err
+        _SIG_CACHE_TIME[cache_k] = now_ts
+        return res_err
 
     dec = get_price_decimals(raw_price)
     current_price = round(raw_price, dec)
@@ -178,20 +187,40 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     cvd_raw = nt.get("cvd", 0)
     cvd_val = cvd_raw.get("value", 0) if isinstance(cvd_raw, dict) else (cvd_raw or 0)
     sc_div = sc.get("divergence", "")
-    atas_tps = atas.get("tape_speed_tps", 35)
+    atas_tape = atas.get("tape_speed", {})
+    atas_tps = float(atas_tape.get("trades_per_sec", 0.0)) if isinstance(atas_tape, dict) else 0.0
 
-    # Scalp Direction Evaluation
+    # Scalp Direction Evaluation (symmetric bull/bear scores + honest NO_TRADE)
     scalp_bull_score = 0
-    if len(bm_icebergs) > 0 and any(ic.get("direction") == "BUY" or ic.get("side") == "BID" for ic in bm_icebergs):
-        scalp_bull_score += 3
-    if cvd_val >= 0:
+    scalp_bear_score = 0
+    if len(bm_icebergs) > 0:
+        if any(ic.get("direction") == "BUY" or ic.get("side") == "BID" for ic in bm_icebergs):
+            scalp_bull_score += 3
+        if any(ic.get("direction") == "SELL" or ic.get("side") == "ASK" for ic in bm_icebergs):
+            scalp_bear_score += 3
+    if cvd_val > 0:
         scalp_bull_score += 2
-    if "صعودی" in sc_div or "جذب" in sc_div:
+    elif cvd_val < 0:
+        scalp_bear_score += 2
+    if "صعودی" in sc_div:
         scalp_bull_score += 3
+    if "نزولی" in sc_div:
+        scalp_bear_score += 3
+    atas_cvd = atas.get("cvd_divergence", {})
+    atas_cvd_status = atas_cvd.get("status", "") if isinstance(atas_cvd, dict) else ""
+    if atas_cvd_status == "BULLISH_ABSORPTION":
+        scalp_bull_score += 2
+    elif atas_cvd_status == "BEARISH_PRESSURE":
+        scalp_bear_score += 2
     if atas_tps >= 30:
         scalp_bull_score += 2
 
-    scalp_is_long = scalp_bull_score >= 5
+    scalp_direction_code = "NO_TRADE"
+    if scalp_bull_score >= 5 and scalp_bull_score > scalp_bear_score:
+        scalp_direction_code = "LONG"
+    elif scalp_bear_score >= 5 and scalp_bear_score > scalp_bull_score:
+        scalp_direction_code = "SHORT"
+    scalp_is_long = scalp_direction_code == "LONG"
 
     # =========================================================================
     # PART 1: UNIFIED SCALP SIGNAL (15m Timeframe - Order Flow Anchored Levels)
@@ -199,7 +228,8 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     # =========================================================================
     locked_sc = _LOCKED_SCALP_SETUPS.get(symbol_clean)
     if locked_sc and (now_ts < locked_sc.get("expires_at", 0)) and not locked_sc.get("closed", False):
-        scalp_is_long = (locked_sc["direction_code"] == "LONG")
+        scalp_direction_code = locked_sc["direction_code"]
+        scalp_is_long = scalp_direction_code == "LONG"
         scalp_entry = locked_sc["entry"]
         scalp_sl = locked_sc["sl"]
         scalp_tp1 = locked_sc["tp1"]
@@ -240,7 +270,7 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         unfin = nt.get("unfinished_auction", {})
         unfin_p = float(unfin.get("price", current_price)) if unfin.get("detected") else 0.0
 
-        if scalp_is_long:
+        if scalp_direction_code == "LONG":
             scalp_sl = round(current_price * (1.0 - min_sl_pct), dec)
             valid_bids = sorted([b for b in bid_shelves if b < current_price], reverse=True)
             if valid_bids:
@@ -272,7 +302,7 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
             sl_why = "سپر ضد هانت نقدینگی و دیواره خرید بوک‌مپ (Anti-Stop-Hunt Shield)"
             tp1_why = "خروج امن ضد فرانت‌رانینگ قبل از اولین دیواره فروش (Anti-Front-Run Ask Wall)"
             tp2_why = "خروج هوشمند پیش از تجمع اردرهای رُند و سقف ارزش (Psychological Front-Run VAH)"
-        else:
+        elif scalp_direction_code == "SHORT":
             scalp_sl = round(current_price * (1.0 + min_sl_pct), dec)
             valid_asks = sorted([a for a in ask_walls if a > current_price])
             if valid_asks:
@@ -301,35 +331,76 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
             sl_why = "سپر ضد هانت نقدینگی بالای دیواره فروش بوک‌مپ (Anti-Stop-Hunt Shield)"
             tp1_why = "خروج امن ضد فرانت‌رانینگ قبل از اولین دیواره خرید (Anti-Front-Run Bid Shelf)"
             tp2_why = "خروج هوشمند پیش از تجمع اردرهای رُند کف ارزش (Psychological Front-Run VAL)"
+        else:
+            # Fail-Closed: no entry/SL/TP levels invented for a NO_TRADE state
+            scalp_sl = None
+            scalp_tp1 = None
+            scalp_tp2 = None
+            scalp_tp3 = None
+            sl_why = ""
+            tp1_why = ""
+            tp2_why = ""
 
-        scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (min_sl_pct * 100)
-        scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 1.5
-        scalp_tp2_pct = abs((scalp_tp2 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 3.5
-        scalp_tp3_pct = abs((scalp_tp3 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 6.5
+        if scalp_direction_code != "NO_TRADE":
+            scalp_sl_pct = abs((scalp_sl - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else (min_sl_pct * 100)
+            scalp_tp1_pct = abs((scalp_tp1 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 1.5
+            scalp_tp2_pct = abs((scalp_tp2 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 3.5
+            scalp_tp3_pct = abs((scalp_tp3 - scalp_entry) / scalp_entry) * 100 if scalp_entry > 0 else 6.5
 
-        # Freeze & lock for 45 minutes
-        _LOCKED_SCALP_SETUPS[symbol_clean] = {
-            "entry": scalp_entry,
-            "sl": scalp_sl,
-            "tp1": scalp_tp1,
-            "tp2": scalp_tp2,
-            "tp3": scalp_tp3,
-            "sl_pct": scalp_sl_pct,
-            "tp1_pct": scalp_tp1_pct,
-            "tp2_pct": scalp_tp2_pct,
-            "tp3_pct": scalp_tp3_pct,
-            "direction_code": "LONG" if scalp_is_long else "SHORT",
-            "sl_why": sl_why,
-            "tp1_why": tp1_why,
-            "tp2_why": tp2_why,
-            "date_tehran": tehran_date_str,
-            "time_tehran": tehran_time_str,
-            "created_at": now_ts,
-            "expires_at": now_ts + 2700,
-            "closed": False
+            # Freeze & lock for 45 minutes
+            _LOCKED_SCALP_SETUPS[symbol_clean] = {
+                "entry": scalp_entry,
+                "sl": scalp_sl,
+                "tp1": scalp_tp1,
+                "tp2": scalp_tp2,
+                "tp3": scalp_tp3,
+                "sl_pct": scalp_sl_pct,
+                "tp1_pct": scalp_tp1_pct,
+                "tp2_pct": scalp_tp2_pct,
+                "tp3_pct": scalp_tp3_pct,
+                "direction_code": scalp_direction_code,
+                "sl_why": sl_why,
+                "tp1_why": tp1_why,
+                "tp2_why": tp2_why,
+                "date_tehran": tehran_date_str,
+                "time_tehran": tehran_time_str,
+                "created_at": now_ts,
+                "expires_at": now_ts + 2700,
+                "closed": False
+            }
+        else:
+            scalp_sl_pct = 0.0
+            scalp_tp1_pct = 0.0
+            scalp_tp2_pct = 0.0
+            scalp_tp3_pct = 0.0
+
+    if scalp_direction_code == "NO_TRADE":
+        scalp_signal = {
+            "signal_type": "SCALP",
+            "signal_type_fa": "اسکالپ (نوسان‌گیری کوتاه‌مدت)",
+            "timeframe": "15m",
+            "direction": "صبر / بدون معامله (NO TRADE)",
+            "direction_code": "NO_TRADE",
+            "direction_emoji": "⏸️",
+            "entry": None,
+            "entry_fmt": "—",
+            "stop_loss": None,
+            "stop_loss_fmt": "—",
+            "tp1": None,
+            "tp1_fmt": "—",
+            "tp2": None,
+            "tp2_fmt": "—",
+            "tp3": None,
+            "tp3_fmt": "—",
+            "date_tehran": scalp_date_tehran,
+            "time_tehran": scalp_time_tehran,
+            "holding_duration": "—",
+            "holding_duration_en": "—",
+            "core_modules": "Bookmap L2/L3 + NinjaTrader 8 + ATAS + Anti-Front-Run",
+            "rationale_fa": "سیگنال اسکالپ صادر نشد؛ شواهد اردرفلو به آستانهٔ همگرایی نرسید (Fail-Closed)."
         }
-
-    scalp_signal = {
+    else:
+        scalp_signal = {
         "signal_type": "SCALP",
         "signal_type_fa": "اسکالپ (نوسان‌گیری کوتاه‌مدت)",
         "timeframe": "15m",
@@ -358,12 +429,17 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     # PART 2: UNIFIED SWING SIGNAL (4h Timeframe - Quantower 4H & Liquidation Anchored)
     # FROZEN & LOCKED FOR 4 HOURS (Macro Structural Stability)
     # =========================================================================
-    etf_net = bank.get("spot_etf_summary", {}).get("total_daily_net_usd", "+$394.9M")
-    etf_is_positive = "+" in etf_net or "مثبت" in etf_net
-    cme_cot = bank.get("cme_cot_crypto", {})
+    bank_ok = bool(bank.get("ok"))
+    etf_summary = bank.get("spot_etf_summary", {}) if bank_ok else {}
+    etf_net = etf_summary.get("total_daily_net_usd", "")
+    etf_is_positive = bool(etf_net) and ("+" in str(etf_net) or "مثبت" in str(etf_net))
+    etf_is_negative = bool(etf_net) and ("-" in str(etf_net) or "منفی" in str(etf_net))
+    cme_cot = bank.get("cme_cot_crypto", {}) if bank_ok else {}
+    cot_pos = cme_cot.get("asset_managers_position", "")
     locked_sw = _LOCKED_SWING_SETUPS.get(symbol_clean)
     if locked_sw and (now_ts < locked_sw.get("expires_at", 0)) and not locked_sw.get("closed", False):
-        swing_is_long = (locked_sw["direction_code"] == "LONG")
+        swing_direction_code = locked_sw["direction_code"]
+        swing_is_long = swing_direction_code == "LONG"
         swing_entry = locked_sw["entry"]
         swing_sl = locked_sw["sl"]
         swing_tp1 = locked_sw["tp1"]
@@ -377,14 +453,26 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         swing_time_tehran = locked_sw.get("time_tehran", tehran_time_str)
     else:
         swing_bull_score = 0
+        swing_bear_score = 0
         if etf_is_positive:
             swing_bull_score += 4
-        if "84%" in cme_cot.get("asset_managers_position", "") or "Long" in cme_cot.get("asset_managers_position", ""):
+        elif etf_is_negative:
+            swing_bear_score += 4
+        if cot_pos and "Long" in cot_pos:
             swing_bull_score += 3
-        if cvd_val >= 0:
+        elif cot_pos and "Short" in cot_pos:
+            swing_bear_score += 3
+        if cvd_val > 0:
             swing_bull_score += 3
+        elif cvd_val < 0:
+            swing_bear_score += 3
 
-        swing_is_long = swing_bull_score >= 6
+        swing_direction_code = "NO_TRADE"
+        if swing_bull_score >= 6 and swing_bull_score > swing_bear_score:
+            swing_direction_code = "LONG"
+        elif swing_bear_score >= 6 and swing_bear_score > swing_bull_score:
+            swing_direction_code = "SHORT"
+        swing_is_long = swing_direction_code == "LONG"
         swing_entry = current_price
         swing_date_tehran = tehran_date_str
         swing_time_tehran = tehran_time_str
@@ -398,7 +486,7 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         short_liq = sorted([float(c["price"]) for c in liq_clusters if "شورت" in c.get("tier", "") and float(c["price"]) > swing_entry])
         long_liq = sorted([float(c["price"]) for c in liq_clusters if "لانگ" in c.get("tier", "") and float(c["price"]) < swing_entry], reverse=True)
 
-        if swing_is_long:
+        if swing_direction_code == "LONG":
             if long_liq:
                 sl_raw = min(long_liq[0] * 0.995, swing_entry * 0.982)
             else:
@@ -424,7 +512,7 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
                 swing_tp2 = round(swing_tp1 + min_step, dec)
             if swing_tp3 <= swing_tp2:
                 swing_tp3 = round(swing_tp2 + min_step, dec)
-        else:
+        elif swing_direction_code == "SHORT":
             if short_liq:
                 sl_raw = max(short_liq[0] * 1.005, swing_entry * 1.018)
             else:
@@ -450,31 +538,84 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
                 swing_tp2 = round(swing_tp1 - min_step, dec)
             if swing_tp3 >= swing_tp2:
                 swing_tp3 = round(swing_tp2 - min_step, dec)
+        else:
+            # Fail-Closed: no entry/SL/TP levels invented for a NO_TRADE state
+            swing_sl = None
+            swing_tp1 = None
+            swing_tp2 = None
+            swing_tp3 = None
 
-        swing_sl_pct = abs((swing_sl - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 1.80
-        swing_tp1_pct = abs((swing_tp1 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 2.50
-        swing_tp2_pct = abs((swing_tp2 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 5.50
-        swing_tp3_pct = abs((swing_tp3 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 10.25
+        if swing_direction_code != "NO_TRADE":
+            swing_sl_pct = abs((swing_sl - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 1.80
+            swing_tp1_pct = abs((swing_tp1 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 2.50
+            swing_tp2_pct = abs((swing_tp2 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 5.50
+            swing_tp3_pct = abs((swing_tp3 - swing_entry) / swing_entry) * 100 if swing_entry > 0 else 10.25
 
-        _LOCKED_SWING_SETUPS[symbol_clean] = {
-            "entry": swing_entry,
-            "sl": swing_sl,
-            "tp1": swing_tp1,
-            "tp2": swing_tp2,
-            "tp3": swing_tp3,
-            "sl_pct": swing_sl_pct,
-            "tp1_pct": swing_tp1_pct,
-            "tp2_pct": swing_tp2_pct,
-            "tp3_pct": swing_tp3_pct,
-            "direction_code": "LONG" if swing_is_long else "SHORT",
-            "date_tehran": tehran_date_str,
-            "time_tehran": tehran_time_str,
-            "created_at": now_ts,
-            "expires_at": now_ts + 14400,
-            "closed": False
+            _LOCKED_SWING_SETUPS[symbol_clean] = {
+                "entry": swing_entry,
+                "sl": swing_sl,
+                "tp1": swing_tp1,
+                "tp2": swing_tp2,
+                "tp3": swing_tp3,
+                "sl_pct": swing_sl_pct,
+                "tp1_pct": swing_tp1_pct,
+                "tp2_pct": swing_tp2_pct,
+                "tp3_pct": swing_tp3_pct,
+                "direction_code": swing_direction_code,
+                "date_tehran": tehran_date_str,
+                "time_tehran": tehran_time_str,
+                "created_at": now_ts,
+                "expires_at": now_ts + 14400,
+                "closed": False
+            }
+        else:
+            swing_sl_pct = 0.0
+            swing_tp1_pct = 0.0
+            swing_tp2_pct = 0.0
+            swing_tp3_pct = 0.0
+
+    rationale_parts = []
+    if etf_is_positive:
+        rationale_parts.append(f"ورود سرمایه به اسپات ETFها ({etf_net})")
+    elif etf_is_negative:
+        rationale_parts.append(f"خروج سرمایه از اسپات ETFها ({etf_net})")
+    if cot_pos and "Long" in cot_pos:
+        rationale_parts.append("پوزیشن لانگ مدیران دارایی در CME")
+    elif cot_pos and "Short" in cot_pos:
+        rationale_parts.append("پوزیشن شورت مدیران دارایی در CME")
+    if cvd_val > 0:
+        rationale_parts.append("دلتای مثبت نینجاتریدر")
+    elif cvd_val < 0:
+        rationale_parts.append("دلتای منفی نینجاتریدر")
+    swing_rationale = "؛ ".join(rationale_parts) if rationale_parts else "سیگنال بر پایهٔ داده‌های زندهٔ بایننس و پروفایل TPO کوانتاور صادر شده است."
+
+    if swing_direction_code == "NO_TRADE":
+        swing_signal = {
+            "signal_type": "SWING",
+            "signal_type_fa": "سوئینگ تریدینگ (موج‌سواری چندروزه)",
+            "timeframe": "4h",
+            "direction": "صبر / بدون معامله (NO TRADE)",
+            "direction_code": "NO_TRADE",
+            "direction_emoji": "⏸️",
+            "entry": None,
+            "entry_fmt": "—",
+            "stop_loss": None,
+            "stop_loss_fmt": "—",
+            "tp1": None,
+            "tp1_fmt": "—",
+            "tp2": None,
+            "tp2_fmt": "—",
+            "tp3": None,
+            "tp3_fmt": "—",
+            "date_tehran": swing_date_tehran,
+            "time_tehran": swing_time_tehran,
+            "holding_duration": "—",
+            "holding_duration_en": "—",
+            "core_modules": "Quantower 4H TPO (Binance Klines)",
+            "rationale_fa": "سیگنال سوئینگ صادر نشد؛ دادهٔ نهادی زنده (ETF/CoT) در دسترس نیست و شواهد به آستانهٔ همگرایی نرسید (Fail-Closed)."
         }
-
-    swing_signal = {
+    else:
+        swing_signal = {
         "signal_type": "SWING",
         "signal_type_fa": "سوئینگ تریدینگ (موج‌سواری چندروزه)",
         "timeframe": "4h",
@@ -495,23 +636,32 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         "time_tehran": swing_time_tehran,
         "holding_duration": "۲ الی ۵ روز",
         "holding_duration_en": "2 - 5 days",
-        "core_modules": "Quantower 4H TPO + CME CoT Whales + Spot ETF Net Flows + Wall Street 5 Banks + Geopolitical Radar",
-        "rationale_fa": f"انباشت سنگین اسپات ETFها ({etf_net})، پوزیشن ۸۴٪ لانگ مدیران دارایی در CME و حفظ محدوده منصفانه کف ارزش (VAL)."
+        "core_modules": "Quantower 4H TPO (Binance Klines) + CVD + Anti-Front-Run",
+        "rationale_fa": swing_rationale
     }
 
     # =========================================================================
     # PART 3: 9-MODULE INSTITUTIONAL CONFLICT RESOLUTION ENGINE
     # =========================================================================
+    bm_ok = bool(bm.get("ok"))
+    nt_ok = bool(nt.get("ok"))
+    sc_ok = bool(sc.get("ok"))
+    atas_ok = bool(atas.get("ok"))
+    qt_ok = bool(qt.get("ok"))
+    smt_ok = bool(smt_liq and smt_liq.get("ok"))
+    smt_data = (smt_liq or {}).get("smt", {}) if smt_ok else {}
+    smt_liq_heat = (smt_liq or {}).get("liquidation_heatmap", {}) if smt_ok else {}
+
     conflict_checklist: List[Dict[str, Any]] = [
-        {"tool": "Bookmap L2/L3", "aligned": True, "note": "دیواره خرید و پر شدن مجدد نقدینگی"},
-        {"tool": "NinjaTrader Footprint", "aligned": cvd_val >= 0, "note": "دلتای مثبت و حراج ناقص در سقف"},
-        {"tool": "ATAS Tape & CVD", "aligned": atas_tps >= 20, "note": "واگرایی صعودی دلتا و جذب فروشندگان"},
-        {"tool": "Sierra Chart VBP", "aligned": True, "note": "مهاجرت صعودی ارزش حراج از آسیا به نیویورک"},
-        {"tool": "Quantower TPO", "aligned": True, "note": "گسترش صعودی سقف Initial Balance"},
-        {"tool": "Crypto SMT Triad", "aligned": (smt_liq.get("smt", {}).get("status") != "BEARISH_DIVERGENCE") if smt_liq else True, "note": "همسویی سه‌قلوهای BTC/ETH/SOL"},
-        {"tool": "Futures Funding & Liq", "aligned": (smt_liq.get("liquidation_heatmap", {}).get("funding_state") != "OVERHEATED_LONGS") if smt_liq else True, "note": "عدم داغ‌شدگی فاندینگ ریت"},
-        {"tool": "Spot ETF Inflows", "aligned": etf_is_positive, "note": "ورود سرمایه نهادی بلک‌راک و فیدلیتی"},
-        {"tool": "Tether Minting & On-Chain", "aligned": True, "note": "تزریق ۱ میلیارد دلار تتر خزانه به بایننس"}
+        {"tool": "Bookmap L2/L3", "aligned": bm_ok, "note": "عمق سفارش زندهٔ بایننس در دسترس است" if bm_ok else "دادهٔ بوک‌مپ در دسترس نیست (Fail-Closed)"},
+        {"tool": "NinjaTrader Footprint", "aligned": nt_ok and cvd_val > 0, "note": "دلتای مثبت فوت‌پرینت" if (nt_ok and cvd_val > 0) else ("دلتای فوت‌پرینت مثبت نیست" if nt_ok else "دادهٔ فوت‌پرینت در دسترس نیست (Fail-Closed)")},
+        {"tool": "ATAS Tape & CVD", "aligned": atas_ok and atas_cvd_status == "BULLISH_ABSORPTION", "note": "برتری خریداران تهاجمی در نوار معاملات" if (atas_ok and atas_cvd_status == "BULLISH_ABSORPTION") else ("برتری خریداران تهاجمی در نوار ثبت نشد" if atas_ok else "دادهٔ اتاس در دسترس نیست (Fail-Closed)")},
+        {"tool": "Sierra Chart VBP", "aligned": sc_ok, "note": "دادهٔ VBP زنده از کندل‌های بایننس در دسترس است" if sc_ok else "دادهٔ سیراچارت در دسترس نیست (Fail-Closed)"},
+        {"tool": "Quantower TPO", "aligned": qt_ok, "note": "پروفایل TPO زنده در دسترس است" if qt_ok else "دادهٔ کوانتاور در دسترس نیست (Fail-Closed)"},
+        {"tool": "Crypto SMT Triad", "aligned": smt_ok and smt_data.get("status") != "BEARISH_DIVERGENCE", "note": "وضعیت SMT تحلیل شد" if smt_ok else "دادهٔ اسمارت‌مانی در دسترس نیست (Fail-Closed)"},
+        {"tool": "Futures Funding & Liq", "aligned": smt_ok and smt_liq_heat.get("funding_state") != "OVERHEATED_LONGS", "note": "وضعیت فاندینگ تحلیل شد" if smt_ok else "دادهٔ لیکوئیدیشن در دسترس نیست (Fail-Closed)"},
+        {"tool": "Spot ETF Inflows", "aligned": etf_is_positive, "note": f"جریان ETF: {etf_net}" if bank_ok and etf_net else "دادهٔ زندهٔ جریان ETF در دسترس نیست (Fail-Closed)"},
+        {"tool": "Tether Minting & On-Chain", "aligned": False, "note": "دادهٔ زندهٔ خزانهٔ تتر در دسترس نیست (Fail-Closed)"}
     ]
 
     conflict_count = len([c for c in conflict_checklist if not c["aligned"]])
@@ -527,18 +677,31 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
     }
 
     if has_conflict:
-        scalp_signal["direction"] = "صبر / بدون معامله (NO TRADE)"
-        scalp_signal["direction_code"] = "NO_TRADE"
-        scalp_signal["direction_emoji"] = "⏸️"
-        swing_signal["direction"] = "صبر / بدون معامله (NO TRADE)"
-        swing_signal["direction_code"] = "NO_TRADE"
-        swing_signal["direction_emoji"] = "⏸️"
+        for sig_x in (scalp_signal, swing_signal):
+            sig_x["direction"] = "صبر / بدون معامله (NO TRADE)"
+            sig_x["direction_code"] = "NO_TRADE"
+            sig_x["direction_emoji"] = "⏸️"
+            sig_x["entry"] = None
+            sig_x["entry_fmt"] = "—"
+            sig_x["stop_loss"] = None
+            sig_x["stop_loss_fmt"] = "—"
+            sig_x["tp1"] = None
+            sig_x["tp1_fmt"] = "—"
+            sig_x["tp2"] = None
+            sig_x["tp2_fmt"] = "—"
+            sig_x["tp3"] = None
+            sig_x["tp3_fmt"] = "—"
 
     # Alignment
-    is_aligned = scalp_is_long == swing_is_long
-    if is_aligned:
+    scalp_dir_final = scalp_signal.get("direction_code")
+    swing_dir_final = swing_signal.get("direction_code")
+    is_aligned = scalp_dir_final == swing_dir_final
+    if scalp_dir_final == "NO_TRADE" or swing_dir_final == "NO_TRADE":
+        alignment_status = "بدون سیگنال اجرایی (No Trade ⏸️)"
+        alignment_note = "یکی از بازه‌های اسکالپ/سوئینگ شرایط صدور سیگنال را نداشت؛ طبق اصول Fail-Closed هیچ معامله‌ای پیشنهاد نمی‌شود."
+    elif is_aligned:
         alignment_status = "همسویی کامل (Full Alignment 💎)"
-        alignment_note = "هر دو دیدگاه اسکالپ و سوئینگ هم‌جهت هستند؛ ستاپ در بالاترین سطح اعتبار و وین‌ریت سازمانی قرار دارد."
+        alignment_note = "هر دو دیدگاه اسکالپ و سوئینگ هم‌جهت هستند؛ ستاپ در بالاترین سطح اعتبار قرار دارد."
     else:
         alignment_status = "اسکالپ اصلاحی درون روند کلان (Counter-Trend Retracement ⚠️)"
         alignment_note = "دیدگاه اسکالپ ۱۵ دقیقه‌ای خلاف جهت سوئینگ چندروزه است؛ این معامله یک پولبک موقت است و خروج سریع در TP1 الزامی است."
@@ -553,7 +716,7 @@ def get_unified_signals(symbol: str = "BTC") -> Dict[str, Any]:
         "alignment_status": alignment_status,
         "alignment_note": alignment_note,
         "conflict_engine": conflict_engine,
-        "smt_and_liquidation": smt_liq,
+        "smt_and_liquidation": smt_liq if isinstance(smt_liq, dict) else {"ok": False, "error": "SMT_ENGINE_UNAVAILABLE", "message": "موتور SMT در دسترس نیست (Fail-Closed)."},
         "updated_at_iran": f"{tehran_date_str} ساعت {tehran_time_str}"
     }
     _SIG_CACHE[cache_k] = res_final
@@ -566,6 +729,11 @@ def format_clean_telegram_signal(sig: Dict[str, Any], symbol: str = "BTC") -> st
     Only: Direction, Type & Timeframe, Entry, TP1, TP2, TP3, SL, Date, Time (Iran), Duration.
     """
     sym = symbol.replace("USDT", "").replace("/", "").strip().upper()
+    if sig.get("direction_code") == "NO_TRADE":
+        return (f"⏸️ <b>وضعیت {sig.get('signal_type_fa', 'سیگنال')} [#{sym}]</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                "🧭 <b>جهت معامله:</b> صبر / بدون معامله (NO TRADE)\n"
+                f"📝 <i>{sig.get('rationale_fa', 'شواهد به آستانهٔ همگرایی نرسید (Fail-Closed).')}</i>").strip()
     sig_type_fa = sig.get("signal_type_fa", "اسکالپ")
     tf = sig.get("timeframe", "15m")
     direction = sig.get("direction", "خرید (LONG)")

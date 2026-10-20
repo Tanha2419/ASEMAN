@@ -57,10 +57,17 @@ class CryptoDataFetcher:
             res = self.session.get(url, timeout=4)
             if res.status_code == 200:
                 data = res.json()
-                if "lastPrice" in data:
-                    pct = float(data.get("priceChangePercent", 0))
-                    if abs(pct) < 1.0 and abs(pct) > 0.0001:
-                        pct = pct * 100.0
+                if "lastPrice" in data and float(data["lastPrice"]) > 0:
+                    last_px = float(data["lastPrice"])
+                    open_px = data.get("openPrice") or data.get("prevClose")
+                    price_chg = data.get("priceChange")
+                    if open_px is not None and float(open_px) > 0:
+                        pct = (last_px - float(open_px)) / float(open_px) * 100.0
+                    elif price_chg is not None:
+                        prev_px = last_px - float(price_chg)
+                        pct = (float(price_chg) / prev_px * 100.0) if prev_px > 0 else 0.0
+                    else:
+                        pct = float(data.get("priceChangePercent") or 0)
                     return {
                         "source": "MEXC",
                         "symbol": data["symbol"],
@@ -130,25 +137,27 @@ class CryptoDataFetcher:
     def fetch_kucoin_ticker(self, symbol: str) -> Optional[Dict[str, Any]]:
         try:
             clean = symbol.upper().replace("USDT", "") + "-USDT"
-            url = f"https://api.kucoin.com/api/v1/market/orderbook/level1?symbol={clean}"
+            url = f"https://api.kucoin.com/api/v1/market/stats?symbol={clean}"
             headers = {"User-Agent": "Mozilla/5.0"}
             res = self.session.get(url, headers=headers, timeout=3.5)
             if res.status_code == 200:
-                data = res.json().get("data", {})
-                price = float(data.get("price", 0))
-                if price > 0:
-                    return {
-                        "source": "KuCoin",
-                        "symbol": symbol.upper(),
-                        "last_price": price,
-                        "price_change_pct": 0.0,
-                        "high_24h": price,
-                        "low_24h": price,
-                        "volume_base": float(data.get("size", 0)),
-                        "volume_quote": 0.0,
-                        "bid": float(data.get("bestBid", price)),
-                        "ask": float(data.get("bestAsk", price))
-                    }
+                data = res.json().get("data") or {}
+                raw = {k: data.get(k) for k in ("last", "changeRate", "high", "low", "vol", "volValue", "buy", "sell")}
+                if all(v is not None for v in raw.values()):
+                    price = float(raw["last"])
+                    if price > 0:
+                        return {
+                            "source": "KuCoin",
+                            "symbol": symbol.upper(),
+                            "last_price": price,
+                            "price_change_pct": round(float(raw["changeRate"]) * 100.0, 2),
+                            "high_24h": float(raw["high"]),
+                            "low_24h": float(raw["low"]),
+                            "volume_base": float(raw["vol"]),
+                            "volume_quote": float(raw["volValue"]),
+                            "bid": float(raw["buy"]),
+                            "ask": float(raw["sell"])
+                        }
         except Exception:
             pass
         return None
@@ -245,11 +254,41 @@ class CryptoDataFetcher:
         except Exception:
             pass
 
-        return {"bid_volume_usd": 0, "ask_volume_usd": 0, "ratio": 1.0, "spread_pct": 0, "pressure": "متعادل", "sentiment": "Neutral", "top_bids": [], "top_asks": [], "whale_walls": []}
+        return {
+            "ok": False,
+            "available": False,
+            "best_bid": None,
+            "best_ask": None,
+            "bid_volume_usd": None,
+            "ask_volume_usd": None,
+            "ratio": None,
+            "spread_pct": None,
+            "pressure": "نامشخص (عمق بازار در دسترس نیست)",
+            "sentiment": "Unavailable",
+            "top_bids": [],
+            "top_asks": [],
+            "whale_walls": [],
+            "data_note": "دریافت عمق اردربوک از صرافی‌های متصل ناموفق بود؛ هیچ عدد عمق ساختگی جایگزین نمی‌شود (Fail-Closed)."
+        }
 
     def _calculate_depth_metrics(self, bids: List[List[float]], asks: List[List[float]]) -> Dict[str, Any]:
         if not bids or not asks:
-            return {"bid_volume_usd": 0, "ask_volume_usd": 0, "ratio": 1.0, "spread_pct": 0, "pressure": "متعادل", "sentiment": "Neutral", "top_bids": [], "top_asks": [], "whale_walls": []}
+            return {
+                "ok": False,
+                "available": False,
+                "best_bid": None,
+                "best_ask": None,
+                "bid_volume_usd": None,
+                "ask_volume_usd": None,
+                "ratio": None,
+                "spread_pct": None,
+                "pressure": "نامشخص (عمق بازار در دسترس نیست)",
+                "sentiment": "Unavailable",
+                "top_bids": [],
+                "top_asks": [],
+                "whale_walls": [],
+                "data_note": "اسنپ‌شات عمق خالی بود؛ هیچ نسبت ساختگی جایگزین نمی‌شود (Fail-Closed)."
+            }
         
         bid_vol = sum(b[0] * b[1] for b in bids)
         ask_vol = sum(a[0] * a[1] for a in asks)
@@ -304,49 +343,76 @@ class CryptoDataFetcher:
 
     def fetch_institutional_derivatives(self, symbol: str) -> Dict[str, Any]:
         contract_sym = symbol.replace("USDT", "_USDT")
+        oi_contracts = None
+        oi_usd = None
+        last_px = None
+        funding_rate = None
+
         try:
             url_ticker = f"https://contract.mexc.com/api/v1/contract/ticker?symbol={contract_sym}"
-            url_fund = f"https://contract.mexc.com/api/v1/contract/funding_rate/{contract_sym}"
-            
             res_t = self.session.get(url_ticker, timeout=4)
-            res_f = self.session.get(url_fund, timeout=4)
-            
-            oi_val = 0
-            funding_rate = 0.0
-            
             if res_t.status_code == 200:
-                dt = res_t.json().get("data", {})
-                oi_val = float(dt.get("holdVol", 0))
-                
-            if res_f.status_code == 200:
-                df = res_f.json().get("data", {})
-                funding_rate = float(df.get("fundingRate", 0.0))
-                
-            fr_pct = funding_rate * 100.0
-            if fr_pct > 0.02:
-                crowd = "ازدحام شدید لانگ (خطر هانت لانگ‌ها و ریزش فیک)"
-            elif fr_pct < -0.01:
-                crowd = "ازدحام شورت (احتمال پامپ و شورت‌اسکوییز Short Squeeze)"
-            else:
-                crowd = "متعادل و طبیعی"
-
-            return {
-                "open_interest_usd": oi_val,
-                "open_interest_fmt": f"${oi_val/1_000_000:,.1f}M" if oi_val > 1_000_000 else f"${oi_val:,.0f}",
-                "funding_rate": round(fr_pct, 4),
-                "funding_rate_fmt": f"{fr_pct:+.4f}%",
-                "market_crowd": crowd,
-                "has_data": oi_val > 0
-            }
+                dt = res_t.json().get("data") or {}
+                if dt.get("holdVol") is not None:
+                    oi_contracts = float(dt["holdVol"])
+                if dt.get("lastPrice") is not None:
+                    last_px = float(dt["lastPrice"])
+                elif dt.get("indexPrice") is not None:
+                    last_px = float(dt["indexPrice"])
+                if dt.get("fundingRate") is not None:
+                    funding_rate = float(dt["fundingRate"])
         except Exception:
             pass
+
+        try:
+            url_fund = f"https://contract.mexc.com/api/v1/contract/funding_rate/{contract_sym}"
+            res_f = self.session.get(url_fund, timeout=4)
+            if res_f.status_code == 200:
+                df = res_f.json().get("data") or {}
+                if df.get("fundingRate") is not None:
+                    funding_rate = float(df["fundingRate"])
+        except Exception:
+            pass
+
+        if oi_contracts is not None and last_px is not None:
+            try:
+                url_detail = f"https://contract.mexc.com/api/v1/contract/detail?symbol={contract_sym}"
+                res_d = self.session.get(url_detail, timeout=4)
+                if res_d.status_code == 200:
+                    dd = res_d.json().get("data") or {}
+                    contract_size = dd.get("contractSize")
+                    if contract_size is not None:
+                        oi_usd = oi_contracts * float(contract_size) * last_px
+            except Exception:
+                pass
+
+        fr_pct = funding_rate * 100.0 if funding_rate is not None else None
+        if fr_pct is None:
+            crowd = "نامشخص (فاندینگ در دسترس نیست)"
+        elif fr_pct > 0.02:
+            crowd = "ازدحام شدید لانگ (خطر هانت لانگ‌ها و ریزش فیک)"
+        elif fr_pct < -0.01:
+            crowd = "ازدحام شورت (احتمال پامپ و شورت‌اسکوییز Short Squeeze)"
+        else:
+            crowd = "متعادل و طبیعی"
+
+        if oi_usd is not None:
+            oi_fmt = f"${oi_usd/1_000_000_000:,.2f}B" if oi_usd >= 1_000_000_000 else (f"${oi_usd/1_000_000:,.1f}M" if oi_usd >= 1_000_000 else f"${oi_usd:,.0f}")
+        elif oi_contracts is not None:
+            oi_fmt = f"{oi_contracts:,.0f} قرارداد (ارزش دلاری نامشخص)"
+        else:
+            oi_fmt = "نامشخص"
+
         return {
-            "open_interest_usd": 0,
-            "open_interest_fmt": "N/A",
-            "funding_rate": 0.0,
-            "funding_rate_fmt": "0.0000%",
-            "market_crowd": "داده مشتقه در دسترس نیست",
-            "has_data": False
+            "ok": oi_usd is not None or funding_rate is not None,
+            "open_interest_usd": round(oi_usd, 2) if oi_usd is not None else None,
+            "open_interest_contracts": oi_contracts,
+            "open_interest_fmt": oi_fmt,
+            "funding_rate": round(fr_pct, 4) if fr_pct is not None else None,
+            "funding_rate_fmt": f"{fr_pct:+.4f}%" if fr_pct is not None else "نامشخص",
+            "market_crowd": crowd,
+            "has_data": oi_usd is not None or oi_contracts is not None or funding_rate is not None,
+            "data_note": "ارزش OI از حجم قراردادی MEXC × contractSize × آخرین قیمت محاسبه شده است." if oi_usd is not None else "ارزش دلاری OI قابل محاسبه نبود؛ حجم قراردادی خام نمایش داده می‌شود."
         }
 
     def fetch_fear_and_greed(self) -> Dict[str, Any]:
@@ -397,6 +463,7 @@ class CryptoDataFetcher:
                         }.get(cls, cls)
 
                         res_data = {
+                            "ok": True,
                             "value": val,
                             "classification": cls,
                             "classification_fa": fa_cls,
@@ -424,6 +491,7 @@ class CryptoDataFetcher:
                     "Extreme Greed": "طمع شدید (Extreme Greed) - هشدار سقف‌های قیمتی و سیو سود"
                 }.get(cls, cls)
                 res_data = {
+                    "ok": True,
                     "value": val,
                     "classification": cls,
                     "classification_fa": fa_cls,
@@ -438,7 +506,15 @@ class CryptoDataFetcher:
         if hasattr(self, "_fng_cache") and self._fng_cache and self._fng_cache.get("data"):
             return self._fng_cache["data"]
 
-        return {"value": 50, "classification": "Neutral", "classification_fa": "خنثی", "source": "Default", "timestamp": None}
+        return {
+            "ok": False,
+            "error": "FNG_UNAVAILABLE",
+            "value": None,
+            "classification": "Unavailable",
+            "classification_fa": "نامشخص (فید شاخص طمع و ترس در دسترس نیست)",
+            "source": "Unavailable",
+            "timestamp": None
+        }
 
     def fetch_coingecko_details(self, base_coin: str) -> Dict[str, Any]:
         try:
@@ -451,8 +527,8 @@ class CryptoDataFetcher:
                     if c["symbol"].upper() == base_coin.upper():
                         match = c
                         break
-                if not match and coins:
-                    match = coins[0]
+                if not match:
+                    return {}
                 
                 if match:
                     coin_id = match["id"]
@@ -461,13 +537,13 @@ class CryptoDataFetcher:
                     if det_res.status_code == 200:
                         md = det_res.json()
                         market_data = md.get("market_data", {})
-                        ath = market_data.get("ath", {}).get("usd", 0)
-                        ath_change_pct = market_data.get("ath_change_percentage", {}).get("usd", 0)
-                        mcap = market_data.get("market_cap", {}).get("usd", 0)
-                        fdv = market_data.get("fully_diluted_valuation", {}).get("usd", 0)
-                        rank = md.get("market_cap_rank", 0)
-                        circ_supply = market_data.get("circulating_supply", 0)
-                        total_supply = market_data.get("total_supply", 0)
+                        ath = market_data.get("ath", {}).get("usd")
+                        ath_change_pct = market_data.get("ath_change_percentage", {}).get("usd")
+                        mcap = market_data.get("market_cap", {}).get("usd")
+                        fdv = market_data.get("fully_diluted_valuation", {}).get("usd")
+                        rank = md.get("market_cap_rank")
+                        circ_supply = market_data.get("circulating_supply")
+                        total_supply = market_data.get("total_supply")
                         desc = md.get("description", {}).get("en", "")
                         if desc:
                             desc = desc.split(". ")[0] + "."
@@ -478,7 +554,7 @@ class CryptoDataFetcher:
                             "market_cap": mcap,
                             "fdv": fdv,
                             "ath": ath,
-                            "ath_change_pct": round(ath_change_pct, 2) if ath_change_pct else 0,
+                            "ath_change_pct": round(ath_change_pct, 2) if ath_change_pct is not None else None,
                             "circulating_supply": circ_supply,
                             "total_supply": total_supply,
                             "categories": md.get("categories", [])[:3],
@@ -683,24 +759,24 @@ class SmartMoneyEngine:
         # 2. Price UP + OI DOWN: Short Covering (رشد ناشی از استاپ خوردن شورت‌ها)
         # 3. Price DOWN + OI UP: Short Accumulation (ورود سنگین فروشندگان سازمانی)
         # 4. Price DOWN + OI DOWN: Long Liquidation (لیکوئید شدن خریداران)
-        if price_change_pct >= 0.5:
+        if price_change_pct is not None and price_change_pct >= 0.5:
             regime = "Long Accumulation (انباشت لانگ)"
-            regime_fa = "انباشت پوزیشن‌های خرید سازمانی"
+            regime_fa = "غالب‌شدن خریداران در ۲۴ ساعت گذشته"
             regime_code = "LONG_ACCUMULATION"
-            behavior = "Price ↑ + OI ↑ (قدرت روند صعودی)"
-            implication = "افزایش قیمت همراه با ورود سرمایه نو به پوزیشن‌های خرید؛ تایید قدرت روند صعودی."
-        elif price_change_pct <= -0.5:
+            behavior = "Price ↑ (رژیم صعودی ۲۴ ساعته)"
+            implication = "قیمت در ۲۴ ساعت گذشته افزایش یافته و جهت‌گیری خریداران غالب است؛ دادهٔ تاریخی تغییر OI برای تأیید ورود پول نو در این فید موجود نیست."
+        elif price_change_pct is not None and price_change_pct <= -0.5:
             regime = "Short Accumulation (انباشت شورت)"
-            regime_fa = "انباشت پوزیشن‌های فروش سازمانی"
+            regime_fa = "غالب‌شدن فروشندگان در ۲۴ ساعت گذشته"
             regime_code = "SHORT_ACCUMULATION"
-            behavior = "Price ↓ + OI ↑ (قدرت روند نزولی)"
-            implication = "کاهش قیمت همراه با ورود پول پرقدرت به قراردادهای فروش؛ هشدار ریزش بیشتر."
+            behavior = "Price ↓ (رژیم نزولی ۲۴ ساعته)"
+            implication = "قیمت در ۲۴ ساعت گذشته کاهش یافته و جهت‌گیری فروشندگان غالب است؛ دادهٔ تاریخی تغییر OI برای تأیید ورود پول جدید در دسترس نیست."
         else:
             regime = "Consolidation / Neutral (رنج و تسویه)"
             regime_fa = "تعادل رژیم بازار و نوسان رنج"
             regime_code = "NEUTRAL"
-            behavior = "Price ~ + OI Stable"
-            implication = "تعادل میان خریداران و فروشندگان مشتقه؛ فاقد جهت‌گیری تهاجمی."
+            behavior = "Price ~ (بدون جهت غالب)"
+            implication = "تغییر قیمت ۲۴ ساعته در محدودهٔ خنثی است؛ دادهٔ تغییر OI در دسترس نیست."
 
         return {
             "regime": regime,
@@ -708,8 +784,10 @@ class SmartMoneyEngine:
             "regime_code": regime_code,
             "behavior": behavior,
             "implication": implication,
-            "price_change": f"{price_change_pct:+.2f}%",
-            "oi_change": "افزایشی" if abs(price_change_pct) > 0.5 else "متعادل"
+            "price_change": f"{price_change_pct:+.2f}%" if price_change_pct is not None else "نامشخص",
+            "oi_change": "نامشخص (دلتای OI در دسترس نیست)",
+            "oi_change_available": False,
+            "funding_rate_pct": funding_rate if funding_rate is not None else None
         }
 
     @classmethod
@@ -1299,7 +1377,7 @@ class CryptoTradingAgent:
         klines_1d = fetched.get("1d") or []
         orderbook = fetched.get("ob") or {"bids": [], "asks": []}
         derivatives = fetched.get("derivatives") or {}
-        fng = fetched.get("fng") or {"value": 50, "classification": "Neutral"}
+        fng = fetched.get("fng") or {"ok": False, "error": "FNG_UNAVAILABLE", "value": None, "classification": "Unavailable", "classification_fa": "نامشخص", "source": "Unavailable"}
         fundamentals = fetched.get("fundamentals") or {}
         macro = fetched.get("macro") or {}
         onchain = fetched.get("onchain") or {}
@@ -1322,8 +1400,8 @@ class CryptoTradingAgent:
         # 6. Institutional Derivatives (Open Interest & Funding Rate)
         derivatives_matrix = self.smc.evaluate_derivatives_matrix(
             ticker.get("price_change_pct", 0),
-            derivatives.get("open_interest_usd", 0),
-            derivatives.get("funding_rate", 0)
+            derivatives.get("open_interest_usd"),
+            derivatives.get("funding_rate")
         )
 
         # 9. Generate Scalp (1m/5m) & Swing (4h/1d) Setups with 5-Layer Confluence
@@ -1407,7 +1485,8 @@ class CryptoTradingAgent:
             c_prev = btc_candles[-4][4] # 45-60m ago
             btc_chg_pct_15m = round(((c_now - c_prev) / c_prev) * 100, 2)
         
-        btc_d = float(macro.get("btc_dominance") or 58.0)
+        _btc_d_raw = macro.get("btc_dominance")
+        btc_d = float(_btc_d_raw) if isinstance(_btc_d_raw, (int, float)) else None
         
         # Determine Altcoin Green Light Status
         if btc_chg_pct_15m < -1.8:
@@ -1416,7 +1495,7 @@ class CryptoTradingAgent:
             alt_title = "ریزش تهاجمی بیت‌کوین - ورود به آلت‌کوین‌ها مسدود"
             alt_advice = "بیت‌کوین در ۶۰ دقیقه اخیر بیش از ۱.۸٪ ریزش تهاجمی داشته است. تمامی آلت‌کوین‌ها با ریسک افت شدید همراه هستند."
             alt_color = "#ff3366"
-        elif btc_d > 61.0:
+        elif btc_d is not None and btc_d > 61.0:
             alt_status = "YELLOW_DOMINANCE"
             alt_badge = "🟡 احتیاط (BTC Dominant)"
             alt_title = "مکیده شدن نقدینگی توسط بیت‌کوین (سلطه BTC)"
@@ -1517,9 +1596,9 @@ class CryptoTradingAgent:
         if "مثبت" in vwap_data.get("cvd_trend", "") and "BULLISH" in bias_15m: direction_score += 10
         elif "منفی" in vwap_data.get("cvd_trend", "") and "BEARISH" in bias_15m: direction_score += 10
 
-        ob_ratio = ob.get("ratio", 1.0)
-        if ob_ratio > 1.25 and "BULLISH" in bias_15m: direction_score += 10
-        elif ob_ratio < 0.75 and "BEARISH" in bias_15m: direction_score += 10
+        ob_ratio = ob.get("ratio")
+        if ob_ratio is not None and ob_ratio > 1.25 and "BULLISH" in bias_15m: direction_score += 10
+        elif ob_ratio is not None and ob_ratio < 0.75 and "BEARISH" in bias_15m: direction_score += 10
 
         direction_score = max(15, min(98, direction_score))
 
@@ -1552,7 +1631,8 @@ class CryptoTradingAgent:
         if not div.get("bearish") and not div.get("bullish"): risk_score += 15
         elif ("BULLISH" in bias_15m and div.get("bearish")) or ("BEARISH" in bias_15m and div.get("bullish")): risk_score -= 25
 
-        if ob.get("spread_pct", 0) < 0.05: risk_score += 10
+        spread_pct_v = ob.get("spread_pct")
+        if spread_pct_v is not None and spread_pct_v < 0.05: risk_score += 10
 
         # Layer 7 Circuit Breaker impact on Risk Score
         if news_circuit and news_circuit.get("circuit_status") == "EMERGENCY_CIRCUIT_BREAKER":
@@ -1633,8 +1713,15 @@ class CryptoTradingAgent:
         vwap_data = smc_15m.get("vwap_cvd", {})
         sweep = smc_15m.get("latest_sweep")
         sweep_str = sweep.get("title") if sweep else "نقدینگی در حال انباشت"
-        ratio = ob.get("ratio", 1.0)
-        imbalance = f"Buy Imbalance ({ratio})" if ratio > 1.15 else (f"Sell Imbalance ({ratio})" if ratio < 0.85 else "تعادل نسبی")
+        ratio = ob.get("ratio")
+        if ratio is None:
+            imbalance = "نامشخص (عمق اردربوک در دسترس نیست)"
+        elif ratio > 1.15:
+            imbalance = f"Buy Imbalance ({ratio})"
+        elif ratio < 0.85:
+            imbalance = f"Sell Imbalance ({ratio})"
+        else:
+            imbalance = "تعادل نسبی"
         action = scalp.get("action", "WAIT")
         
         table = [
@@ -1642,10 +1729,10 @@ class CryptoTradingAgent:
             {"param": "ساختار تکنیکال ۱۵ دقیقه (Structure 15m)", "val": smc_15m.get("latest_structure", {}).get("label", "رنج"), "status": "PASS" if smc_15m.get("latest_structure") else "WARN"},
             {"param": "موقعیت نسبت به VWAP سازمانی", "val": vwap_data.get("vwap_position", "در محدوده VWAP"), "status": "PASS" if "بالای VWAP" in vwap_data.get("vwap_position","") or "پایین VWAP" in vwap_data.get("vwap_position","") else "WARN"},
             {"param": "حجم دلتا و جهت CVD", "val": f"{vwap_data.get('cvd_trend', '')} (Delta: {vwap_data.get('delta_latest', 0):+.2f})", "status": "PASS" if "مثبت" in vwap_data.get("cvd_trend","") or "منفی" in vwap_data.get("cvd_trend","") else "INFO"},
-            {"param": "قراردادهای باز مشتقه (Open Interest)", "val": f"{derivatives.get('open_interest_fmt', 'N/A')} ({derivatives_matrix.get('behavior', '')})", "status": "INFO"},
-            {"param": "نرخ تامین مالی (Funding Rate)", "val": f"{derivatives.get('funding_rate_fmt', '0%')} ({derivatives.get('market_crowd', 'خنثی')})", "status": "INFO"},
+            {"param": "قراردادهای باز مشتقه (Open Interest)", "val": f"{derivatives.get('open_interest_fmt') or 'نامشخص'} ({derivatives_matrix.get('behavior') or 'نامشخص'})", "status": "INFO"},
+            {"param": "نرخ تامین مالی (Funding Rate)", "val": f"{derivatives.get('funding_rate_fmt') or 'نامشخص'} ({derivatives.get('market_crowd') or 'نامشخص'})", "status": "INFO"},
             {"param": "شکار نقدینگی و تسویه استاپ‌ها (Sweeps)", "val": sweep_str, "status": "PASS" if sweep else "INFO"},
-            {"param": "وضعیت دفتر سفارشات (Order Book Imbalance)", "val": imbalance, "status": "PASS" if ratio > 1.15 or ratio < 0.85 else "INFO"},
+            {"param": "وضعیت دفتر سفارشات (Order Book Imbalance)", "val": imbalance, "status": "PASS" if ratio is not None and (ratio > 1.15 or ratio < 0.85) else "INFO"},
             {"param": "گره تراکم حجم نقدینگی (POC)", "val": f"{format_price_adaptive(smc_15m.get('poc', 0))} (VAH: {format_price_adaptive(smc_15m.get('vah', 0))} | VAL: {format_price_adaptive(smc_15m.get('val', 0))})", "status": "INFO"},
             {"param": "سیگنال نهایی سیستم (Signal)", "val": action, "status": "PASS" if "LONG" in action or "SHORT" in action or "BUY" in action or "SELL" in action else "WARN"},
             {"param": "محدوده ورود بهینه (Entry Zone)", "val": scalp.get("entry_zone", "-"), "status": "INFO"},
@@ -1723,7 +1810,9 @@ class CryptoTradingAgent:
         ema20 = ref_ta.get("ema20", price)
         nearest_sup = ref_ta.get("nearest_support", price - atr)
         nearest_res = ref_ta.get("nearest_resistance", price + atr)
-        ob_ratio = float(ob.get("ratio", 1.0))
+        ob_ratio_raw = ob.get("ratio")
+        ob_ratio = float(ob_ratio_raw) if ob_ratio_raw is not None else None
+        ob_depth_txt = f"{ob_ratio:.2f}x" if ob_ratio is not None else "نامشخص (بدون داده اردربوک)"
         fake_badge = smc.get("fake_trend", {}).get("badge", "ORGANIC")
         latest_sweep = smc.get("latest_sweep", {})
 
@@ -1732,9 +1821,9 @@ class CryptoTradingAgent:
         is_dead_chop = atr_pct < 0.075
 
         # --- GATE 1: Order Book Wall & Imbalance Check ---
-        # ob_ratio > 1.1 means strong buying depth support; < 0.9 means strong selling wall pressure
-        has_sell_wall = ob_ratio < 0.85
-        has_buy_wall = ob_ratio > 1.18
+        # Depth gate stays neutral when live order book is unavailable (no synthetic ratio).
+        has_sell_wall = ob_ratio is not None and ob_ratio < 0.85
+        has_buy_wall = ob_ratio is not None and ob_ratio > 1.18
 
         # --- GATE 3: Open Interest & Derivatives Regime Validation ---
         deriv_regime = derivatives_matrix.get("regime_code", "NEUTRAL") if derivatives_matrix else "NEUTRAL"
@@ -1761,7 +1850,7 @@ class CryptoTradingAgent:
             ("BULLISH" in bias_5m or "BULLISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") or price >= ema20)
             and bullish_mtf
             and (32 <= rsi_5m <= 72)
-            and ob_ratio >= 0.88
+            and (ob_ratio is not None and ob_ratio >= 0.88)
             and not has_sell_wall
             and not is_short_covering_trap
             and fake_badge != "BULL_TRAP"
@@ -1772,7 +1861,7 @@ class CryptoTradingAgent:
             ("BEARISH" in bias_5m or "BEARISH" in bias_1m or (latest_sweep and latest_sweep.get("type") == "BSL_SWEEP") or price <= ema20)
             and bearish_mtf
             and (28 <= rsi_5m <= 68)
-            and ob_ratio <= 1.12
+            and (ob_ratio is not None and ob_ratio <= 1.12)
             and not has_buy_wall
             and not is_long_liquidation_trap
             and fake_badge != "BEAR_TRAP"
@@ -1831,7 +1920,7 @@ class CryptoTradingAgent:
             confidence = "92%" if (latest_sweep and latest_sweep.get("type") == "SSL_SWEEP") else "88%"
             
             triggers = [
-                f"تاییدیه همسویی ساختاری نهادی (MTF 4H صعودی + عمق خرید {ob_ratio:.2f}x + فقدان دیوار فروش)",
+                f"تاییدیه همسویی ساختاری نهادی (MTF 4H صعودی + عمق خرید {ob_depth_txt} + فقدان دیوار فروش)",
                 "حد ضرر ساختاری امن پشت سنگر اردر بلاک با فاصله تنفس ۱.۸٪ (مصون از شدوهای نقدینگی)",
                 "سیو سود ۵۰٪ در تارگت ۱ (+۱.۲٪) و انتقال فوری حد ضرر به نقطه ورود (Risk-Free Breakeven)",
                 "شکار استخر نقدینگی سقف (BSL Liquidity Pool) با نسبت سود به ریسک بالای ۲.۲"
@@ -1994,9 +2083,10 @@ class CryptoTradingAgent:
         fib_618 = fib.get("0.618 (پاکت طلایی)", recent_low + 0.618 * (recent_high - recent_low))
 
         # Derivatives and Depth Confirmation
-        funding_rate = float(derivatives.get("funding_rate", 0.0)) if derivatives else 0.0
-        is_overheated_long = funding_rate > 0.05 # > +0.05% funding means long crowd is overleveraged
-        is_overheated_short = funding_rate < -0.05 # < -0.05% funding means heavy short squeeze risk
+        fr_raw = derivatives.get("funding_rate") if derivatives else None
+        funding_rate = float(fr_raw) if fr_raw is not None else None
+        is_overheated_long = funding_rate is not None and funding_rate > 0.05
+        is_overheated_short = funding_rate is not None and funding_rate < -0.05
 
         # 1. Swing Long (Requires 4H Bullish + Daily not strongly bearish + Not overheated)
         if "BULLISH" in bias_4h and price >= ema50 and bias_1d != "BEARISH_STRONG" and not is_overheated_long:
@@ -2108,10 +2198,12 @@ class CryptoTradingAgent:
             f"نماد **{symbol}** هم‌اکنون با قیمت **{format_price_adaptive(price)}** معامله می‌شود و در ۲۴ ساعت گذشته تغییرات قیمتی **{change_24h:+.2f}%** همراه با حجم معاملات نقدی معادل **{vol_million:,.1f} میلیون دلار** به ثبت رسانده است."
         )
 
-        ob_ratio = orderbook.get("ratio", 1.0)
-        ob_pressure = orderbook.get("pressure", "متعادل")
-        fng_val = fng.get("value", 50)
-        fng_desc = fng.get("classification_fa", "خنثی")
+        ob_ratio = orderbook.get("ratio")
+        ob_ratio_disp = ob_ratio if ob_ratio is not None else "نامشخص"
+        ob_pressure = orderbook.get("pressure", "نامشخص")
+        fng_val = fng.get("value")
+        fng_val = fng_val if fng_val is not None else "نامشخص"
+        fng_desc = fng.get("classification_fa", "نامشخص")
         
         hft_score = smc_15m.get("hft", {}).get("score", 50)
         hft_status = smc_15m.get("hft", {}).get("status", "متعادل")
@@ -2120,7 +2212,7 @@ class CryptoTradingAgent:
         vwap_data = smc_15m.get("vwap_cvd", {})
         
         summary_paragraphs.append(
-            f"در عمق بازار (Order Book)، وضعیت **{ob_pressure}** (نسبت خریدار/فروشنده: **{ob_ratio}**) مشاهده می‌شود. شاخص طمع و ترس کل بازار روی **{fng_val}** ({fng_desc}) قرار دارد. مرکز کنترل حجم نقدینگی (POC) در قیمت **{format_price_adaptive(poc)}** و میانگین قیمت وزنی حجم (VWAP) روی **{format_price_adaptive(vwap_data.get('vwap', 0))}** قرار دارد ({vwap_data.get('vwap_position', '')})."
+            f"در عمق بازار (Order Book)، وضعیت **{ob_pressure}** (نسبت خریدار/فروشنده: **{ob_ratio_disp}**) مشاهده می‌شود. شاخص طمع و ترس کل بازار روی **{fng_val}** ({fng_desc}) قرار دارد. مرکز کنترل حجم نقدینگی (POC) در قیمت **{format_price_adaptive(poc)}** و میانگین قیمت وزنی حجم (VWAP) روی **{format_price_adaptive(vwap_data.get('vwap', 0))}** قرار دارد ({vwap_data.get('vwap_position', '')})."
         )
 
         summary_paragraphs.append(
@@ -2151,14 +2243,15 @@ class CryptoTradingAgent:
             for wall in orderbook["whale_walls"][:2]:
                 danger_alerts.append(f"ردپای نهنگ در اردربوک: {wall['desc']} در قیمت {wall['price']:,.4f}$ به ارزش تقریبی ${wall['volume_usd']:,.0f}.")
 
-        if derivatives.get("funding_rate", 0) > 0.02:
+        fr_alert = derivatives.get("funding_rate")
+        if fr_alert is not None and fr_alert > 0.02:
             danger_alerts.append("هشدار مشتقه: فاندینگ ریت به شدت مثبت است؛ ازدحام معامله‌گران لانگ احتمال استاپ‌هانت نزولی توسط نهنگ‌ها را افزایش داده است.")
 
         return {
             "executive_summary": "\n\n".join(summary_paragraphs),
             "directives": directives,
             "danger_alerts": danger_alerts,
-            "overall_market_bias": "BULLISH" if ("BULLISH" in bias_4h_fa and ob_ratio > 1) else ("BEARISH" if "BEARISH" in bias_4h_fa else "NEUTRAL")
+            "overall_market_bias": "BULLISH" if ("BULLISH" in bias_4h_fa and ob_ratio is not None and ob_ratio > 1) else ("BEARISH" if "BEARISH" in bias_4h_fa else "NEUTRAL")
         }
 
 

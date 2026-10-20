@@ -85,7 +85,9 @@ def run_cli():
     print(f"💰 {BOLD}قیمت لحظه‌ای:{RESET} {BOLD}{format_price(price)}{RESET} | {BOLD}تغییر ۲۴ ساعته:{RESET} {change_color}{change:+.2f}%{RESET}")
     print(f"📈 {BOLD}بالاترین ۲۴ ساعت:{RESET} {format_price(ticker.get('high_24h'))} | {BOLD}پایین‌ترین:{RESET} {format_price(ticker.get('low_24h'))}")
     print(f"🌊 {BOLD}حجم ۲۴ ساعته:{RESET} ${ticker.get('volume_quote', 0)/1_000_000:,.1f}M USD")
-    print(f"🧭 {BOLD}شاخص طمع و ترس کل بازار:{RESET} {YELLOW}{fng.get('value')} ({fng.get('classification')}){RESET}")
+    fng_val = fng.get("value")
+    fng_txt = f"{fng_val} ({fng.get('classification')})" if fng_val is not None else "نامشخص (فید در دسترس نیست)"
+    print(f"🧭 {BOLD}شاخص طمع و ترس کل بازار:{RESET} {YELLOW}{fng_txt}{RESET}")
 
     # Institutional 3D Scores Summary
     if scores_3d:
@@ -270,25 +272,34 @@ def run_cli():
         print(f"  🧭 {BOLD}سنتیمنت نهنگ‌ها:{RESET} {wf_col}{whales.get('flow_status')}{RESET} (امتیاز انباشت: {whales.get('accumulation_score')}/100)")
 
         # 3. Macro Economic Calendar & Shield
-        sh_col = GREEN if "باثبات" in macro_cal.get("shield_state","") else (YELLOW if "ریسک بالا" in macro_cal.get("shield_state","") else RED)
+        sh_state = macro_cal.get("shield_state", "") or ""
+        sh_col = GREEN if "باثبات" in sh_state else (YELLOW if ("ریسک بالا" in sh_state or "نامشخص" in sh_state) else RED)
         print(f"\n{BOLD}3. 🏛️ تقویم رویدادهای ماکرو و فیوز کلان (Economic Shield & Circuit Breaker):{RESET}")
-        print(f"  📅 {BOLD}رویداد بعدی کلان آمریکا:{RESET} {YELLOW}{macro_cal.get('next_event')}{RESET}")
-        print(f"  ⭐ {BOLD}درجه اهمیت و نوسان:{RESET} {RED}{macro_cal.get('impact_fa', 'بسیار بالا')}{RESET} ({macro_cal.get('volatility_fa', 'نوسان شدید')})")
-        print(f"  ⏳ {BOLD}شمارش معکوس زنده:{RESET} {macro_cal.get('countdown_fmt')} (پیش‌بینی: {macro_cal.get('forecast')} | قبلی: {macro_cal.get('previous')})")
+        print(f"  📅 {BOLD}رویداد بعدی کلان آمریکا:{RESET} {YELLOW}{macro_cal.get('next_event') or 'نامشخص'}{RESET}")
+        print(f"  ⭐ {BOLD}درجه اهمیت و نوسان:{RESET} {RED}{macro_cal.get('impact_fa', 'بسیار بالا') or 'نامشخص'}{RESET} ({macro_cal.get('volatility_fa', 'نوسان شدید') or 'نامشخص'})")
+        print(f"  ⏳ {BOLD}شمارش معکوس زنده:{RESET} {macro_cal.get('countdown_fmt') or 'نامشخص'} (پیش‌بینی: {macro_cal.get('forecast') or 'نامشخص'} | قبلی: {macro_cal.get('previous') or 'نامشخص'})")
         rx = macro_cal.get("reaction_inline", {})
         if rx:
             g = rx.get("gold", {})
             fx = rx.get("forex", {})
             c = rx.get("crypto", {})
             print(f"  🎯 {BOLD}اثر در صورت تحقق پیش‌بینی:{RESET} 🥇 طلا: {g.get('arrow')} {g.get('dir')} | 💵 فارکس: {fx.get('arrow')} {fx.get('dir')} | 🪙 کریپتو: {c.get('arrow')} {c.get('dir')}")
-        print(f"  🛡️ {BOLD}وضعیت فیوز معاملاتی:{RESET} {sh_col}{macro_cal.get('shield_state')}{RESET}")
+        print(f"  🛡️ {BOLD}وضعیت فیوز معاملاتی:{RESET} {sh_col}{macro_cal.get('shield_state') or 'نامشخص'}{RESET}")
 
         # 4. Deribit Options & Max Pain
-        pcr_col = GREEN if "صعودی" in options.get("pcr_sentiment","") else (RED if "نزولی" in options.get("pcr_sentiment","") else YELLOW)
+        pcr_sent_txt = str(options.get("pcr_sentiment") or "")
+        pcr_col = GREEN if "صعودی" in pcr_sent_txt else (RED if "نزولی" in pcr_sent_txt else YELLOW)
+        max_pain_v = options.get('max_pain_strike')
+        pcr_v = options.get('pcr_ratio')
+        calls_v = options.get('total_calls_oi')
+        puts_v = options.get('total_puts_oi')
         print(f"\n{BOLD}4. 📊 بازار آپشن‌ها و قیمت ماکس‌پین دریبیت (Deribit Options & Max Pain):{RESET}")
-        print(f"  🎯 {BOLD}قیمت ماکس‌پین قراردادها (Max Pain Strike):{RESET} {CYAN}{format_price(options.get('max_pain_strike'))}{RESET}")
-        print(f"  ⚖️ {BOLD}نسبت اختیار فروش به خرید (Put/Call Ratio):{RESET} {options.get('pcr_ratio')} [{pcr_col}{options.get('pcr_sentiment')}{RESET}]")
-        print(f"  📦 {BOLD}کل حجم قراردادهای باز:{RESET} کال‌ها {options.get('total_calls_oi'):,.0f} | پوت‌ها {options.get('total_puts_oi'):,.0f}")
+        print(f"  🎯 {BOLD}قیمت ماکس‌پین قراردادها (Max Pain Strike):{RESET} {CYAN}{format_price(max_pain_v) if max_pain_v is not None else 'نامشخص'}{RESET}")
+        print(f"  ⚖️ {BOLD}نسبت اختیار فروش به خرید (Put/Call Ratio):{RESET} {pcr_v if pcr_v is not None else 'نامشخص'} [{pcr_col}{options.get('pcr_sentiment') or 'نامشخص'}{RESET}]")
+        if calls_v is not None and puts_v is not None:
+            print(f"  📦 {BOLD}کل حجم قراردادهای باز:{RESET} کال‌ها {calls_v:,.0f} | پوت‌ها {puts_v:,.0f}")
+        else:
+            print(f"  📦 {BOLD}کل حجم قراردادهای باز:{RESET} نامشخص (دادهٔ دریبیت در دسترس نیست)")
 
         # 5. Orderbook Depth & Spoofing
         spf_col = GREEN if "واقعی" in depth_spoof.get("spoofing_status","") else RED
@@ -406,3 +417,4 @@ def run_cli():
 
 if __name__ == "__main__":
     run_cli()
+

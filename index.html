@@ -8000,16 +8000,30 @@
     
         // Live Funding Squeeze Alarm
         if (window.currentAnalysis && window.currentAnalysis.derivatives) {
-          const fr = parseFloat(window.currentAnalysis.derivatives.funding_rate || 0.01);
+          const frRaw = window.currentAnalysis.derivatives.funding_rate;
+          const frKnown = frRaw !== null && frRaw !== undefined && !isNaN(parseFloat(frRaw));
+          const fr = frKnown ? parseFloat(frRaw) : null;
           const alarmIcon = document.getElementById('fundingAlarmIcon');
           const alarmBadge = document.getElementById('fundingAlarmBadge');
           const alarmTitle = document.getElementById('fundingAlarmTitle');
           const alarmDesc = document.getElementById('fundingAlarmDesc');
           const rateTag = document.getElementById('fundingRateLiveTag');
 
-          if (rateTag) rateTag.innerText = `فاندینگ ریت: ${fr > 0 ? '+' : ''}${fr.toFixed(4)}%`;
+          if (rateTag) rateTag.innerText = frKnown ? `فاندینگ ریت: ${fr > 0 ? '+' : ''}${fr.toFixed(4)}%` : 'فاندینگ ریت: نامشخص';
 
-          if (fr >= 0.025) {
+          if (!frKnown) {
+            if (alarmIcon) alarmIcon.innerText = '⚪';
+            if (alarmBadge) {
+              alarmBadge.innerText = 'فاندینگ ریت در دسترس نیست';
+              alarmBadge.style.background = 'rgba(148, 163, 184, 0.2)';
+              alarmBadge.style.color = '#94a3b8';
+            }
+            if (alarmTitle) {
+              alarmTitle.innerText = 'بدون داده فاندینگ، هشدار ازدحام اهرمی صادر نمی‌شود (Fail-Closed)';
+              alarmTitle.style.color = '#94a3b8';
+            }
+            if (alarmDesc) alarmDesc.innerText = 'داده نرخ تامین مالی از صرافی در دسترس نبود؛ هیچ مقدار پیش‌فرضی جایگزین نمی‌شود.';
+          } else if (fr >= 0.025) {
             if (alarmIcon) alarmIcon.innerText = '🚨';
             if (alarmBadge) {
               alarmBadge.innerText = '⚠️ هشدار استاپ‌هانت نزولی (LONG SQUEEZE)';
@@ -10064,9 +10078,14 @@
         fBadge.style.background = (fData.color || "#00e676") + "22";
       }
       if (fNet) {
-        const net = fData.netflow_m || 0;
-        fNet.innerText = (net >= 0 ? "+" : "") + net.toFixed(2) + "M USD";
-        fNet.style.color = net > 5 ? "#ff3366" : (net < -5 ? "#00e676" : "#ffd700");
+        const net = fData.netflow_m;
+        if (net === null || net === undefined) {
+          fNet.innerText = 'نامشخص (فید در دسترس نیست)';
+          fNet.style.color = '#94a3b8';
+        } else {
+          fNet.innerText = (net >= 0 ? "+" : "") + net.toFixed(2) + "M USD";
+          fNet.style.color = net > 5 ? "#ff3366" : (net < -5 ? "#00e676" : "#ffd700");
+        }
       }
       if (fDesc) fDesc.innerText = fData.description || "توازن سالم جریان‌های صرافی.";
 
@@ -10080,7 +10099,10 @@
         uBadge.style.background = (uData.color || "#00e676") + "22";
       }
       if (uDays) {
-        if (uData.days_left === 0) {
+        if (uData.days_left === null || uData.days_left === undefined) {
+          uDays.innerText = "نامشخص (فید آنلاک در دسترس نیست)";
+          uDays.style.color = "#94a3b8";
+        } else if (uData.days_left === 0) {
           uDays.innerText = "۱۰۰٪ در گردش (بدون آنلاک)";
           uDays.style.color = "#00e676";
         } else {
@@ -10100,8 +10122,14 @@
         sBadge.style.background = (sData.color || "#00e676") + "22";
       }
       if (sVal) {
-        sVal.innerText = `SSR: ${sData.ssr_ratio || 9.9} (${sData.stablecoin_mcap_fmt || "$168B"})`;
-        sVal.style.color = sData.color || "#00e676";
+        const ssrVal = sData.ssr_ratio;
+        if (ssrVal === null || ssrVal === undefined) {
+          sVal.innerText = 'SSR: نامشخص';
+          sVal.style.color = '#94a3b8';
+        } else {
+          sVal.innerText = `SSR: ${ssrVal} (${sData.stablecoin_mcap_fmt || 'نامشخص'})`;
+          sVal.style.color = sData.color || "#00e676";
+        }
       }
       if (sDesc) sDesc.innerText = sData.description || "ذخایر دلاری کافی برای حمایت از روند.";
 
@@ -10135,11 +10163,16 @@
 
         if (altTitle) altTitle.innerText = altShield.title || "رادار سلامت بیت‌کوین و مجوز آلت‌کوین‌ها";
         if (altDesc) altDesc.innerText = altShield.advice || "وضعیت بیت‌کوین در شرایط پایدار است.";
-        if (sDom) sDom.innerText = (altShield.btc_dominance || 58.0) + "%";
+        if (sDom) sDom.innerText = (altShield.btc_dominance != null ? altShield.btc_dominance + "%" : "نامشخص");
         if (sMom) {
-          const mom = altShield.btc_momentum_1h || 0;
-          sMom.innerText = (mom >= 0 ? "+" : "") + mom + "%";
-          sMom.style.color = mom >= 0 ? "#00e676" : "#ff3366";
+          const mom = altShield.btc_momentum_1h;
+          if (mom == null) {
+            sMom.innerText = "نامشخص";
+            sMom.style.color = "var(--text-muted, #888)";
+          } else {
+            sMom.innerText = (mom >= 0 ? "+" : "") + mom + "%";
+            sMom.style.color = mom >= 0 ? "#00e676" : "#ff3366";
+          }
         }
       }
 
@@ -10148,20 +10181,25 @@
       // Header Fear & Greed
       if (market_sentiment) {
         const valEl = document.getElementById('fngValue');
-        if (valEl) valEl.innerText = `${market_sentiment.value} (${market_sentiment.classification})`;
+        const fngVal = market_sentiment.value;
+        const fngKnown = fngVal !== null && fngVal !== undefined;
+        if (valEl) valEl.innerText = fngKnown ? `${fngVal} (${market_sentiment.classification})` : 'نامشخص';
         const dot = document.getElementById('fngDot');
         const badge = document.getElementById('fngBadge');
         if (dot) {
-          if (market_sentiment.value >= 75) {
+          if (!fngKnown) {
+            dot.style.background = '#94a3b8';
+            dot.style.boxShadow = '0 0 6px rgba(148, 163, 184, 0.7)';
+          } else if (fngVal >= 75) {
             dot.style.background = '#00e676';
             dot.style.boxShadow = '0 0 10px rgba(0, 230, 118, 0.9)';
-          } else if (market_sentiment.value >= 55) {
+          } else if (fngVal >= 55) {
             dot.style.background = '#a3e635';
             dot.style.boxShadow = '0 0 6px rgba(163, 230, 53, 0.7)';
-          } else if (market_sentiment.value <= 25) {
+          } else if (fngVal <= 25) {
             dot.style.background = '#ff1744';
             dot.style.boxShadow = '0 0 10px rgba(255, 23, 68, 0.9)';
-          } else if (market_sentiment.value <= 45) {
+          } else if (fngVal <= 45) {
             dot.style.background = '#ff7043';
             dot.style.boxShadow = '0 0 6px rgba(255, 112, 67, 0.7)';
           } else {
@@ -10170,9 +10208,9 @@
           }
         }
         if (badge) {
-          const srcText = market_sentiment.source || 'CoinMarketCap زنده';
-          const faDesc = market_sentiment.classification_fa || market_sentiment.classification;
-          badge.title = `شاخص زنده طمع و ترس (${srcText}): ${market_sentiment.value} - ${faDesc}`;
+          const srcText = market_sentiment.source || 'نامشخص';
+          const faDesc = market_sentiment.classification_fa || market_sentiment.classification || 'نامشخص';
+          badge.title = fngKnown ? `شاخص زنده طمع و ترس (${srcText}): ${fngVal} - ${faDesc}` : `شاخص طمع و ترس در دسترس نیست (${srcText})`;
         }
       }
 
@@ -10217,8 +10255,8 @@
         document.getElementById('pocPill').innerText = formatPrice(smc15m.poc);
       }
       if (derivatives) {
-        document.getElementById('oiPill').innerText = derivatives.open_interest_fmt || '$0M';
-        document.getElementById('fundingRatePill').innerText = `فاندینگ ریت: ${derivatives.funding_rate_fmt || '0.0000%'}`;
+        document.getElementById('oiPill').innerText = derivatives.open_interest_fmt || 'نامشخص';
+        document.getElementById('fundingRatePill').innerText = `فاندینگ ریت: ${derivatives.funding_rate_fmt || 'نامشخص'}`;
       }
 
       if (smc15m && smc15m.killzone) {
@@ -10330,17 +10368,25 @@
 
       // Orderbook Depth
       if (orderbook) {
-        document.getElementById('obPressureText').innerText = orderbook.pressure || 'متعادل';
-        document.getElementById('obRatioText').innerText = `Ratio: ${orderbook.ratio || '1.00'}`;
-        const bidUsd = orderbook.bid_volume_usd || 0;
-        const askUsd = orderbook.ask_volume_usd || 0;
-        const total = bidUsd + askUsd;
-        const bidPct = total > 0 ? (bidUsd / total) * 100 : 50;
-        const askPct = 100 - bidPct;
-        document.getElementById('bidFill').style.width = `${bidPct}%`;
-        document.getElementById('askFill').style.width = `${askPct}%`;
-        document.getElementById('bidVolUsd').innerText = `$${Math.round(bidUsd).toLocaleString()}`;
-        document.getElementById('askVolUsd').innerText = `$${Math.round(askUsd).toLocaleString()}`;
+        const obRatio = orderbook.ratio;
+        const bidUsd = orderbook.bid_volume_usd;
+        const askUsd = orderbook.ask_volume_usd;
+        document.getElementById('obPressureText').innerText = orderbook.pressure || 'نامشخص';
+        document.getElementById('obRatioText').innerText = `Ratio: ${obRatio !== null && obRatio !== undefined ? obRatio : 'نامشخص'}`;
+        if (bidUsd === null || bidUsd === undefined || askUsd === null || askUsd === undefined) {
+          document.getElementById('bidFill').style.width = '50%';
+          document.getElementById('askFill').style.width = '50%';
+          document.getElementById('bidVolUsd').innerText = 'نامشخص';
+          document.getElementById('askVolUsd').innerText = 'نامشخص';
+        } else {
+          const total = bidUsd + askUsd;
+          const bidPct = total > 0 ? (bidUsd / total) * 100 : 50;
+          const askPct = 100 - bidPct;
+          document.getElementById('bidFill').style.width = `${bidPct}%`;
+          document.getElementById('askFill').style.width = `${askPct}%`;
+          document.getElementById('bidVolUsd').innerText = `$${Math.round(bidUsd).toLocaleString()}`;
+          document.getElementById('askVolUsd').innerText = `$${Math.round(askUsd).toLocaleString()}`;
+        }
       }
 
       // Alert Banner
@@ -10844,22 +10890,27 @@
     function renderMacroTab(macro, onchain, corr) {
       if (macro) {
         const capEl = document.getElementById('macroTotalCap');
-        if (capEl) capEl.innerText = macro.total_market_cap_fmt || '$0.00T';
+        if (capEl) capEl.innerText = macro.total_market_cap_fmt || 'نامشخص';
         const capBadge = document.getElementById('macroCapBadge');
         if (capBadge) {
-          const chg = macro.mcap_change_24h || 0;
-          capBadge.innerText = `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`;
-          capBadge.style.color = chg >= 0 ? 'var(--green)' : 'var(--red)';
+          const chg = macro.mcap_change_24h;
+          if (chg == null) {
+            capBadge.innerText = 'نامشخص';
+            capBadge.style.color = 'var(--text-muted, #888)';
+          } else {
+            capBadge.innerText = `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`;
+            capBadge.style.color = chg >= 0 ? 'var(--green)' : 'var(--red)';
+          }
         }
         const volEl = document.getElementById('macroTotalVol');
-        if (volEl) volEl.innerText = macro.total_volume_fmt || '$0B';
+        if (volEl) volEl.innerText = macro.total_volume_fmt || 'نامشخص';
 
         const btcDEl = document.getElementById('macroBtcD');
-        if (btcDEl) btcDEl.innerText = `${macro.btc_dominance || 0}%`;
+        if (btcDEl) btcDEl.innerText = macro.btc_dominance != null ? `${macro.btc_dominance}%` : 'نامشخص';
         const usdtDEl = document.getElementById('macroUsdtD');
-        if (usdtDEl) usdtDEl.innerText = `${macro.usdt_dominance || 0}%`;
+        if (usdtDEl) usdtDEl.innerText = macro.usdt_dominance != null ? `${macro.usdt_dominance}%` : 'نامشخص';
         const ethDEl = document.getElementById('macroEthD');
-        if (ethDEl) ethDEl.innerText = `${macro.eth_dominance || 0}%`;
+        if (ethDEl) ethDEl.innerText = macro.eth_dominance != null ? `${macro.eth_dominance}%` : 'نامشخص';
         const altSeason = document.getElementById('macroAltSeason');
         if (altSeason) altSeason.innerText = macro.alt_season_status || 'سلطه بیت‌کوین';
 
@@ -12037,18 +12088,23 @@ ${s3d.action_advice || ''}
           const valEl = document.getElementById('fngValue');
           const dot = document.getElementById('fngDot');
           const badge = document.getElementById('fngBadge');
-          if (valEl) valEl.innerText = `${data.value} (${data.classification})`;
+          const fngVal = data.value;
+          const known = fngVal !== null && fngVal !== undefined;
+          if (valEl) valEl.innerText = known ? `${fngVal} (${data.classification})` : 'نامشخص';
           if (dot) {
-            if (data.value >= 75) {
+            if (!known) {
+              dot.style.background = '#94a3b8';
+              dot.style.boxShadow = '0 0 6px rgba(148, 163, 184, 0.7)';
+            } else if (fngVal >= 75) {
               dot.style.background = '#00e676';
               dot.style.boxShadow = '0 0 10px rgba(0, 230, 118, 0.9)';
-            } else if (data.value >= 55) {
+            } else if (fngVal >= 55) {
               dot.style.background = '#a3e635';
               dot.style.boxShadow = '0 0 6px rgba(163, 230, 53, 0.7)';
-            } else if (data.value <= 25) {
+            } else if (fngVal <= 25) {
               dot.style.background = '#ff1744';
               dot.style.boxShadow = '0 0 10px rgba(255, 23, 68, 0.9)';
-            } else if (data.value <= 45) {
+            } else if (fngVal <= 45) {
               dot.style.background = '#ff7043';
               dot.style.boxShadow = '0 0 6px rgba(255, 112, 67, 0.7)';
             } else {
@@ -12057,9 +12113,9 @@ ${s3d.action_advice || ''}
             }
           }
           if (badge) {
-            const srcText = data.source || 'CoinMarketCap زنده';
-            const faDesc = data.classification_fa || data.classification;
-            badge.title = `شاخص زنده طمع و ترس (${srcText}): ${data.value} - ${faDesc}`;
+            const srcText = data.source || 'نامشخص';
+            const faDesc = data.classification_fa || data.classification || 'نامشخص';
+            badge.title = known ? `شاخص زنده طمع و ترس (${srcText}): ${fngVal} - ${faDesc}` : `شاخص طمع و ترس در دسترس نیست (${srcText})`;
           }
         }
       } catch (e) {
@@ -12457,7 +12513,7 @@ async function triggerCustomAudit(btnElement) {
           </div>
         </div>
         <div style="font-size: 0.78rem; color:#94a3b8;">
-          • روند ۴H: ${d.bias_4h} | روند ۱۵M: ${d.bias_15m} | نسبت خریدار/فروشنده بوک: ${d.order_book_ratio}
+          • روند ۴H: ${d.bias_4h} | روند ۱۵M: ${d.bias_15m} | نسبت خریدار/فروشنده بوک: ${d.order_book_ratio !== null && d.order_book_ratio !== undefined ? d.order_book_ratio : 'نامشخص'}
         </div>
       `;
     } else {

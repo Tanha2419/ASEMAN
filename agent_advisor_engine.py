@@ -127,7 +127,7 @@ class AgentAdvisor:
                 verified = [r for r in records if r.get("accuracy_status") in ["VERIFIED_HIT", "VERIFIED_ACCURATE"]]
                 pending = [r for r in records if r.get("accuracy_status") in ["PENDING_LIVE", "PENDING"]]
                 scores_l = [float(r.get("accuracy_score")) for r in verified if r.get("accuracy_score")]
-                avg_score = round(sum(scores_l) / len(scores_l), 1) if scores_l else 95.2
+                avg_score_txt = f"%{round(sum(scores_l) / len(scores_l), 1)}" if scores_l else "نامشخص (هیچ رویداد تأییدشده‌ای با امتیاز دقت ثبت نشده است)"
 
                 lines = []
                 for r in verified[:4]:
@@ -146,9 +146,9 @@ class AgentAdvisor:
 
                 return (
                     f"### 🏛️ کارنامه و گزارش رسمی درست‌سنجی هوش مصنوعی در اقتصاد کلان\n\n"
-                    f"🎯 **میانگین نرخ دقت ثبت‌شده هوش کلان:** **{avg_score}٪**\n"
+                    f"🎯 **میانگین نرخ دقت ثبت‌شده هوش کلان:** **{avg_score_txt}**\n"
                     f"📜 **کل رویدادهای فریز شده در دیتابیس:** **{total} رویداد**\n"
-                    f"✅ **رویدادهای محقق‌شده با موفقیت کامل:** **{len(verified)} از {len(verified)} رویداد گذشته (وین‌ریت ۱۰۰٪ جهتی)**\n"
+                    f"✅ **رویدادهای راستی‌آزمایی‌شده:** **{len(verified)} از {total} رویداد** (هیچ نرخ موفقیتی بدون محاسبهٔ واقعی ادعا نمی‌شود)\n"
                     f"⏳ **رویدادهای پیش‌رو در دست بررسی:** **{len(pending)} رویداد**\n\n"
                     f"📋 **کارنامه راستی‌آزمایی رویدادهای اعلام‌شده اخیر:**\n" + "\n\n".join(lines) + "\n\n"
                     f"⏳ **رویدادهای پیش‌رو که نظر هوش از قبل قفل شده است:**\n" + "\n".join(pending_lines) + "\n\n"
@@ -177,12 +177,12 @@ class AgentAdvisor:
                 t_loss = sum([float(r.get("pnl_pct", 0)) for r in records if float(r.get("pnl_pct", 0)) < 0])
                 net_p = t_prof + t_loss
                 decided = tp1_c + sl_c
-                wr = round((tp1_c / decided * 100), 1) if decided > 0 else 92.5
+                wr_txt = f"%{round((tp1_c / decided * 100), 1)}" if decided > 0 else "نامشخص (هنوز معاملهٔ بسته‌شده‌ای برای محاسبه ثبت نشده است)"
 
                 return (
                     f"### 📋 کارنامه شفاف و زنده ژورنال سیگنال‌های ترید (Performance Journal)\n\n"
                     f"- **تعداد کل معاملات ثبت‌شده:** **{total_t} معامله**\n"
-                    f"- **وین‌ریت تاریخی (Win Rate):** **%{wr}**\n"
+                    f"- **وین‌ریت تاریخی (Win Rate):** **{wr_txt}**\n"
                     f"- **موفقیت تاچ تارگت اول (TP1 Hits):** **{tp1_c} معامله**\n"
                     f"- **موفقیت تاچ تارگت دوم (TP2 Hits):** **{tp2_c} معامله**\n"
                     f"- **اصابت به حد ضرر (SL Hits):** **{sl_c} معامله**\n"
@@ -190,7 +190,7 @@ class AgentAdvisor:
                     f"💰 **برآیند سود و زیان تجمعی:**\n"
                     f"- **مجموع سود تارگت‌ها (TPs):** **+{t_prof:.2f}%**\n"
                     f"- **مجموع ضرر استاپ‌ها (SLs):** **{t_loss:.2f}%**\n"
-                    f"- **سود خالص برآیند (Net PnL):** **+{net_p:.2f}%**\n\n"
+                    f"- **سود خالص برآیند (Net PnL):** **{net_p:+.2f}%**\n\n"
                     f"📌 تمام سیگنال‌های ارسالی به تلگرام یا خروجی دستی بدون دخالت انسان در این ژورنال لاگ شده و قیمت آن‌ها به‌صورت ثانیه‌ای پایش می‌شود."
                 )
             except Exception:
@@ -314,7 +314,13 @@ class AgentAdvisor:
 
         # Priority 10: Position Sizer, Kelly Criterion & Liquidation Calculator (ماشین‌حساب‌ها، اهرم ۲۰۰x و لیکوئیدیشن)
         if any(w in q for w in ["ماشین حساب", "لیکوئیدیشن من", "قیمت لیکوئید", "فرمول لیکوئید", "اهرم ۲۰۰", "اهرم 200", "معیار کلی", "kelly", "سایز پوزیشن", "مارجین"]):
-            entry_p = price or 84200
+            if not isinstance(price, (int, float)) or price <= 0:
+                return (
+                    f"### 🧮 ماشین‌حساب لیکوئیدیشن و مدیریت ریسک\n\n"
+                    f"⛔ **قیمت زندهٔ {symbol} در دسترس نیست؛ محاسبهٔ نمونه با قیمت ساختگی انجام نمی‌شود (Fail-Closed).**\n"
+                    f"به‌محض دریافت قیمت واقعی از صرافی، فرمول‌های `LONG = قیمت × (۱ - ۱÷اهرم + مارجین)` و `SHORT = قیمت × (۱ + ۱÷اهرم - مارجین)` با قیمت واقعی محاسبه خواهند شد."
+                )
+            entry_p = float(price)
             lev = 20
             long_liq = entry_p * (1 - (1 / lev) + 0.005)
             short_liq = entry_p * (1 + (1 / lev) - 0.005)
@@ -336,7 +342,14 @@ class AgentAdvisor:
         if any(w in q for w in ["شش هسته", "۶ هسته", "هسته طلایی", "golden six", "شش ضلعی", "۶ ضلعی", "کانفلوئنس"]):
             try:
                 from institutional_addons import GoldenSixCoreEngine
-                g6 = GoldenSixCoreEngine.evaluate(clean_s, price, 50.0, scalp.get("action", "LONG"))
+                rsi_real = (((analysis.get("timeframes") or {}).get("15m") or {}).get("rsi"))
+                price_arg = float(price) if isinstance(price, (int, float)) and price > 0 else None
+                g6 = GoldenSixCoreEngine.evaluate(clean_s, price_arg, rsi_real, scalp.get("action", "LONG"))
+                if not g6.get("ok"):
+                    return (
+                        f"### 🌟 ارزیابی ۶ هسته طلایی کانفلوئنس برای {symbol}\n\n"
+                        f"⛔ **{g6.get('message', 'ارزیابی شش‌گانه انجام نشد (Fail-Closed).')}**"
+                    )
                 return (
                     f"### 🌟 ارزیابی جامع ۶ هسته طلایی کانفلوئنس برای {symbol}\n\n"
                     f"- **وضعیت نهایی:** **{g6.get('verdict_fa')}**\n"
@@ -392,46 +405,57 @@ class AgentAdvisor:
                     target_ev = all_evs[0] if all_evs else {}
 
                 ag = target_ev.get("agent_macro_analysis", {})
-                s_risk = ag.get("surprise_risk_pct", 65)
-                s_level = ag.get("surprise_risk_level", "متوسط")
-                consensus = ag.get("market_consensus_text", target_ev.get("forecast_context", ""))
-                crosscheck = ag.get("data_crosscheck_text", "راستی‌آزمایی با بازدهی اوراق ۱۰ ساله و بهای جهانی انرژی")
+                s_risk = ag.get("surprise_risk_pct")
+                if not isinstance(s_risk, (int, float)):
+                    s_risk = None
+                s_level = ag.get("surprise_risk_level", "نامشخص")
+                consensus = ag.get("market_consensus_text", target_ev.get("forecast_context", "")) or "نامشخص"
+                crosscheck = ag.get("data_crosscheck_text") or "دادهٔ راستی‌آزمایی مستقل از فید زنده دریافت نشد."
                 verdict = ag.get("agent_verdict_status", "در حال پردازش")
                 details = ag.get("agent_verdict_details", "")
                 shock = ag.get("shock_projection_text", "")
                 ev_title = target_ev.get("name", next_ev_name)
-                ev_date = target_ev.get("date_tehran", "به زودی")
-                vol_fa = target_ev.get("volatility_fa", "نوسان شدید")
-                inline_re = target_ev.get("reaction_inline", {})
-                gold_re = inline_re.get("gold", {})
-                crypto_re = inline_re.get("crypto", {})
-                
-                high_gold = target_ev.get("reaction_higher", {}).get("gold", {})
-                crypto_pred = target_ev.get("crypto_prediction", {})
+                ev_date = target_ev.get("date_tehran", "نامشخص")
+                vol_fa = target_ev.get("volatility_fa", "نامشخص")
+                inline_re = target_ev.get("reaction_inline", {}) or {}
+                gold_re = inline_re.get("gold", {}) or {}
+                crypto_re = inline_re.get("crypto", {}) or {}
 
-                surprise_favored_dir = ""
-                consensus_prob = max(10, 100 - s_risk)
-                if s_risk >= 50:
+                higher_re = target_ev.get("reaction_higher", {}) or {}
+                high_gold = higher_re.get("gold", {}) or {}
+                high_crypto = higher_re.get("crypto", {}) or {}
+                high_forex = higher_re.get("forex", {}) or {}
+                crypto_pred = target_ev.get("crypto_prediction", {}) or {}
+
+                if s_risk is None:
                     surprise_favored_dir = (
-                        f"\n\n💥 **کالبدشکافی رادار غافلگیری (%{s_risk} ریسک تله وال‌استریت):**\n"
-                        f"• **احتمال غافلگیری یا تله:** **%{s_risk}** (در برابر فقط %{consensus_prob} احتمال تحقق آرام اجماع بازار)\n"
-                        f"• **جهت دارایی‌ها در شوک غافلگیری:**\n"
-                        f"  - **🥇 انس جهانی طلا (XAU/USD):** {high_gold.get('arrow', '⬇️')} **{high_gold.get('dir', 'نزولی و شوک ریزش')}** (پیش‌بینی شوک نوسانی: **{vol_fa}**)\n"
-                        f"  - **⚡ ارز دیجیتال (BTC):** 🔴 **{crypto_pred.get('down_scenario', 'ریزش و هانت لانگ‌ها')}**\n"
-                        f"  - **💵 شاخص دلار آمریکا (DXY):** ⬆️ جهش ناگهانی و تقویت تقاضای نقدی دلار\n"
+                        "\n\n⚠️ **رادار ریسک غافلگیری:** امتیاز ریسک غافلگیری برای این رویداد از فید معتبر دریافت نشد؛ "
+                        "هیچ احتمال یا جهت ساختگی برای دارایی‌ها ارائه نمی‌شود (Fail-Closed)."
                     )
                 else:
-                    surprise_favored_dir = (
-                        f"\n\n📊 **توزیع احتمالات جهت حرکت بازار:**\n"
-                        f"• **احتمال همسویی آرام با بازار:** **%{consensus_prob}** (ریسک غافلگیری تنها %{s_risk} است)\n"
-                        f"• **جهت مورد انتظار طلا (XAU/USD):** {gold_re.get('arrow', '⬆️')} **{gold_re.get('dir', 'صعودی')}** ({vol_fa})\n"
-                        f"• **جهت مورد انتظار بیت‌کوین (BTC):** {crypto_re.get('arrow', '⬆️')} **{crypto_re.get('dir', 'صعودی')}**\n"
-                    )
+                    consensus_prob = max(0, 100 - s_risk)
+                    if s_risk >= 50:
+                        surprise_favored_dir = (
+                            f"\n\n💥 **کالبدشکافی رادار غافلگیری (%{s_risk} ریسک تله وال‌استریت):**\n"
+                            f"• **احتمال غافلگیری یا تله:** **%{s_risk}** (در برابر %{consensus_prob} احتمال تحقق آرام اجماع بازار)\n"
+                            f"• **سناریوی جهت دارایی‌ها در صورت غافلگیری (پیش‌بینی سناریویی، نه داده زنده):**\n"
+                            f"  - **🥇 انس جهانی طلا (XAU/USD):** {high_gold.get('arrow', '⚪')} **{high_gold.get('dir', 'نامشخص')}**\n"
+                            f"  - **⚡ ارز دیجیتال (BTC):** {high_crypto.get('arrow', '⚪')} **{high_crypto.get('dir', 'نامشخص')}** (سناریوی نزولی: {crypto_pred.get('down_scenario', 'نامشخص')})\n"
+                            f"  - **💵 شاخص دلار آمریکا (DXY):** {high_forex.get('arrow', '⚪')} **{high_forex.get('dir', 'نامشخص')}**\n"
+                            f"  - **نوسان مورد انتظار:** **{vol_fa}**"
+                        )
+                    else:
+                        surprise_favored_dir = (
+                            f"\n\n📊 **توزیع احتمالات جهت حرکت بازار:**\n"
+                            f"• **احتمال همسویی آرام با بازار:** **%{consensus_prob}** (ریسک غافلگیری %{s_risk} است)\n"
+                            f"• **جهت مورد انتظار طلا (XAU/USD):** {gold_re.get('arrow', '⚪')} **{gold_re.get('dir', 'نامشخص')}** ({vol_fa})\n"
+                            f"• **جهت مورد انتظار بیت‌کوین (BTC):** {crypto_re.get('arrow', '⚪')} **{crypto_re.get('dir', 'نامشخص')}**"
+                        )
 
                 return (
                     f"### 🏛️ کالبدشکافی اختصاصی ایجنت از رویداد کلان **{ev_title}**\n\n"
                     f"⏳ **موعد انتشار به وقت تهران:** **{ev_date}**\n"
-                    f"⚠️ **رادار ریسک غافلگیری (Surprise Risk):** **%{s_risk} ({s_level})**\n\n"
+                    f"⚠️ **رادار ریسک غافلگیری (Surprise Risk):** **{('%' + str(s_risk) + ' (' + str(s_level) + ')') if s_risk is not None else 'نامشخص (فید معتبر در دسترس نیست)'}**\n\n"
                     f"🎙️ **ادعای اجماع بازار (Consensus):**\n{consensus}\n\n"
                     f"🔬 **راستی‌آزمایی داده‌های زیرپوستی ایجنت (Data Cross-Check):**\n{crosscheck}\n\n"
                     f"⚖️ **حکم و موضع نهایی هوش آسمان:**\n**{verdict}**\n{details}\n\n"
@@ -447,27 +471,33 @@ class AgentAdvisor:
             try:
                 from institutional_addons import EconomicCalendarEngine
                 cal = EconomicCalendarEngine.get_macro_shield_status()
-                li = cal.get("leading_indicators", {})
-                dxy = li.get("dxy", {})
-                gold = li.get("gold", {})
-                us10y = li.get("us10y", {})
-                oil = li.get("oil", {})
-                gold_p = gold.get("price", 4162)
-                gold_c = gold.get("chg", -0.95)
-                dxy_p = dxy.get("price", 101.92)
-                dxy_c = dxy.get("chg", -0.01)
-                us10y_p = us10y.get("price", "5.27%")
-                oil_p = oil.get("price", 91.11)
+                li = cal.get("leading_indicators", {}) or {}
+                dxy = li.get("dxy") or {}
+                gold = li.get("gold") or {}
+                us10y = li.get("us10y") or {}
+                oil = li.get("oil") or {}
+                gold_p = gold.get("price")
+                gold_c = gold.get("chg")
+                dxy_p = dxy.get("price")
+                dxy_c = dxy.get("chg")
+                us10y_p = us10y.get("price")
+                oil_p = oil.get("price")
+
+                def _px(v):
+                    return f"${v}" if v is not None else "نامشخص"
+
+                def _pct(v):
+                    return f"{v:+.2f}%" if v is not None else "نامشخص"
 
                 return (
                     f"### 🌐 ماتریس کراس‌مارکت (طلا، شاخص دلار DXY، نفت و اوراق قرضه آمریکا)\n\n"
-                    f"- **🥇 انس جهانی طلا (XAU/USD):** **${gold_p}** ({gold_c:+.2f}%)\n"
+                    f"- **🥇 انس جهانی طلا (XAU/USD):** **{_px(gold_p)}** ({_pct(gold_c)})\n"
                     f"  ↳ *تفسیر:* پناهگاه امن سرمایه‌گذاران بزرگ در برابر چاپ پول و تنش‌های ژئوپلیتیک.\n\n"
-                    f"- **💵 شاخص دلار آمریکا (DXY):** **{dxy_p}** ({dxy_c:+.2f}%)\n"
+                    f"- **💵 شاخص دلار آمریکا (DXY):** **{_px(dxy_p)}** ({_pct(dxy_c)})\n"
                     f"  ↳ *تفسیر:* سقوط DXY موتور محرک اصلی بول‌ران بیت‌کوین و پرواز طلاست.\n\n"
-                    f"- **📈 اوراق قرضه ۱۰ ساله آمریکا (US10Y):** **{us10y_p}**\n"
+                    f"- **📈 اوراق قرضه ۱۰ ساله آمریکا (US10Y):** **{_px(us10y_p)}**\n"
                     f"  ↳ *تفسیر:* دماسنج واقعی هزینه پول در وال‌استریت؛ کاهش این نرخ، سوخت پامپ دارایی‌های ریسکی است.\n\n"
-                    f"- **🛢️ نفت خام WTI:** **${oil_p}**\n"
+                    f"- **🛢️ نفت خام WTI:** **{_px(oil_p)}**\n"
                     f"  ↳ *تفسیر:* هرگونه جهش نفت مستقیماً شاخص تورم CPI را بالا برده و فدرال‌رزرو را هاوکیش می‌کند."
                 )
             except Exception:
@@ -498,21 +528,30 @@ class AgentAdvisor:
             try:
                 from institutional_addons import WhaleFlowEngine
                 w_met = WhaleFlowEngine.get_whale_metrics(symbol)
-                cb = w_met.get("whale_avg_cost_basis_fmt", "-")
-                d_pct = w_met.get("distance_from_whale_entry_pct", 0)
-                n_flow = w_met.get("netflow_fmt", "-")
-                supp = w_met.get("whale_support_status", "")
-                pnl_lbl = "در سود انباشت سنگین 🟢" if d_pct >= 3.0 else ("نزدیک نقطه سربه‌سر ⚖️" if d_pct >= 0 else "در ضرر موقت (دفاع سنگین از کف) 🛡️")
+                if not w_met.get("ok"):
+                    return (
+                        f"### 🐋 ردپای انباشت و شناسنامه کیف‌پول نهنگ‌ها برای {symbol}\n\n"
+                        f"⛔ **{w_met.get('message', 'دادهٔ زندهٔ کیف‌پول نهنگ‌ها در دسترس نیست (Fail-Closed).')}**"
+                    )
+                cb = w_met.get("whale_avg_cost_basis_fmt", "نامشخص")
+                d_pct = w_met.get("distance_from_whale_entry_pct")
+                n_flow = w_met.get("netflow_fmt", "نامشخص")
+                supp = w_met.get("whale_support_status", "نامشخص")
+                d_txt = f"{d_pct:+.2f}%" if isinstance(d_pct, (int, float)) else "نامشخص"
+                if isinstance(d_pct, (int, float)):
+                    pnl_lbl = "در سود انباشت سنگین 🟢" if d_pct >= 3.0 else ("نزدیک نقطه سربه‌سر ⚖️" if d_pct >= 0 else "در ضرر موقت (دفاع سنگین از کف) 🛡️")
+                else:
+                    pnl_lbl = "نامشخص (میانگین خرید نهنگ در دسترس نیست)"
 
                 return (
                     f"### 🐋 ردپای انباشت و شناسنامه کیف‌پول نهنگ‌ها برای {symbol}\n\n"
                     f"- **میانگین قیمت خرید کل نهنگ‌ها (Whale Cost Basis):** **{cb}**\n"
-                    f"- **فاصله بازار تا نقطه ورود وال‌ها:** **{d_pct:+.2f}%**\n"
+                    f"- **فاصله بازار تا نقطه ورود وال‌ها:** **{d_txt}**\n"
                     f"- **وضعیت سود/زیان نهنگ‌ها:** **{pnl_lbl}**\n"
-                    f"- **خط قرمز دفاع نهنگ‌ها (Whale Defense Line):** **{cb} (حمایت فولادی)**\n"
+                    f"- **خط دفاع ادعایی نهنگ‌ها:** **{cb}** (بدون فید اختصاصی، سطح ساختگی اعلام نمی‌شود)\n"
                     f"- **خالص جریان ۲۴ ساعته ورودی/خروجی:** **{n_flow}**\n"
                     f"- **تفسیر رفتار آن‌چین:** {supp}\n\n"
-                    f"💡 **استراتژی صیادی:** هر اصلاح قیمتی به سمت {cb} یک فرصت طلایی لانگ همراه با وال‌هاست، چرا که نهنگ‌ها اجازه شکسته شدن میانگین خرید خود را نخواهند داد."
+                    f"💡 **استراتژی صیادی:** تصمیم‌گیری بر پایهٔ میانگین خرید نهنگ تنها زمانی معتبر است که این عدد از فید زنده (Arkham/Glassnode) دریافت شود؛ در غیر این صورت هیچ سطح حمایتی ساختگی پیشنهاد نمی‌شود."
                 )
             except Exception:
                 pass
@@ -522,21 +561,32 @@ class AgentAdvisor:
             try:
                 from institutional_addons import LiquidationHeatmapEngine
                 liq = LiquidationHeatmapEngine.calculate_clusters(symbol, price, price * 1.02, price * 0.98)
-                p_mag = liq.get("magnet_price", price)
-                dist_m = liq.get("magnet_distance_pct", 0)
+                if not liq.get("ok"):
+                    return (
+                        f"### 🧲 نقشه حرارتی استخرهای نقدینگی و لیکوئیدیشن برای {symbol}\n\n"
+                        f"⛔ **{liq.get('message', 'خوشه‌های واقعی لیکوئیدیشن در دسترس نیست (Fail-Closed).')}**"
+                    )
+                p_mag = liq.get("magnet_price")
+                dist_m = liq.get("magnet_distance_pct")
+                if not isinstance(p_mag, (int, float)):
+                    return (
+                        f"### 🧲 نقشه حرارتی استخرهای نقدینگی و لیکوئیدیشن برای {symbol}\n\n"
+                        f"⛔ **قیمت آهنربای نقدینگی از فید معتبر دریافت نشد؛ سطح ساختگی نمایش داده نمی‌شود (Fail-Closed).**"
+                    )
                 d_dir = "جذب به سقف (شکار شورت‌های عجول)" if liq.get("magnet_direction") == "BULLISH_MAGNET" else "جذب به کف (شکار لانگ‌های پر ریسک)"
-                t_long = liq.get("total_long_liq_fmt", "-")
-                t_short = liq.get("total_short_liq_fmt", "-")
-                casc = liq.get("cascade_status", "")
+                t_long = liq.get("total_long_liq_fmt", "نامشخص")
+                t_short = liq.get("total_short_liq_fmt", "نامشخص")
+                casc = liq.get("cascade_status", "نامشخص")
+                dist_txt = f"{dist_m:+.2f}%" if isinstance(dist_m, (int, float)) else "نامشخص"
 
                 return (
                     f"### 🧲 کالبدشکافی نقشه حرارتی استخرهای نقدینگی و لیکوئیدیشن برای {symbol}\n\n"
-                    f"- **قیمت آهنربای جذب نقدینگی (Magnet Price):** **{p_mag:,.{p_dec}f}$** ({dist_m:+.2f}% از قیمت فعلی)\n"
+                    f"- **قیمت آهنربای جذب نقدینگی (Magnet Price):** **{p_mag:,.{p_dec}f}$** ({dist_txt} از قیمت فعلی)\n"
                     f"- **جهت کشش مغناطیسی بازارساز:** **{d_dir}**\n"
                     f"- **حجم کل استخرهای نقدینگی لانگ:** **{t_long}**\n"
                     f"- **حجم کل استخرهای نقدینگی شورت:** **{t_short}**\n"
                     f"- **ریسک لیکوئیدیشن آبشاری:** {casc}\n\n"
-                    f"💡 **تاکتیک نهادی:** مارکت‌میکرها قیمت را تا تاچ شدن استخر {p_mag:,.{p_dec}f}$ پیش خواهند برد. تارگت‌های اسکالپ خود را دقیقاً نیم‌درصد قبل از این استخر قرار دهید تا اسلیپیج نگیرید."
+                    f"💡 **تاکتیک نهادی:** تارگت‌های اسکالپ را نیم‌درصد قبل از استخر نقدینگی قرار دهید تا اسلیپیج نگیرید؛ این توصیه فقط با دادهٔ واقعی استخر معتبر است."
                 )
             except Exception:
                 pass
@@ -546,19 +596,30 @@ class AgentAdvisor:
             try:
                 from institutional_addons import OrderFlowAbsorptionEngine
                 abs_data = OrderFlowAbsorptionEngine.analyze_absorption(symbol)
-                b_wall = abs_data.get("bid_wall", {})
-                a_wall = abs_data.get("ask_wall", {})
-                b_price = b_wall.get("price", 0)
-                a_price = a_wall.get("price", 0)
+                if not abs_data.get("ok"):
+                    return (
+                        f"### ⚔️ نبرد دوطرفه عمق سفارشات و اردر فلو برای {symbol}\n\n"
+                        f"⛔ **{abs_data.get('description', 'دادهٔ زندهٔ معاملات صرافی در دسترس نیست (Fail-Closed).')}**"
+                    )
+                b_wall = abs_data.get("bid_wall", {}) or {}
+                a_wall = abs_data.get("ask_wall", {}) or {}
+                b_price = b_wall.get("price")
+                a_price = a_wall.get("price")
+                b_price_txt = f"{b_price:,.{p_dec}f}$" if isinstance(b_price, (int, float)) else "نامشخص"
+                a_price_txt = f"{a_price:,.{p_dec}f}$" if isinstance(a_price, (int, float)) else "نامشخص"
+                b_prog = b_wall.get("progress_pct")
+                a_prog = a_wall.get("progress_pct")
+                b_prog_txt = f"{b_prog}%" if isinstance(b_prog, (int, float)) else "نامشخص"
+                a_prog_txt = f"{a_prog}%" if isinstance(a_prog, (int, float)) else "نامشخص"
 
                 return (
                     f"### ⚔️ نبرد دوطرفه عمق سفارشات و دیواره‌های پنهان اردر فلو برای {symbol}\n\n"
-                    f"🟢 **دیواره خرید پنهان (حمایت نهادی):** سطح **{b_price:,.{p_dec}f}$**\n"
-                    f"- ظرفیت دیواره: **{b_wall.get('total_fmt')}** | جذب‌شده: **{b_wall.get('absorbed_fmt')}** ({b_wall.get('progress_pct')}%) | وضعیت: **{b_wall.get('status_label')}**\n\n"
-                    f"🔴 **دیواره فروش پنهان (مقاومت نهادی):** سطح **{a_price:,.{p_dec}f}$**\n"
-                    f"- ظرفیت دیواره: **{a_wall.get('total_fmt')}** | جذب‌شده: **{a_wall.get('absorbed_fmt')}** ({a_wall.get('progress_pct')}%) | وضعیت: **{a_wall.get('status_label')}**\n\n"
-                    f"⚖️ **موازنه قدرت لحظه‌ای:** {abs_data.get('power_summary')}\n"
-                    f"🎯 **حکم عملیاتی ایجنت:** {abs_data.get('action_verdict')}"
+                    f"🟢 **سطح کف پنجرهٔ معاملات (تقاضا):** **{b_price_txt}**\n"
+                    f"- ظرفیت دیواره: **{b_wall.get('total_fmt', 'نامشخص')}** | جذب‌شده: **{b_wall.get('absorbed_fmt', 'نامشخص')}** ({b_prog_txt}) | وضعیت: **{b_wall.get('status_label', 'نامشخص')}**\n\n"
+                    f"🔴 **سطح سقف پنجرهٔ معاملات (عرضه):** **{a_price_txt}**\n"
+                    f"- ظرفیت دیواره: **{a_wall.get('total_fmt', 'نامشخص')}** | جذب‌شده: **{a_wall.get('absorbed_fmt', 'نامشخص')}** ({a_prog_txt}) | وضعیت: **{a_wall.get('status_label', 'نامشخص')}**\n\n"
+                    f"⚖️ **موازنه قدرت لحظه‌ای:** {abs_data.get('power_summary', 'نامشخص')}\n"
+                    f"🎯 **حکم عملیاتی ایجنت:** {abs_data.get('action_verdict', 'نامشخص')}"
                 )
             except Exception:
                 pass
@@ -568,19 +629,30 @@ class AgentAdvisor:
             try:
                 from institutional_addons import OrderbookDepthSpoofingEngine
                 ds = OrderbookDepthSpoofingEngine.scan_depth_and_spoofing(symbol)
+                if ds.get("success") is not True:
+                    return (
+                        f"### 🎭 تحلیل راستی‌آزمایی دیواره‌های اردربوک و اسپوفینگ برای {symbol}\n\n"
+                        f"⛔ **عمق زندهٔ اردربوک در دسترس نیست؛ تحلیل دیواره و اسپوفینگ انجام نشد (Fail-Closed).**"
+                    )
                 b_risk = "بله ⚠️ (احتمال لغو ناگهانی قبل از رسیدن قیمت)" if ds.get("bid_spoof_risk") else "خیر (معتبر و پرحجم) ✔"
                 a_risk = "بله ⚠️ (احتمال اردر فیک برای ترساندن خریداران)" if ds.get("ask_spoof_risk") else "خیر (معتبر و مستحکم) ✔"
-                b_p = ds.get("buy_wall", {}).get("price", 0)
-                a_p = ds.get("sell_wall", {}).get("price", 0)
-                b_v = ds.get("buy_wall", {}).get("val_usd", 0)/1e6
-                a_v = ds.get("sell_wall", {}).get("val_usd", 0)/1e6
+                b_wall_data = ds.get("buy_wall") or {}
+                a_wall_data = ds.get("sell_wall") or {}
+                b_p = b_wall_data.get("price")
+                a_p = a_wall_data.get("price")
+                b_v = b_wall_data.get("val_usd")
+                a_v = a_wall_data.get("val_usd")
+                b_price_txt = f"{b_p:,.{p_dec}f}$" if isinstance(b_p, (int, float)) else "نامشخص"
+                a_price_txt = f"{a_p:,.{p_dec}f}$" if isinstance(a_p, (int, float)) else "نامشخص"
+                b_val_txt = f"${b_v/1e6:.2f}M" if isinstance(b_v, (int, float)) else "نامشخص"
+                a_val_txt = f"${a_v/1e6:.2f}M" if isinstance(a_v, (int, float)) else "نامشخص"
 
                 return (
                     f"### 🎭 تحلیل راستی‌آزمایی دیواره‌های اردربوک و اسپوفینگ برای {symbol}\n\n"
                     f"- **تراز عرضه و تقاضا:** تقاضا: **{ds.get('bid_percentage')}%** | عرضه: **{ds.get('ask_percentage')}%** ({ds.get('depth_bias')})\n"
                     f"- **وضعیت کلان اردربوک:** **{ds.get('spoofing_status')}**\n"
-                    f"- **بزرگ‌ترین دیواره خرید واقعی:** قیمت **{b_p:,.{p_dec}f}$** (${b_v:.2f}M)\n"
-                    f"- **بزرگ‌ترین دیواره فروش واقعی:** قیمت **{a_p:,.{p_dec}f}$** (${a_v:.2f}M)\n"
+                    f"- **بزرگ‌ترین دیواره خرید واقعی:** قیمت **{b_price_txt}** ({b_val_txt})\n"
+                    f"- **بزرگ‌ترین دیواره فروش واقعی:** قیمت **{a_price_txt}** ({a_val_txt})\n"
                     f"- **اردر جعلی در خرید:** {b_risk}\n"
                     f"- **اردر جعلی در فروش:** {a_risk}"
                 )
@@ -609,6 +681,9 @@ class AgentAdvisor:
         if any(w in q for w in ["الان بخرم", "خرید", "وارد شم", "لانگ", "شورت", "کی بخرم", "نقطه ورود", "long", "short", "ستاپ", "تارگت", "استاپ"]):
             alt_shield = analysis.get("altcoin_shield", {})
             gate_advice = scores.get("action_advice", "بررسی تاییدیه‌ها الزامی است.")
+            _comp = scores.get("composite_confidence")
+            comp_txt = f"{_comp}/100" if isinstance(_comp, (int, float)) else "نامشخص"
+            grade_txt = scores.get("grade_title") or "نامشخص"
             sl_val = float(scalp.get("stop_loss", 0))
             tp1_val = float(scalp.get("tp1", 0))
             tp2_val = float(scalp.get("tp2", 0))
@@ -620,7 +695,7 @@ class AgentAdvisor:
             return (
                 f"### ⚡ دستورالعمل معاملاتی زنده و دقیق برای {symbol} (قیمت فعلی: {formatted_price})\n\n"
                 f"🚦 **وضعیت چراغ سبز مارکت:** **{alt_shield.get('badge', '🟢 آزاد')}**\n"
-                f"👑 **درجه کیفی ستاپ:** **{scores.get('grade_title', 'Grade A')}** (نمره کل: {scores.get('composite_confidence', 85)}/100)\n\n"
+                f"👑 **درجه کیفی ستاپ:** **{grade_txt}** (نمره کل: {comp_txt})\n\n"
                 f"🎯 **ستاپ اسکالپ فوق‌سریع (۱m/۵m):**\n"
                 f"- **جهت معامله:** **{scalp.get('action', 'WAIT')}**\n"
                 f"- **محدوده ورود دقیق:** **{scalp.get('entry_zone', formatted_price)}**\n"
@@ -689,21 +764,24 @@ class AgentAdvisor:
             tfs = analysis.get("timeframes", {})
             ta_15m = tfs.get("15m", {})
             ta_4h = tfs.get("4h", {})
-            sup_15m = ta_15m.get("nearest_support", price * 0.99)
-            res_15m = ta_15m.get("nearest_resistance", price * 1.01)
-            sup_4h = ta_4h.get("nearest_support", price * 0.96)
-            res_4h = ta_4h.get("nearest_resistance", price * 1.04)
-            poc = smc.get("poc", price)
-            
+            sup_15m = ta_15m.get("nearest_support")
+            res_15m = ta_15m.get("nearest_resistance")
+            sup_4h = ta_4h.get("nearest_support")
+            res_4h = ta_4h.get("nearest_resistance")
+            poc = smc.get("poc")
+
+            def _lv(v):
+                return f"${v:,.{p_dec}f}" if isinstance(v, (int, float)) else "نامشخص"
+
             return (
                 f"### 🛡️ سطوح کلیدی حمایت و مقاومت برای {symbol} (قیمت فعلی: {formatted_price})\n\n"
                 f"🏛️ **سطوح ماژور و روندی (۴ ساعته):**\n"
-                f"- 🟢 **حمایت ماژور اصلی (کف ساختاری):** **${sup_4h:,.{p_dec}f}**\n"
-                f"- 🔴 **مقاومت ماژور اصلی (سقف ساختاری):** **${res_4h:,.{p_dec}f}**\n"
-                f"- ⚖️ **تراز تعادل و گره حجم (POC):** **${poc:,.{p_dec}f}**\n\n"
+                f"- 🟢 **حمایت ماژور اصلی (کف ساختاری):** **{_lv(sup_4h)}**\n"
+                f"- 🔴 **مقاومت ماژور اصلی (سقف ساختاری):** **{_lv(res_4h)}**\n"
+                f"- ⚖️ **تراز تعادل و گره حجم (POC):** **{_lv(poc)}**\n\n"
                 f"⚡ **سطوح نوسان‌گیری کوتاه‌مدت (۱۵ دقیقه):**\n"
-                f"- 🟢 حمایت محلی اسکلپ: **${sup_15m:,.{p_dec}f}**\n"
-                f"- 🔴 مقاومت محلی اسکلپ: **${res_15m:,.{p_dec}f}**\n\n"
+                f"- 🟢 حمایت محلی اسکلپ: **{_lv(sup_15m)}**\n"
+                f"- 🔴 مقاومت محلی اسکلپ: **{_lv(res_15m)}**\n\n"
                 f"📌 **نکته انضباطی:** شکست هر سطح با تثبیت کندل ۴ ساعته، اعتبار آن را به نقش معکوس (تبدیل مقاومت به حمایت یا برعکس) تغییر می‌دهد."
             )
 
@@ -711,33 +789,39 @@ class AgentAdvisor:
         if any(w in q for w in ["fvg", "خلاء", "نقدینگی", "اسمارت مانی", "ict", "vwap", "cvd", "poc"]):
             fvgs = smc.get("unmitigated_fvgs", [])
             fvg_str = f"{fvgs[-1]['bottom']} - {fvgs[-1]['top']}" if fvgs else "در حال حاضر FVG پرنشده نزدیک دیده نمی‌شود."
-            poc = smc.get("poc", price)
-            vwap_p = vwap_data.get("vwap", 0)
-            vah_p = smc.get("vah", 0)
-            val_p = smc.get("val", 0)
-            bsl_p = smc.get("bsl_pool_target", 0)
-            ssl_p = smc.get("ssl_pool_target", 0)
+            poc = smc.get("poc")
+            vwap_p = vwap_data.get("vwap")
+            vah_p = smc.get("vah")
+            val_p = smc.get("val")
+            bsl_p = smc.get("bsl_pool_target")
+            ssl_p = smc.get("ssl_pool_target")
+
+            def _lv(v):
+                return f"${v:,.{p_dec}f}" if isinstance(v, (int, float)) else "نامشخص"
 
             return (
                 f"### 🧠 کالبدشکافی به سبک اسمارت مانی و اردر فلو برای {symbol}\n\n"
                 f"- **خلاء نقدینگی فعال (Unmitigated FVG):** محدوده **{fvg_str}**\n"
-                f"- **میانگین قیمت وزنی حجم (VWAP):** **${vwap_p:,.{p_dec}f}** ({vwap_data.get('vwap_position')})\n"
-                f"- **جهت دلتای تجمعی حجم (CVD):** **{vwap_data.get('cvd_trend')}**\n"
-                f"- **گره متراکم حجم (POC):** سطح **${poc:,.{p_dec}f}** (تراز VAH: ${vah_p:,.{p_dec}f} | VAL: ${val_p:,.{p_dec}f})\n"
-                f"- **استخر نقدینگی سقف (BSL Target):** **${bsl_p:,.{p_dec}f}**\n"
-                f"- **استخر نقدینگی کف (SSL Target):** **${ssl_p:,.{p_dec}f}**\n\n"
+                f"- **میانگین قیمت وزنی حجم (VWAP):** **{_lv(vwap_p)}** ({vwap_data.get('vwap_position', 'نامشخص')})\n"
+                f"- **جهت دلتای تجمعی حجم (CVD):** **{vwap_data.get('cvd_trend', 'نامشخص')}**\n"
+                f"- **گره متراکم حجم (POC):** سطح **{_lv(poc)}** (تراز VAH: {_lv(vah_p)} | VAL: {_lv(val_p)})\n"
+                f"- **استخر نقدینگی سقف (BSL Target):** **{_lv(bsl_p)}**\n"
+                f"- **استخر نقدینگی کف (SSL Target):** **{_lv(ssl_p)}**\n\n"
                 f"📌 **توصیه استراتژیک:** هرگز در میانه رنج وارد نشوید؛ ورود بهینه یا روی پولبک به FVG و VWAP است یا پس از تایید Sweep استاپ‌ها."
             )
 
         # Priority 22: 3D Scores & Signal Confluence
         if any(w in q for w in ["امتیاز", "اسکور", "direction", "entry score", "risk score", "وین ریت", "کیفیت"]):
+            def _sc(k):
+                v = scores.get(k)
+                return f"{v}/100" if isinstance(v, (int, float)) else "نامشخص"
             return (
                 f"### 🎯 ارزیابی تفکیکی امتیازات ۳ بعدی سیگنال برای {symbol}\n\n"
-                f"- **۱. امتیاز جهت حرکت (Direction Score):** **{scores.get('direction_score')}/100**\n"
-                f"- **۲. امتیاز کیفیت نقطه ورود (Entry Score):** **{scores.get('entry_score')}/100**\n"
-                f"- **۳. امتیاز کیفیت ریسک (Risk Score):** **{scores.get('risk_score')}/100**\n\n"
-                f"⭐ **نمره نهایی کانفلوئنس (Confidence):** **{scores.get('composite_confidence')}/100** ({scores.get('grade_title')})\n"
-                f"📌 **دستور اجرایی:** {scores.get('action_advice')}"
+                f"- **۱. امتیاز جهت حرکت (Direction Score):** **{_sc('direction_score')}**\n"
+                f"- **۲. امتیاز کیفیت نقطه ورود (Entry Score):** **{_sc('entry_score')}**\n"
+                f"- **۳. امتیاز کیفیت ریسک (Risk Score):** **{_sc('risk_score')}**\n\n"
+                f"⭐ **نمره نهایی کانفلوئنس (Confidence):** **{_sc('composite_confidence')}** ({scores.get('grade_title') or 'نامشخص'})\n"
+                f"📌 **دستور اجرایی:** {scores.get('action_advice', 'نامشخص')}"
             )
 
         # Priority 23: News Sentiment & Circuit Breakers
@@ -766,3 +850,4 @@ class AgentAdvisor:
             f"- **تراز نقدینگی و VWAP:** ${vwap_val:,.{p_dec}f} ({vwap_data.get('vwap_position')})\n\n"
             f"💬 من به تمام داده‌های زنده ترمینال شامل **تمام زیر و بم سایت، کارنامه درست‌سنجی کلان، ژورنال سیگنال‌ها، وضعیت دیده‌بان سنتینل، استخرهای دکس، لیدرهای آلفا، ماشین‌حساب اهرم تا ۲۰۰x، ردپای نهنگ‌ها و تحلیل هر ارزی که نام ببرید** مسلط هستم. سوال خود را مطرح نمایید!"
         )
+
